@@ -7,6 +7,10 @@ that slowly improve the codebase.
 It is generally quite unusual to regularly publish iterative beta versions on
 the public registry, but it is also generally quite unusual to exclusively
 support a monolithic public registry. (:
+
+## Vault
+
+@docs Vault
 -}
 
 {-| The Vault type stores all relevant information about the Matrix API.
