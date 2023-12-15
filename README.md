@@ -32,3 +32,8 @@ elm install noordstar/elm-matrix-sdk-beta
 Keep in mind that the beta versions are intended to develop rapidly. You should
 not expect the versions to remain reliable for years! If you need a stable
 version, please wait around for a full version.
+
+## Contribute
+
+If you wish to contribute, please read the
+[contribution guide](docs/CONTRIBUTE.md).
