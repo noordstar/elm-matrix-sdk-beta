@@ -56,18 +56,17 @@ example, this can be useful when every user is identifiable by their username:
 
     users : Hashdict User
     users =
-      Hashdict.fromList .name
-        [ User "Alice" 28 1.65
-        , User "Bob"   19 1.82
-        , User "Chuck" 33 1.75
-        ]
+        Hashdict.fromList .name
+            [ User "Alice" 28 1.65
+            , User "Bob" 19 1.82
+            , User "Chuck" 33 1.75
+            ]
 
     type alias User =
-      { name : String
-      , age : Int
-      , height : Float
-      }
-
+        { name : String
+        , age : Int
+        , height : Float
+        }
 
 In the example listed above, the users are stored by their username, which means
 that all you need to know is the value "Alice" to retrieve all the information
