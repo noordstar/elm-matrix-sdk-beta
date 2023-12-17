@@ -11,7 +11,8 @@
         "Internal.Tools.Hashdict",
         "Internal.Tools.Iddict",
         "Internal.Tools.Timestamp",
-        "Internal.Tools.VersionControl"
+        "Internal.Tools.VersionControl",
+        "Internal.Values.Envelope"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
