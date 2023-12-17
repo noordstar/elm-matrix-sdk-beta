@@ -8,6 +8,8 @@
         "Matrix",
         "Internal.Config.Default",
         "Internal.Config.Text",
+        "Internal.Tools.Decode",
+        "Internal.Tools.Encode",
         "Internal.Tools.Hashdict",
         "Internal.Tools.Iddict",
         "Internal.Tools.Timestamp",
