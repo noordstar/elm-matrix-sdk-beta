@@ -227,26 +227,6 @@ mapContext f (Envelope data) =
         }
 
 
-{-| Update the settings in the Envelope.
-
-    setDeviceName : String -> Envelope a -> Envelope a
-    setDeviceName name envelope =
-        mapSettings
-            (\settings ->
-                { settings | deviceName = name }
-            )
-            envelope
-
--}
-mapSettings : (Settings -> Settings) -> Envelope a -> Envelope a
-mapSettings f (Envelope data) =
-    Envelope
-        { content = data.content
-        , context = data.context
-        , settings = f data.settings
-        }
-
-
 {-| Map the contents of a function, where the result is wrapped in a `List`
 type. This can be useful when you are mapping to a list of individual values
 that you would all like to see enveloped.
@@ -285,6 +265,26 @@ looking for.
 mapMaybe : (a -> Maybe b) -> Envelope a -> Maybe (Envelope b)
 mapMaybe f =
     map f >> toMaybe
+
+
+{-| Update the settings in the Envelope.
+
+    setDeviceName : String -> Envelope a -> Envelope a
+    setDeviceName name envelope =
+        mapSettings
+            (\settings ->
+                { settings | deviceName = name }
+            )
+            envelope
+
+-}
+mapSettings : (Settings -> Settings) -> Envelope a -> Envelope a
+mapSettings f (Envelope data) =
+    Envelope
+        { content = data.content
+        , context = data.context
+        , settings = f data.settings
+        }
 
 
 toList : Envelope (List a) -> List (Envelope a)
