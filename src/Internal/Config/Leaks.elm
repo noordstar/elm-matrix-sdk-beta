@@ -1,4 +1,4 @@
-module Internal.Config.Leaks exposing (accessToken)
+module Internal.Config.Leaks exposing (accessToken, baseUrl, transaction, versions)
 
 {-|
 
@@ -27,7 +27,7 @@ know 100% sure that the value isn't `Nothing`.
 
     Just 5 |> Maybe.withDefault Leaks.number
 
-@docs accessToken
+@docs accessToken, baseUrl, transaction, versions
 
 -}
 
@@ -37,3 +37,24 @@ know 100% sure that the value isn't `Nothing`.
 accessToken : String
 accessToken =
     "elm-sdk-placeholder-access-token-leaks"
+
+
+{-| Placeholder base URL.
+-}
+baseUrl : String
+baseUrl =
+    "elm-sdk-placeholder-baseurl-leaks.example.org"
+
+
+{-| Placeholder transaction id.
+-}
+transaction : String
+transaction =
+    "elm-sdk-placeholder-transaction-leaks"
+
+
+{-| Placeholder versions list.
+-}
+versions : List String
+versions =
+    [ "elm-sdk-placeholder-versions-leaks" ]
