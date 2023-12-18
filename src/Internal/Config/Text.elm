@@ -7,12 +7,20 @@ module Internal.Config.Text exposing
 {-| Throughout the Elm SDK, there are lots of pieces of text being used for
 various purposes. Some of these are:
 
-  - To log on what is happening during an API call.
+  - To log what is happening during an API call.
   - To fail with custom decoder errors.
   - To describe custom values in a human readable format.
 
 All magic values of text are gathered in this module, to form a monolithic
 source of text. This allows people to learn more about the Elm SDK, and it
+offers room for future translations.
+
+Optionally, developers can even consider taking the values of some of these
+variables to interpret them automatically when they appear as logs on the other
+side. This could be used to automatically detect when the Vault is failing to
+authenticate, for example, so that a new login screen can be shown. **WARNING:**
+This is a risky feature, keep in mind that even a patch update might break this!
+You should only do this if you know what you're doing.
 
 
 ## API Versions
