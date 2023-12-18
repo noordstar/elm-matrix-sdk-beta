@@ -8,6 +8,7 @@
         "Matrix",
         "Matrix.Settings",
         "Internal.Config.Default",
+        "Internal.Config.Leaks",
         "Internal.Config.Text",
         "Internal.Tools.Decode",
         "Internal.Tools.Encode",
