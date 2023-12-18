@@ -42,7 +42,7 @@ the Elm SDK tolerates being held on hold.
 
   - ↗️ A high value is good because it significantly reduces traffic between the
     user and the homeserver.
-  - ↘️ A low value is good because it refuces the risk of
+  - ↘️ A low value is good because it reduces the risk of
     the connection ending abruptly or unexpectedly.
 
 Nowadays, most libraries use 30 seconds as the standard, as does the Elm SDK.

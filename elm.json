@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "exposed-modules": [
         "Matrix",
+        "Matrix.Settings",
         "Internal.Config.Default",
         "Internal.Config.Text",
         "Internal.Tools.Decode",
