@@ -36,4 +36,4 @@ version, please wait around for a full version.
 ## Contribute
 
 If you wish to contribute, please read the
-[contribution guide](docs/CONTRIBUTE.md).
+[contribution guide](docs/CONTRIBUTING.md).
