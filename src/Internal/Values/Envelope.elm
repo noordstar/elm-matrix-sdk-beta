@@ -1,7 +1,7 @@
 module Internal.Values.Envelope exposing
     ( Envelope, init
     , map, mapMaybe
-    , Settings, mapSettings
+    , Settings, mapSettings, extractSettings
     , getContent, extract
     , encode, decoder
     )
@@ -22,7 +22,7 @@ settings that can be adjusted manually.
 
 ## Settings
 
-@docs Settings, mapSettings
+@docs Settings, mapSettings, extractSettings
 
 
 ## Extract
@@ -147,6 +147,16 @@ from a data type inside an Envelope.
 extract : (a -> b) -> Envelope a -> b
 extract f (Envelope data) =
     f data.content
+
+
+{-| Map a function on the settings, effectively getting data that way.
+
+This can be helpful if you have a UI that displays custom settings to a user.
+
+-}
+extractSettings : (Settings -> b) -> Envelope a -> b
+extractSettings f (Envelope data) =
+    f data.settings
 
 
 {-| Get the original item that is stored inside an Envelope.
