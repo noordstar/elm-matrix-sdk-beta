@@ -19,11 +19,13 @@ support a monolithic public registry. (:
 
 -}
 
+import Types
+
 
 {-| The Vault type stores all relevant information about the Matrix API.
 
 It currently supports no functionality and it will just stay here - for fun.
 
 -}
-type Vault
-    = Vault
+type alias Vault =
+    Types.Vault
