@@ -3,11 +3,11 @@ module Internal.Tools.Timestamp exposing
     , encode, decoder
     )
 
-{-| The Timestamp module is a simplification of the Timetsamp as delivered by
+{-| The Timestamp module is a simplification of the Timestamp as delivered by
 elm/time. This module offers ways to work with the timestamp in meaningful ways.
 
 
-## Timetstamp
+## Timestamp
 
 @docs Timestamp
 
@@ -23,7 +23,7 @@ import Json.Encode as E
 import Time
 
 
-{-| The Timetstamp data type representing a moment in time.
+{-| The Timestamp data type representing a moment in time.
 -}
 type alias Timestamp =
     Time.Posix

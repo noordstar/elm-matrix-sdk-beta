@@ -102,14 +102,14 @@ versionsFailedToDecode =
     "Matrix API returned an invalid version list"
 
 
-{-| Logs when the Vault remembers how to communicate with the Matrix homeserver
+{-| Logs when the Vault remembers how to communicate with the Matrix homeserver.
 -}
 versionsFoundLocally : String
 versionsFoundLocally =
     "Found locally cached version list"
 
 
-{-| Logs when the Matrix API has returned how to best communicate with them
+{-| Logs when the Matrix API has returned how to best communicate with them.
 -}
 versionsReceived : String
 versionsReceived =
