@@ -1,6 +1,6 @@
 module Internal.Values.Envelope exposing
     ( Envelope, init
-    , map, mapMaybe
+    , map, mapMaybe, mapList
     , Settings, mapSettings, extractSettings
     , mapContext
     , getContent, extract
@@ -18,7 +18,7 @@ settings that can be adjusted manually.
 
 ## Manipulate
 
-@docs map, mapMaybe
+@docs map, mapMaybe, mapList
 
 
 ## Settings
@@ -247,6 +247,26 @@ mapSettings f (Envelope data) =
         }
 
 
+{-| Map the contents of a function, where the result is wrapped in a `List`
+type. This can be useful when you are mapping to a list of individual values
+that you would all like to see enveloped.
+
+    type alias User =
+        { name : String, age : Int }
+
+    type alias Company =
+        { name : String, employees : List User }
+
+    getEmployees : Envelope Company -> List (Envelope User)
+    getEmployees envelope =
+        mapList .employees envelope
+
+-}
+mapList : (a -> List b) -> Envelope a -> List (Envelope b)
+mapList f =
+    map f >> toList
+
+
 {-| Map the contents of a function, where the result is wrapped in a `Maybe`
 type. This can be useful when you are not guaranteed to find the value you're
 looking for.
@@ -265,6 +285,13 @@ looking for.
 mapMaybe : (a -> Maybe b) -> Envelope a -> Maybe (Envelope b)
 mapMaybe f =
     map f >> toMaybe
+
+
+toList : Envelope (List a) -> List (Envelope a)
+toList (Envelope data) =
+    List.map
+        (\content -> map (always content) (Envelope data))
+        data.content
 
 
 toMaybe : Envelope (Maybe a) -> Maybe (Envelope a)
