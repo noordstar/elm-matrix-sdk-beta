@@ -2,6 +2,7 @@ module Internal.Values.Envelope exposing
     ( Envelope, init
     , map, mapMaybe
     , Settings, mapSettings, extractSettings
+    , mapContext
     , getContent, extract
     , encode, decoder
     )
@@ -25,6 +26,11 @@ settings that can be adjusted manually.
 @docs Settings, mapSettings, extractSettings
 
 
+## Context
+
+@docs mapContext
+
+
 ## Extract
 
 @docs getContent, extract
@@ -39,6 +45,7 @@ settings that can be adjusted manually.
 import Internal.Config.Default as Default
 import Internal.Tools.Decode as D
 import Internal.Tools.Encode as E
+import Internal.Values.Context as Context exposing (Context)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -51,6 +58,7 @@ define them in their type.
 type Envelope a
     = Envelope
         { content : a
+        , context : Context
         , settings : Settings
         }
 
@@ -74,8 +82,9 @@ potential tokens, values and settings included in the JSON.
 -}
 decoder : D.Decoder a -> D.Decoder (Envelope a)
 decoder xDecoder =
-    D.map2 (\a b -> Envelope { content = a, settings = b })
+    D.map3 (\a b c -> Envelope { content = a, context = b, settings = c })
         (D.field "content" xDecoder)
+        (D.field "context" Context.decoder)
         (D.field "settings" decoderSettings)
 
 
@@ -96,6 +105,7 @@ encode : (a -> E.Value) -> Envelope a -> E.Value
 encode encodeX (Envelope data) =
     E.object
         [ ( "content", encodeX data.content )
+        , ( "context", Context.encode data.context )
         , ( "settings", encodeSettings data.settings )
         , ( "version", E.string Default.currentVersion )
         ]
@@ -178,6 +188,7 @@ init : a -> Envelope a
 init x =
     Envelope
         { content = x
+        , context = Context.init
         , settings =
             { currentVersion = Default.currentVersion
             , deviceName = Default.deviceName
@@ -200,6 +211,18 @@ map : (a -> b) -> Envelope a -> Envelope b
 map f (Envelope data) =
     Envelope
         { content = f data.content
+        , context = data.context
+        , settings = data.settings
+        }
+
+
+{-| Update the Context in the Envelope.
+-}
+mapContext : (Context -> Context) -> Envelope a -> Envelope a
+mapContext f (Envelope data) =
+    Envelope
+        { content = data.content
+        , context = f data.context
         , settings = data.settings
         }
 
@@ -219,6 +242,7 @@ mapSettings : (Settings -> Settings) -> Envelope a -> Envelope a
 mapSettings f (Envelope data) =
     Envelope
         { content = data.content
+        , context = data.context
         , settings = f data.settings
         }
 
