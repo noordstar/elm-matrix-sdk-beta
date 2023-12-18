@@ -3,6 +3,7 @@ module Internal.Values.Envelope exposing
     , map, mapMaybe
     , Settings, mapSettings
     , getContent, extract
+    , encode, decoder
     )
 
 {-| The Envelope module wraps existing data types with lots of values and
@@ -28,9 +29,18 @@ settings that can be adjusted manually.
 
 @docs getContent, extract
 
+
+## JSON coders
+
+@docs encode, decoder
+
 -}
 
 import Internal.Config.Default as Default
+import Internal.Tools.Decode as D
+import Internal.Tools.Encode as E
+import Json.Decode as D
+import Json.Encode as E
 
 
 {-| There are lots of different data types in the Elm SDK, and many of them
@@ -57,6 +67,70 @@ type alias Settings =
     , deviceName : String
     , syncTime : Int
     }
+
+
+{-| Decode an enveloped type from a JSON value. The decoder also imports any
+potential tokens, values and settings included in the JSON.
+-}
+decoder : D.Decoder a -> D.Decoder (Envelope a)
+decoder xDecoder =
+    D.map2 (\a b -> Envelope { content = a, settings = b })
+        (D.field "content" xDecoder)
+        (D.field "settings" decoderSettings)
+
+
+{-| Decode settings from a JSON value.
+-}
+decoderSettings : D.Decoder Settings
+decoderSettings =
+    D.map3 Settings
+        (D.opFieldWithDefault "currentVersion" Default.currentVersion D.string)
+        (D.opFieldWithDefault "deviceName" Default.deviceName D.string)
+        (D.opFieldWithDefault "syncTime" Default.syncTime D.int)
+
+
+{-| Encode an enveloped type into a JSON value. The function encodes all
+non-standard settings, tokens and values.
+-}
+encode : (a -> E.Value) -> Envelope a -> E.Value
+encode encodeX (Envelope data) =
+    E.object
+        [ ( "content", encodeX data.content )
+        , ( "settings", encodeSettings data.settings )
+        , ( "version", E.string Default.currentVersion )
+        ]
+
+
+{-| Encode the settings into a JSON value.
+-}
+encodeSettings : Settings -> E.Value
+encodeSettings settings =
+    let
+        differentFrom : b -> b -> Maybe b
+        differentFrom defaultValue currentValue =
+            if currentValue == defaultValue then
+                Nothing
+
+            else
+                Just currentValue
+    in
+    E.maybeObject
+        [ ( "currentVersion"
+          , settings.currentVersion
+                |> differentFrom Default.currentVersion
+                |> Maybe.map E.string
+          )
+        , ( "deviceName"
+          , settings.deviceName
+                |> differentFrom Default.deviceName
+                |> Maybe.map E.string
+          )
+        , ( "syncTime"
+          , settings.syncTime
+                |> differentFrom Default.syncTime
+                |> Maybe.map E.int
+          )
+        ]
 
 
 {-| Map a function, then get its content. This is useful for getting information
