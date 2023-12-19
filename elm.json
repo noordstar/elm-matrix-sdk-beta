@@ -18,6 +18,7 @@
         "Internal.Tools.VersionControl",
         "Internal.Values.Context",
         "Internal.Values.Envelope",
+        "Internal.Values.Event",
         "Internal.Values.Vault",
         "Types"
     ],
