@@ -4,9 +4,8 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Json.Decode as D
-import Test exposing (..)
 import Json.Encode as E
-import Internal.Tools.Iddict as Iddict
+import Test exposing (..)
 
 
 fuzzer : Fuzzer a -> Fuzzer (Iddict a)
@@ -94,6 +93,7 @@ empty =
             )
         ]
 
+
 singleton : Test
 singleton =
     let
@@ -106,86 +106,100 @@ singleton =
                 )
                 Fuzz.int
     in
-        describe "singleton"
-            [ fuzz singleFuzzer "not isEmpty"
-                (\single ->
-                    single
-                        |> Iddict.isEmpty
-                        |> Expect.equal False
-                )
-            , fuzz Fuzz.int "singleton == insert empty"
-                (\i ->
-                    Iddict.empty
-                        |> Iddict.insert i
-                        |> Expect.equal (Iddict.singleton i)
-                )
-            , fuzz Fuzz.int "First item is key 0"
-                (\i ->
-                    Iddict.singleton i
-                        |> Tuple.first
-                        |> Expect.equal 0
-                )
-            , fuzz singleFuzzer "Key 0 is member"
-                (\single ->
-                    single
-                        |> Iddict.member 0
-                        |> Expect.equal True
-                )
-            , fuzz Fuzz.int "Key 0 get returns Just value"
-                (\i ->
-                    Iddict.singleton i
-                        |> Tuple.second
-                        |> Iddict.get 0
-                        |> Expect.equal (Just i)
-                )
-            , fuzz singleFuzzer "Size == 1"
-                (\single ->
-                    single
-                        |> Iddict.size
-                        |> Expect.equal 1
-                )
-            , fuzz Fuzz.int "Only key 0"
-                (\i ->
-                    Iddict.singleton i
-                        |> Tuple.second
-                        |> Iddict.keys
-                        |> Expect.equal [ 0 ]
-                )
-            , fuzz Fuzz.int "Only value value"
-                (\i ->
-                    Iddict.singleton i
-                        |> Tuple.second
-                        |> Iddict.values
-                        |> Expect.equal [ i ]
-                )
-            , fuzz singleFuzzer "JSON encode -> decode -> singleton"
-                (\single ->
-                    single
-                        |> Iddict.encode E.int
-                        |> D.decodeValue (Iddict.decoder D.int)
-                        |> Expect.equal (Ok single)
-                )
-            , fuzz Fuzz.int "JSON encode"
-                (\i ->
-                    Iddict.singleton i
-                        |> Tuple.second
-                        |> Iddict.encode E.int
-                        |> E.encode 0
-                        |> Expect.equal ("{\"cursor\":1,\"dict\":{\"0\":" ++ (String.fromInt i) ++ "}}")
-                )
-            , fuzz Fuzz.int "JSON decode"
-                (\i ->
-                    ("{\"cursor\":1,\"dict\":{\"0\":" ++ (String.fromInt i) ++ "}}")
-                        |> D.decodeString (Iddict.decoder D.int)
-                        |> Tuple.pair 0
-                        |> Expect.equal (Iddict.singleton i |> Tuple.mapSecond Ok)
-                )
-            ]
+    describe "singleton"
+        [ fuzz singleFuzzer
+            "not isEmpty"
+            (\single ->
+                single
+                    |> Iddict.isEmpty
+                    |> Expect.equal False
+            )
+        , fuzz Fuzz.int
+            "singleton == insert empty"
+            (\i ->
+                Iddict.empty
+                    |> Iddict.insert i
+                    |> Expect.equal (Iddict.singleton i)
+            )
+        , fuzz Fuzz.int
+            "First item is key 0"
+            (\i ->
+                Iddict.singleton i
+                    |> Tuple.first
+                    |> Expect.equal 0
+            )
+        , fuzz singleFuzzer
+            "Key 0 is member"
+            (\single ->
+                single
+                    |> Iddict.member 0
+                    |> Expect.equal True
+            )
+        , fuzz Fuzz.int
+            "Key 0 get returns Just value"
+            (\i ->
+                Iddict.singleton i
+                    |> Tuple.second
+                    |> Iddict.get 0
+                    |> Expect.equal (Just i)
+            )
+        , fuzz singleFuzzer
+            "Size == 1"
+            (\single ->
+                single
+                    |> Iddict.size
+                    |> Expect.equal 1
+            )
+        , fuzz Fuzz.int
+            "Only key 0"
+            (\i ->
+                Iddict.singleton i
+                    |> Tuple.second
+                    |> Iddict.keys
+                    |> Expect.equal [ 0 ]
+            )
+        , fuzz Fuzz.int
+            "Only value value"
+            (\i ->
+                Iddict.singleton i
+                    |> Tuple.second
+                    |> Iddict.values
+                    |> Expect.equal [ i ]
+            )
+        , fuzz singleFuzzer
+            "JSON encode -> decode -> singleton"
+            (\single ->
+                single
+                    |> Iddict.encode E.int
+                    |> D.decodeValue (Iddict.decoder D.int)
+                    |> Expect.equal (Ok single)
+            )
+        , fuzz Fuzz.int
+            "JSON encode"
+            (\i ->
+                Iddict.singleton i
+                    |> Tuple.second
+                    |> Iddict.encode E.int
+                    |> E.encode 0
+                    |> Expect.equal ("{\"cursor\":1,\"dict\":{\"0\":" ++ String.fromInt i ++ "}}")
+            )
+        , fuzz Fuzz.int
+            "JSON decode"
+            (\i ->
+                ("{\"cursor\":1,\"dict\":{\"0\":" ++ String.fromInt i ++ "}}")
+                    |> D.decodeString (Iddict.decoder D.int)
+                    |> Tuple.pair 0
+                    |> Expect.equal (Iddict.singleton i |> Tuple.mapSecond Ok)
+            )
+        ]
+
 
 insert : Test
 insert =
     describe "insert"
-        [ fuzz2 (fuzzer Fuzz.int) Fuzz.int "Add something"
+        [ fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "Add something"
             (\d i ->
                 case Iddict.insert i d of
                     ( key, dict ) ->
@@ -193,14 +207,18 @@ insert =
                             |> Iddict.get key
                             |> Expect.equal (Just i)
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "Never isEmpty"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "Never isEmpty"
             (\d i ->
                 Iddict.insert i d
                     |> Tuple.second
                     |> Iddict.isEmpty
                     |> Expect.equal False
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "New key"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "New key"
             (\d i ->
                 case Iddict.insert i d of
                     ( key, dict ) ->
@@ -211,7 +229,9 @@ insert =
                                     Expect.notEqual key newKey
                                )
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "New dict"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "New dict"
             (\d i ->
                 case Iddict.insert i d of
                     ( key, dict ) ->
@@ -222,7 +242,9 @@ insert =
                                     Expect.notEqual dict newDict
                                )
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "Inserted value is member"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "Inserted value is member"
             (\d i ->
                 case Iddict.insert i d of
                     ( key, dict ) ->
@@ -230,7 +252,9 @@ insert =
                             |> Iddict.member key
                             |> Expect.equal True
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "Get inserted value"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "Get inserted value"
             (\d i ->
                 case Iddict.insert i d of
                     ( key, dict ) ->
@@ -238,12 +262,14 @@ insert =
                             |> Iddict.get key
                             |> Expect.equal (Just i)
             )
-        , fuzz2 (fuzzer Fuzz.int) Fuzz.int "size = size + 1"
+        , fuzz2 (fuzzer Fuzz.int)
+            Fuzz.int
+            "size = size + 1"
             (\d i ->
                 case Iddict.insert i d of
                     ( _, dict ) ->
                         Expect.equal
-                            ( Iddict.size dict )
-                            ( Iddict.size d + 1 )
+                            (Iddict.size dict)
+                            (Iddict.size d + 1)
             )
         ]
