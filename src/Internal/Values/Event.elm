@@ -84,9 +84,7 @@ age envelope =
         envelope
 
 
-{-| The Matrix protocol revolves around users being able to send each other
-JSON objects. This function reveals the JSON value that the user has sent to
-the room.
+{-| Determine the body of this event, as created by the user that sent it.
 -}
 content : Event -> E.Value
 content =
@@ -153,8 +151,7 @@ encodeUnsignedData (UnsignedData data) =
         ]
 
 
-{-| Every event is assigned a unique id in the room. You can use this event id
-to reference or look up events.
+{-| Determine the globally unique identifier for an event.
 -}
 eventId : Event -> String
 eventId =
@@ -173,10 +170,10 @@ eventType =
     Envelope.extract .eventType
 
 
-{-| Timestamp of at what time the event was originally received by the original
-homeserver.
+{-| Determine the timestamp of at what time the event was originally received by
+the original homeserver.
 
-Generally, this timestamp offers a relalatively accurate indicator of when a
+Generally, this timestamp offers a relatively accurate indicator of when a
 message was sent. However, this number isn't completely reliable! The timestamp
 can be far in the past due to long network lag, and a (malicious) homeserver can
 spoof this number to make it seem like something was sent ridiculously far in
@@ -188,7 +185,9 @@ originServerTs =
     Envelope.extract .originServerTs
 
 
-{-| Get the old content, if the event has changed or it has been edited.
+{-| Determine the previous `content` value for this event. This field is only a
+`Just value` if the event is a state event, and the Matrix Vault has permission
+to see the previous content.
 -}
 prevContent : Event -> Maybe E.Value
 prevContent envelope =
@@ -223,19 +222,22 @@ roomId =
     Envelope.extract .roomId
 
 
-{-| User id of the user that sent this event. You can use this user id to
-reference or look up users.
+{-| Determine the fully-qualified ID of the user who sent an event.
 -}
 sender : Event -> String
 sender =
     Envelope.extract .sender
 
 
-{-| When an event's state key is `Nothing`, it is an ordinary message event in
-the timeline.
+{-| Determine an event's state key.
 
-When the state key is `Just ""` or some other `Just string`, then it is a state
-event that affects how the room works. TODO: Explain state events.
+It is present if, and only if, the event is a _state_ event. The key makes the
+piece of state unique in the room. Note that it is often `Just ""`. If it is not
+present, its value is `Nothing`.
+
+State keys starting with an `@` are reserved for referencing user IDs, such as
+room members. With the exception of a few events, state events set with a given
+user'd ID as the state key can only be set by that user.
 
 -}
 stateKey : Event -> Maybe String
