@@ -1,7 +1,7 @@
 module Internal.Values.Event exposing
     ( Event
     , content, eventId, eventType, originServerTs, roomId, sender, stateKey
-    , UnsignedData, age, prevContent, redactedBecause, transactionId
+    , UnsignedData(..), age, prevContent, redactedBecause, transactionId
     , encode, decoder
     )
 
