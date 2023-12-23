@@ -66,7 +66,7 @@ type UnsignedData
     = UnsignedData
         { age : Maybe Int
         , prevContent : Maybe E.Value
-        , redactedBecause : Maybe Event
+        , redactedBecause : Maybe IEvent
         , transactionId : Maybe String
         }
 
@@ -95,6 +95,11 @@ content =
 -}
 decoder : D.Decoder Event
 decoder =
+    Envelope.decoder decoderInternal
+
+
+decoderInternal : D.Decoder IEvent
+decoderInternal =
     D.map8 IEvent
         (D.field "content" D.value)
         (D.field "eventId" D.string)
@@ -104,7 +109,6 @@ decoder =
         (D.opField "stateKey" D.string)
         (D.field "eventType" D.string)
         (D.opField "unsigned" decoderUnsignedData)
-        |> Envelope.decoder
 
 
 {-| Decode Unsigned Data from a JSON value.
@@ -114,29 +118,30 @@ decoderUnsignedData =
     D.map4 (\a b c d -> UnsignedData { age = a, prevContent = b, redactedBecause = c, transactionId = d })
         (D.opField "age" D.int)
         (D.opField "prevContent" D.value)
-        (D.opField "redactedBecause" (D.lazy (\_ -> decoder)))
+        (D.opField "redactedBecause" (D.lazy (\_ -> decoderInternal)))
         (D.opField "transactionId" D.string)
 
 
 {-| Encode an Event into a JSON value.
 -}
 encode : Event -> E.Value
-encode envelope =
-    Envelope.encode
-        (\event ->
-            E.maybeObject
-                [ ( "content", Just event.content )
-                , ( "eventId", Just <| E.string event.eventId )
-                , ( "originServerTs", Just <| Timestamp.encode event.originServerTs )
-                , ( "roomId", Just <| E.string event.roomId )
-                , ( "sender", Just <| E.string event.sender )
-                , ( "stateKey", Maybe.map E.string event.stateKey )
-                , ( "eventType", Just <| E.string event.eventType )
-                , ( "unsigned", Maybe.map encodeUnsignedData event.unsigned )
-                , ( "version", Just <| E.string Default.currentVersion )
-                ]
-        )
-        envelope
+encode =
+    Envelope.encode encodeInternal
+
+
+encodeInternal : IEvent -> E.Value
+encodeInternal event =
+    E.maybeObject
+        [ ( "content", Just event.content )
+        , ( "eventId", Just <| E.string event.eventId )
+        , ( "originServerTs", Just <| Timestamp.encode event.originServerTs )
+        , ( "roomId", Just <| E.string event.roomId )
+        , ( "sender", Just <| E.string event.sender )
+        , ( "stateKey", Maybe.map E.string event.stateKey )
+        , ( "eventType", Just <| E.string event.eventType )
+        , ( "unsigned", Maybe.map encodeUnsignedData event.unsigned )
+        , ( "version", Just <| E.string Default.currentVersion )
+        ]
 
 
 {-| Encode Unsigned Data into a JSON value.
@@ -146,7 +151,7 @@ encodeUnsignedData (UnsignedData data) =
     E.maybeObject
         [ ( "age", Maybe.map E.int data.age )
         , ( "prevContent", data.prevContent )
-        , ( "redactedBecause", Maybe.map encode data.redactedBecause )
+        , ( "redactedBecause", Maybe.map encodeInternal data.redactedBecause )
         , ( "transactionId", Maybe.map E.string data.transactionId )
         ]
 
@@ -204,14 +209,13 @@ prevContent envelope =
 redacted it here.
 -}
 redactedBecause : Event -> Maybe Event
-redactedBecause envelope =
-    Envelope.extract
+redactedBecause =
+    Envelope.mapMaybe
         (\event ->
             Maybe.andThen
                 (\(UnsignedData data) -> data.redactedBecause)
                 event.unsigned
         )
-        envelope
 
 
 {-| Unique id assigned to the Matrix room. You can use this room id to reference
