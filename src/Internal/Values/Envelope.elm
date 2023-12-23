@@ -1,5 +1,5 @@
 module Internal.Values.Envelope exposing
-    ( Envelope, init
+    ( Envelope(..), init
     , map, mapMaybe, mapList
     , Settings, mapSettings, extractSettings
     , mapContext

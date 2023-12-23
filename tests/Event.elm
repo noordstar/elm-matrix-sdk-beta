@@ -1,5 +1,6 @@
 module Event exposing (..)
 
+import Envelope as TestEnvelope
 import Expect
 import Fuzz exposing (Fuzzer)
 import Iddict as TestIddict
@@ -24,24 +25,23 @@ valueFuzzer =
         , Fuzz.map E.string Fuzz.string
         , Fuzz.map (E.list E.int) (Fuzz.list Fuzz.int)
         , Fuzz.map (E.list E.string) (Fuzz.list Fuzz.string)
-        , Fuzz.map Event.encode (Fuzz.lazy (\_ -> fuzzer))
+        , Fuzz.map Event.encode (Fuzz.lazy (\_ -> TestEnvelope.fuzzer fuzzer))
         ]
 
 
-fuzzer : Fuzzer Event.Event
+fuzzer : Fuzzer Event.IEvent
 fuzzer =
     Fuzz.map8
         (\c ei et o r se sk u ->
-            Envelope.init
-                { content = c
-                , eventId = ei
-                , eventType = et
-                , originServerTs = o
-                , roomId = r
-                , sender = se
-                , stateKey = sk
-                , unsigned = u
-                }
+            { content = c
+            , eventId = ei
+            , eventType = et
+            , originServerTs = o
+            , roomId = r
+            , sender = se
+            , stateKey = sk
+            , unsigned = u
+            }
         )
         valueFuzzer
         Fuzz.string
@@ -51,6 +51,11 @@ fuzzer =
         Fuzz.string
         (Fuzz.maybe Fuzz.string)
         (Fuzz.maybe unsignedDataFuzzer)
+
+
+fuzzerFull : Fuzzer Event.Event
+fuzzerFull =
+    TestEnvelope.fuzzer fuzzer
 
 
 unsignedDataFuzzer : Fuzzer Event.UnsignedData
@@ -73,7 +78,7 @@ unsignedDataFuzzer =
 json : Test
 json =
     describe "JSON tests"
-        [ fuzz fuzzer
+        [ fuzz fuzzerFull
             "JSON encode + JSON decode"
             (\event ->
                 event

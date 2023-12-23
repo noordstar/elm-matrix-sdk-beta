@@ -1,6 +1,6 @@
 module Matrix.Event exposing
     ( Event, content, eventType, stateKey
-    , eventId, originServerTs, roomId, sender
+    , eventId, roomId, sender, originServerTs
     , previousContent, redactedBecause
     )
 
@@ -20,7 +20,7 @@ events.
 
 ## Metadata
 
-@docs eventId, originServerTs, roomId, sender
+@docs eventId, roomId, sender, originServerTs
 
 
 ## Optional data
