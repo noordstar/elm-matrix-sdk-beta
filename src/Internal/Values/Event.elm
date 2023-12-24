@@ -67,6 +67,8 @@ age event =
     Maybe.andThen (\(UnsignedData data) -> data.age) event.unsigned
 
 
+{-| Decode an Event from a JSON value.
+-}
 decoder : D.Decoder Event
 decoder =
     D.map8 Event

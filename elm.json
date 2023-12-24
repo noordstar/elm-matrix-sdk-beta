@@ -6,6 +6,7 @@
     "version": "2.0.0",
     "exposed-modules": [
         "Matrix",
+        "Matrix.Event",
         "Matrix.Settings",
         "Internal.Config.Default",
         "Internal.Config.Leaks",
@@ -18,6 +19,7 @@
         "Internal.Tools.VersionControl",
         "Internal.Values.Context",
         "Internal.Values.Envelope",
+        "Internal.Values.Event",
         "Internal.Values.Settings",
         "Internal.Values.Vault",
         "Types"
