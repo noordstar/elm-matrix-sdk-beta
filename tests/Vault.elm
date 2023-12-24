@@ -12,7 +12,7 @@ import Types
 
 fuzzer : Fuzzer Matrix.Vault
 fuzzer =
-    Fuzz.constant <| Types.Vault <| Envelope.init {}
+    Fuzz.constant <| Types.Vault <| Envelope.init ()
 
 
 settings : Test

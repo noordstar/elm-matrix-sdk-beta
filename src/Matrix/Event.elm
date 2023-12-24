@@ -32,6 +32,7 @@ information isn't always applicable, it doesn't always exist.
 
 -}
 
+import Internal.Values.Envelope as Envelope
 import Internal.Values.Event as Internal
 import Json.Encode
 import Time
@@ -56,14 +57,14 @@ type alias Event =
 -}
 content : Event -> Json.Encode.Value
 content (Event event) =
-    Internal.content event
+    Envelope.extract .content event
 
 
 {-| Determine the globally unique identifier for an event.
 -}
 eventId : Event -> String
 eventId (Event event) =
-    Internal.eventId event
+    Envelope.extract .eventId event
 
 
 {-| To give a hint what the event's [content](#content) might look like, users
@@ -75,7 +76,7 @@ Standard examples of event types are `m.room.message`, `m.room.member` and
 -}
 eventType : Event -> String
 eventType (Event event) =
-    Internal.eventType event
+    Envelope.extract .eventType event
 
 
 {-| Determine the timestamp of at what time the event was originally received by
@@ -90,7 +91,7 @@ the past - or even in the future.
 -}
 originServerTs : Event -> Time.Posix
 originServerTs (Event event) =
-    Internal.originServerTs event
+    Envelope.extract .originServerTs event
 
 
 {-| Determine the previous `content` value for this event. This field is only a
@@ -99,7 +100,7 @@ to see the previous content.
 -}
 previousContent : Event -> Maybe Json.Encode.Value
 previousContent (Event event) =
-    Internal.prevContent event
+    Envelope.extract Internal.prevContent event
 
 
 {-| If the event has been redacted, the homeserver can display the event that
@@ -107,7 +108,7 @@ redacted it here.
 -}
 redactedBecause : Event -> Maybe Event
 redactedBecause (Event event) =
-    Internal.redactedBecause event
+    Envelope.mapMaybe Internal.redactedBecause event
         |> Maybe.map Event
 
 
@@ -116,14 +117,14 @@ or look up rooms.
 -}
 roomId : Event -> String
 roomId (Event event) =
-    Internal.roomId event
+    Envelope.extract .roomId event
 
 
 {-| Determine the fully-qualified ID of the user who sent an event.
 -}
 sender : Event -> String
 sender (Event event) =
-    Internal.sender event
+    Envelope.extract .sender event
 
 
 {-| Determine an event's state key.
@@ -139,4 +140,4 @@ user'd ID as the state key can only be set by that user.
 -}
 stateKey : Event -> Maybe String
 stateKey (Event event) =
-    Internal.stateKey event
+    Envelope.extract .stateKey event

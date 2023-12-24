@@ -11,5 +11,4 @@ import Internal.Values.Envelope as Envelope
 
 {-| This is the Vault type.
 -}
-type alias Vault =
-    Envelope.Envelope {}
+type alias Vault = ()

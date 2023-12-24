@@ -16,6 +16,7 @@ safely access all exposed data types without risking to create circular imports.
 
 -}
 
+import Internal.Values.Envelope as Envelope
 import Internal.Values.Event as Event
 import Internal.Values.Vault as Vault
 
@@ -23,10 +24,10 @@ import Internal.Values.Vault as Vault
 {-| Opaque type for Matrix Event
 -}
 type Event
-    = Event Event.Event
+    = Event (Envelope.Envelope Event.Event)
 
 
 {-| Opaque type for Matrix Vault
 -}
 type Vault
-    = Vault Vault.Vault
+    = Vault (Envelope.Envelope Vault.Vault)

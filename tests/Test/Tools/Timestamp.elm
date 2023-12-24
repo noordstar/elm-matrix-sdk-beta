@@ -1,4 +1,4 @@
-module Timestamp exposing (..)
+module Test.Tools.Timestamp exposing (..)
 
 import Fuzz exposing (Fuzzer)
 import Internal.Tools.Timestamp exposing (Timestamp)
