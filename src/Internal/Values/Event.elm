@@ -1,6 +1,6 @@
 module Internal.Values.Event exposing
     ( Event
-    , UnsignedData, age, prevContent, redactedBecause, transactionId
+    , UnsignedData(..), age, prevContent, redactedBecause, transactionId
     , encode, decoder
     )
 
@@ -122,7 +122,9 @@ encodeUnsignedData (UnsignedData data) =
         ]
 
 
-{-| Get the old content, if the event has changed or it has been edited.
+{-| Determine the previous `content` value for this event. This field is only a
+`Just value` if the event is a state event, and the Matrix Vault has permission
+to see the previous content.
 -}
 prevContent : Event -> Maybe E.Value
 prevContent event =

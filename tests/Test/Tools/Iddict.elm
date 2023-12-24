@@ -1,4 +1,4 @@
-module Iddict exposing (..)
+module Test.Tools.Iddict exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
