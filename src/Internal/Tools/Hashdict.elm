@@ -1,10 +1,10 @@
 module Internal.Tools.Hashdict exposing
     ( Hashdict
     , empty, singleton, insert, remove, removeKey
-    , isEmpty, member, memberKey, get, size
+    , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
     , rehash, union
-    , encode, decoder, softDecoder, isEqual
+    , encode, decoder, softDecoder
     )
 
 {-| This module abstracts the `Dict` type with one function that assigns a
@@ -150,12 +150,14 @@ insert : a -> Hashdict a -> Hashdict a
 insert v (Hashdict h) =
     Hashdict { h | values = Dict.insert (h.hash v) v h.values }
 
+
 {-| Since the Hashdict contains a hash function, the == operator does not work
 simply. Instead, you should use the isEqual operator.
 -}
 isEqual : Hashdict a -> Hashdict a -> Bool
 isEqual h1 h2 =
     toList h1 == toList h2
+
 
 {-| Determine if a hashdict is empty.
 -}
