@@ -15,6 +15,7 @@
         "Internal.Tools.Encode",
         "Internal.Tools.Hashdict",
         "Internal.Tools.Iddict",
+        "Internal.Tools.Mashdict",
         "Internal.Tools.Timestamp",
         "Internal.Tools.VersionControl",
         "Internal.Values.Context",
