@@ -112,6 +112,7 @@ suite =
                         |> StateManager.member event
                         |> Expect.equal True
                 )
+
             -- , fuzz2 TestEvent.fuzzerState TestEvent.fuzzerState
             --     "singleton has no other members"
             --     (\e1 e2 ->
@@ -124,7 +125,8 @@ suite =
             --                 |> StateManager.member e2
             --                 |> Expect.equal False
             --     )
-            , fuzz TestEvent.fuzzerState "singleton has one value"
+            , fuzz TestEvent.fuzzerState
+                "singleton has one value"
                 (\event ->
                     StateManager.singleton event
                         |> StateManager.values

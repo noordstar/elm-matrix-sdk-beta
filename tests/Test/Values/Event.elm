@@ -19,6 +19,7 @@ fuzzer =
         Fuzz.string
         (Fuzz.maybe unsignedDataFuzzer)
 
+
 {-| Fuzzer for an event with a set state key
 -}
 fuzzerState : Fuzzer Event
@@ -26,10 +27,10 @@ fuzzerState =
     Fuzz.map2
         (\event default ->
             { event
-            | stateKey =
-                event.stateKey
-                    |> Maybe.withDefault default
-                    |> Maybe.Just
+                | stateKey =
+                    event.stateKey
+                        |> Maybe.withDefault default
+                        |> Maybe.Just
             }
         )
         fuzzer

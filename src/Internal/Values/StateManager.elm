@@ -61,6 +61,7 @@ append sm2 sm1 =
     List.foldl insert sm1 (values sm2)
 
 
+
 -- {-| Remove any floating empty Mashdicts from ALL keys in the dictionary.
 -- -}
 -- cleanAll : StateManager -> StateManager
