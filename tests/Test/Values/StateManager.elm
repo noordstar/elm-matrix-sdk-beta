@@ -2,7 +2,6 @@ module Test.Values.StateManager exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
-import Internal.Values.Event as Event
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Json.Decode as D
 import Json.Encode as E
