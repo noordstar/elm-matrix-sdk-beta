@@ -22,6 +22,7 @@
         "Internal.Values.Envelope",
         "Internal.Values.Event",
         "Internal.Values.Settings",
+        "Internal.Values.StateManager",
         "Internal.Values.Vault",
         "Types"
     ],
