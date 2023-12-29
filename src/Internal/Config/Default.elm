@@ -23,7 +23,7 @@ will assume until overriden by the user.
 -}
 currentVersion : String
 currentVersion =
-    "beta 2.0.0"
+    "beta 2.1.0"
 
 
 {-| The default device name that is being communicated with the Matrix API.

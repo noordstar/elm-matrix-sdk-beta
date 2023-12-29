@@ -46,6 +46,7 @@ import Internal.Config.Default as Default
 import Internal.Tools.Decode as D
 import Internal.Tools.Encode as E
 import Internal.Values.Context as Context exposing (Context)
+import Internal.Values.Settings as Settings
 import Json.Decode as D
 import Json.Encode as E
 
@@ -55,26 +56,19 @@ need the same values. The Envelope type wraps settings, tokens and values around
 each data type so they can all enjoy those values without needing to explicitly
 define them in their type.
 -}
-type Envelope a
-    = Envelope
-        { content : a
-        , context : Context
-        , settings : Settings
-        }
+type alias Envelope a =
+    { content : a
+    , context : Context
+    , settings : Settings
+    }
 
 
-{-| Custom settings that can be manipulated by the user. These serve as a
-configuration for how the Elm SDK should behave.
-
-Custom settings are always part of the Envelope, allowing all functions to
-behave under the user's preferred settings.
-
+{-| Settings value from
+[Internal.Values.Settings](Internal-Values-Settings#Settings). Can be used to
+manipulate the Matrix Vault.
 -}
 type alias Settings =
-    { currentVersion : String
-    , deviceName : String
-    , syncTime : Int
-    }
+    Settings.Settings
 
 
 {-| Decode an enveloped type from a JSON value. The decoder also imports any
@@ -82,64 +76,22 @@ potential tokens, values and settings included in the JSON.
 -}
 decoder : D.Decoder a -> D.Decoder (Envelope a)
 decoder xDecoder =
-    D.map3 (\a b c -> Envelope { content = a, context = b, settings = c })
+    D.map3 Envelope
         (D.field "content" xDecoder)
         (D.field "context" Context.decoder)
-        (D.field "settings" decoderSettings)
-
-
-{-| Decode settings from a JSON value.
--}
-decoderSettings : D.Decoder Settings
-decoderSettings =
-    D.map3 Settings
-        (D.opFieldWithDefault "currentVersion" Default.currentVersion D.string)
-        (D.opFieldWithDefault "deviceName" Default.deviceName D.string)
-        (D.opFieldWithDefault "syncTime" Default.syncTime D.int)
+        (D.field "settings" Settings.decoder)
 
 
 {-| Encode an enveloped type into a JSON value. The function encodes all
 non-standard settings, tokens and values.
 -}
 encode : (a -> E.Value) -> Envelope a -> E.Value
-encode encodeX (Envelope data) =
+encode encodeX data =
     E.object
         [ ( "content", encodeX data.content )
         , ( "context", Context.encode data.context )
-        , ( "settings", encodeSettings data.settings )
+        , ( "settings", Settings.encode data.settings )
         , ( "version", E.string Default.currentVersion )
-        ]
-
-
-{-| Encode the settings into a JSON value.
--}
-encodeSettings : Settings -> E.Value
-encodeSettings settings =
-    let
-        differentFrom : b -> b -> Maybe b
-        differentFrom defaultValue currentValue =
-            if currentValue == defaultValue then
-                Nothing
-
-            else
-                Just currentValue
-    in
-    E.maybeObject
-        [ ( "currentVersion"
-          , settings.currentVersion
-                |> differentFrom Default.currentVersion
-                |> Maybe.map E.string
-          )
-        , ( "deviceName"
-          , settings.deviceName
-                |> differentFrom Default.deviceName
-                |> Maybe.map E.string
-          )
-        , ( "syncTime"
-          , settings.syncTime
-                |> differentFrom Default.syncTime
-                |> Maybe.map E.int
-          )
         ]
 
 
@@ -155,7 +107,7 @@ from a data type inside an Envelope.
 
 -}
 extract : (a -> b) -> Envelope a -> b
-extract f (Envelope data) =
+extract f data =
     f data.content
 
 
@@ -165,7 +117,7 @@ This can be helpful if you have a UI that displays custom settings to a user.
 
 -}
 extractSettings : (Settings -> b) -> Envelope a -> b
-extractSettings f (Envelope data) =
+extractSettings f data =
     f data.settings
 
 
@@ -186,15 +138,10 @@ from the [Internal.Config.Default](Internal-Config-Default) module.
 -}
 init : a -> Envelope a
 init x =
-    Envelope
-        { content = x
-        , context = Context.init
-        , settings =
-            { currentVersion = Default.currentVersion
-            , deviceName = Default.deviceName
-            , syncTime = Default.syncTime
-            }
-        }
+    { content = x
+    , context = Context.init
+    , settings = Settings.init
+    }
 
 
 {-| Map a function on the content of the Envelope.
@@ -208,23 +155,18 @@ init x =
 
 -}
 map : (a -> b) -> Envelope a -> Envelope b
-map f (Envelope data) =
-    Envelope
-        { content = f data.content
-        , context = data.context
-        , settings = data.settings
-        }
+map f data =
+    { content = f data.content
+    , context = data.context
+    , settings = data.settings
+    }
 
 
 {-| Update the Context in the Envelope.
 -}
 mapContext : (Context -> Context) -> Envelope a -> Envelope a
-mapContext f (Envelope data) =
-    Envelope
-        { content = data.content
-        , context = f data.context
-        , settings = data.settings
-        }
+mapContext f data =
+    { data | context = f data.context }
 
 
 {-| Map the contents of a function, where the result is wrapped in a `List`
@@ -279,23 +221,19 @@ mapMaybe f =
 
 -}
 mapSettings : (Settings -> Settings) -> Envelope a -> Envelope a
-mapSettings f (Envelope data) =
-    Envelope
-        { content = data.content
-        , context = data.context
-        , settings = f data.settings
-        }
+mapSettings f data =
+    { data | settings = f data.settings }
 
 
 toList : Envelope (List a) -> List (Envelope a)
-toList (Envelope data) =
+toList data =
     List.map
-        (\content -> map (always content) (Envelope data))
+        (\content -> map (always content) data)
         data.content
 
 
 toMaybe : Envelope (Maybe a) -> Maybe (Envelope a)
-toMaybe (Envelope data) =
+toMaybe data =
     Maybe.map
-        (\content -> map (always content) (Envelope data))
+        (\content -> map (always content) data)
         data.content
