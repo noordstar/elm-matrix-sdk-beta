@@ -3,6 +3,7 @@ module Internal.Filter.Timeline exposing
     , pass, onlySenders, allSendersExcept, onlyTypes, allTypesExcept, fail
     , match, run
     , and
+    , subsetOf
     )
 
 {-|
@@ -32,6 +33,11 @@ for interacting with the Matrix API.
 ## Combine
 
 @docs and
+
+
+## Compare
+
+@docs subsetOf
 
 -}
 
@@ -132,15 +138,15 @@ and (Filter f1) (Filter f2) =
 
                         ( False, False ) ->
                             Set.intersect f1.types f2.types
-                , typesAllowOthers = f2.typesAllowOthers && f2.typesAllowOthers
+                , typesAllowOthers = f1.typesAllowOthers && f2.typesAllowOthers
                 }
     in
     case stdAnd of
         Filter f ->
-            if Set.isEmpty f.senders && (not f.sendersAllowOthers) then
+            if Set.isEmpty f.senders && not f.sendersAllowOthers then
                 fail
 
-            else if Set.isEmpty f.types && (not f.typesAllowOthers) then
+            else if Set.isEmpty f.types && not f.typesAllowOthers then
                 fail
 
             else
@@ -235,3 +241,36 @@ pass =
 run : Filter -> List (Event a) -> List (Event a)
 run f events =
     List.filter (match f) events
+
+
+{-| Determine whether the second argument is a subset filter of the first
+argument.
+-}
+subsetOf : Filter -> Filter -> Bool
+subsetOf (Filter big) (Filter small) =
+    let
+        isSSof : Set String -> Set String -> Bool
+        isSSof b s =
+            Set.intersect b s == s
+
+        isSubsetFor : ( Bool, Set String ) -> ( Bool, Set String ) -> Bool
+        isSubsetFor ( bb, sb ) ( bs, ss ) =
+            case ( bb, bs ) of
+                ( True, True ) ->
+                    isSSof ss sb
+
+                ( True, False ) ->
+                    Set.isEmpty (Set.intersect sb ss)
+
+                ( False, True ) ->
+                    False
+
+                ( False, False ) ->
+                    isSSof sb ss
+    in
+    isSubsetFor
+        ( big.sendersAllowOthers, big.senders )
+        ( small.sendersAllowOthers, small.senders )
+        && isSubsetFor
+            ( big.typesAllowOthers, big.types )
+            ( small.typesAllowOthers, small.types )

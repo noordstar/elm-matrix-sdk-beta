@@ -1,11 +1,11 @@
 module Test.Values.Event exposing (..)
 
+import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Values.Event as Event exposing (Event)
 import Json.Encode as E
 import Test exposing (..)
 import Test.Tools.Timestamp as TestTimestamp
-import Expect
 
 
 fuzzer : Fuzzer Event
@@ -67,10 +67,12 @@ valueFuzzer =
         , Fuzz.map Event.encode (Fuzz.lazy (\_ -> fuzzer))
         ]
 
+
 suite : Test
 suite =
     describe "Sanity check"
-        [ fuzz fuzzer "event = event"
+        [ fuzz fuzzer
+            "event = event"
             (\event ->
                 Event.isEqual event event
                     |> Expect.equal True

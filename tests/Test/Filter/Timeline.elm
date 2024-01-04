@@ -4,6 +4,7 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Values.Event as Event
+import Set
 import Test exposing (..)
 import Test.Values.Event as TestEvent
 
@@ -138,6 +139,138 @@ suite =
                         |> Filter.and (Filter.allTypesExcept types)
                         |> Expect.equal Filter.fail
                 )
+            , fuzz2 (Fuzz.list Fuzz.string)
+                (Fuzz.list Fuzz.string)
+                "Only list + all except list = common types"
+                (\t1 t2 ->
+                    Expect.equal
+                        (Filter.and
+                            (Filter.onlyTypes t1)
+                            (Filter.allTypesExcept t2)
+                        )
+                        (Set.diff (Set.fromList t1) (Set.fromList t2)
+                            |> Set.toList
+                            |> Filter.onlyTypes
+                        )
+                )
+            , fuzz2 (Fuzz.list Fuzz.string)
+                (Fuzz.list Fuzz.string)
+                "Only list + all except list = common senders"
+                (\t1 t2 ->
+                    Expect.equal
+                        (Filter.and
+                            (Filter.onlySenders t1)
+                            (Filter.allSendersExcept t2)
+                        )
+                        (Set.diff (Set.fromList t1) (Set.fromList t2)
+                            |> Set.toList
+                            |> Filter.onlySenders
+                        )
+                )
+            ]
+        , describe "Subset testing"
+            [ fuzz2 fuzzer
+                fuzzer
+                "Combining two filters is always a subset"
+                (\filter1 filter2 ->
+                    filter1
+                        |> Filter.and filter2
+                        |> Expect.all
+                            [ Filter.subsetOf filter1 >> Expect.equal True
+                            , Filter.subsetOf filter2 >> Expect.equal True
+                            ]
+                )
+            , fuzz
+                (Fuzz.bool
+                    |> Fuzz.andThen
+                        (\same ->
+                            if same then
+                                Fuzz.map (\a -> ( a, a )) fuzzer
+
+                            else
+                                Fuzz.map2 Tuple.pair fuzzer fuzzer
+                        )
+                )
+                "subset goes both way iff equal"
+                (\( filter1, filter2 ) ->
+                    Expect.equal
+                        (filter1 == filter2)
+                        (Filter.subsetOf filter1 filter2
+                            && Filter.subsetOf filter2 filter1
+                        )
+                )
+            , fuzz2 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                "One more excluded sender is a subset"
+                (\head tail ->
+                    Filter.allSendersExcept (head :: tail)
+                        |> Filter.subsetOf (Filter.allSendersExcept tail)
+                        |> Expect.equal True
+                )
+            , fuzz2 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                "One more excluded type is a subset"
+                (\head tail ->
+                    Filter.allTypesExcept (head :: tail)
+                        |> Filter.subsetOf (Filter.allTypesExcept tail)
+                        |> Expect.equal True
+                )
+            , fuzz2 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                "One less included sender is a subset"
+                (\head tail ->
+                    Filter.onlySenders tail
+                        |> Filter.subsetOf (Filter.onlySenders (head :: tail))
+                        |> Expect.equal True
+                )
+            , fuzz2 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                "One less included type is a subset"
+                (\head tail ->
+                    Filter.onlyTypes tail
+                        |> Filter.subsetOf (Filter.onlyTypes (head :: tail))
+                        |> Expect.equal True
+                )
+            , fuzz3 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                fuzzer
+                "One more excluded sender is a subset - even when combined with another fuzzer"
+                (\head tail filter ->
+                    Filter.allSendersExcept (head :: tail)
+                        |> Filter.and filter
+                        |> Filter.subsetOf (Filter.and filter <| Filter.allSendersExcept tail)
+                        |> Expect.equal True
+                )
+            , fuzz3 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                fuzzer
+                "One more excluded type is a subset - even when combined with another fuzzer"
+                (\head tail filter ->
+                    Filter.allTypesExcept (head :: tail)
+                        |> Filter.and filter
+                        |> Filter.subsetOf (Filter.and filter <| Filter.allTypesExcept tail)
+                        |> Expect.equal True
+                )
+            , fuzz3 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                fuzzer
+                "One less included sender is a subset - even when combined with another fuzzer"
+                (\head tail filter ->
+                    Filter.onlySenders tail
+                        |> Filter.and filter
+                        |> Filter.subsetOf (Filter.and filter <| Filter.onlySenders (head :: tail))
+                        |> Expect.equal True
+                )
+            , fuzz3 Fuzz.string
+                (Fuzz.list Fuzz.string)
+                fuzzer
+                "One less included type is a subset - even when combined with another fuzzer"
+                (\head tail filter ->
+                    Filter.onlyTypes tail
+                        |> Filter.and filter
+                        |> Filter.subsetOf (Filter.and filter <| Filter.onlyTypes (head :: tail))
+                        |> Expect.equal True
+                )
             ]
         , describe "Use case testing"
             [ fuzz3 (Fuzz.list TestEvent.fuzzer)
@@ -150,30 +283,29 @@ suite =
                         l1 =
                             events
                                 |> Filter.run
-                                    ( Filter.and
-                                        ( Filter.onlySenders senders )
-                                        ( Filter.onlyTypes types )
+                                    (Filter.and
+                                        (Filter.onlySenders senders)
+                                        (Filter.onlyTypes types)
                                     )
-                        
+
                         l2 : List Event.Event
                         l2 =
-                            ( List.filter
+                            List.filter
                                 (\e ->
-                                    (List.member e.sender senders) &&
-                                    (List.member e.eventType types)
+                                    List.member e.sender senders
+                                        && List.member e.eventType types
                                 )
                                 events
-                            )
                     in
-                        Expect.all
-                            [ Expect.equal (List.length l1) (List.length l2)
-                                |> always
-                            , List.map2 Event.isEqual l1 l2
-                                |> List.all identity
-                                |> Expect.equal True
-                                |> always
-                            ]
-                            ()
+                    Expect.all
+                        [ Expect.equal (List.length l1) (List.length l2)
+                            |> always
+                        , List.map2 Event.isEqual l1 l2
+                            |> List.all identity
+                            |> Expect.equal True
+                            |> always
+                        ]
+                        ()
                 )
             , fuzz3 (Fuzz.list TestEvent.fuzzer)
                 (Fuzz.list Fuzz.string)
@@ -185,30 +317,29 @@ suite =
                         l1 =
                             events
                                 |> Filter.run
-                                    ( Filter.and
-                                        ( Filter.onlySenders senders )
-                                        ( Filter.allTypesExcept types )
+                                    (Filter.and
+                                        (Filter.onlySenders senders)
+                                        (Filter.allTypesExcept types)
                                     )
-                        
+
                         l2 : List Event.Event
                         l2 =
-                            ( List.filter
+                            List.filter
                                 (\e ->
-                                    (List.member e.sender senders) &&
-                                    (not <| List.member e.eventType types)
+                                    List.member e.sender senders
+                                        && (not <| List.member e.eventType types)
                                 )
                                 events
-                            )
                     in
-                        Expect.all
-                            [ Expect.equal (List.length l1) (List.length l2)
-                                |> always
-                            , List.map2 Event.isEqual l1 l2
-                                |> List.all identity
-                                |> Expect.equal True
-                                |> always
-                            ]
-                            ()
+                    Expect.all
+                        [ Expect.equal (List.length l1) (List.length l2)
+                            |> always
+                        , List.map2 Event.isEqual l1 l2
+                            |> List.all identity
+                            |> Expect.equal True
+                            |> always
+                        ]
+                        ()
                 )
             , fuzz3 (Fuzz.list TestEvent.fuzzer)
                 (Fuzz.list Fuzz.string)
@@ -220,30 +351,29 @@ suite =
                         l1 =
                             events
                                 |> Filter.run
-                                    ( Filter.and
-                                        ( Filter.allSendersExcept senders )
-                                        ( Filter.onlyTypes types )
+                                    (Filter.and
+                                        (Filter.allSendersExcept senders)
+                                        (Filter.onlyTypes types)
                                     )
-                        
+
                         l2 : List Event.Event
                         l2 =
-                            ( List.filter
+                            List.filter
                                 (\e ->
-                                    (not <| List.member e.sender senders) &&
-                                    (List.member e.eventType types)
+                                    (not <| List.member e.sender senders)
+                                        && List.member e.eventType types
                                 )
                                 events
-                            )
                     in
-                        Expect.all
-                            [ Expect.equal (List.length l1) (List.length l2)
-                                |> always
-                            , List.map2 Event.isEqual l1 l2
-                                |> List.all identity
-                                |> Expect.equal True
-                                |> always
-                            ]
-                            ()
+                    Expect.all
+                        [ Expect.equal (List.length l1) (List.length l2)
+                            |> always
+                        , List.map2 Event.isEqual l1 l2
+                            |> List.all identity
+                            |> Expect.equal True
+                            |> always
+                        ]
+                        ()
                 )
             , fuzz3 (Fuzz.list TestEvent.fuzzer)
                 (Fuzz.list Fuzz.string)
@@ -255,30 +385,29 @@ suite =
                         l1 =
                             events
                                 |> Filter.run
-                                    ( Filter.and
-                                        ( Filter.allSendersExcept senders )
-                                        ( Filter.allTypesExcept types )
+                                    (Filter.and
+                                        (Filter.allSendersExcept senders)
+                                        (Filter.allTypesExcept types)
                                     )
-                        
+
                         l2 : List Event.Event
                         l2 =
-                            ( List.filter
+                            List.filter
                                 (\e ->
-                                    (not <| List.member e.sender senders) &&
-                                    (not <| List.member e.eventType types)
+                                    (not <| List.member e.sender senders)
+                                        && (not <| List.member e.eventType types)
                                 )
                                 events
-                            )
                     in
-                        Expect.all
-                            [ Expect.equal (List.length l1) (List.length l2)
-                                |> always
-                            , List.map2 Event.isEqual l1 l2
-                                |> List.all identity
-                                |> Expect.equal True
-                                |> always
-                            ]
-                            ()
+                    Expect.all
+                        [ Expect.equal (List.length l1) (List.length l2)
+                            |> always
+                        , List.map2 Event.isEqual l1 l2
+                            |> List.all identity
+                            |> Expect.equal True
+                            |> always
+                        ]
+                        ()
                 )
             ]
         ]
