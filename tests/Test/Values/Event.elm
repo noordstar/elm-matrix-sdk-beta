@@ -5,6 +5,7 @@ import Internal.Values.Event as Event exposing (Event)
 import Json.Encode as E
 import Test exposing (..)
 import Test.Tools.Timestamp as TestTimestamp
+import Expect
 
 
 fuzzer : Fuzzer Event
@@ -64,4 +65,14 @@ valueFuzzer =
         , Fuzz.map (E.list E.int) (Fuzz.list Fuzz.int)
         , Fuzz.map (E.list E.string) (Fuzz.list Fuzz.string)
         , Fuzz.map Event.encode (Fuzz.lazy (\_ -> fuzzer))
+        ]
+
+suite : Test
+suite =
+    describe "Sanity check"
+        [ fuzz fuzzer "event = event"
+            (\event ->
+                Event.isEqual event event
+                    |> Expect.equal True
+            )
         ]
