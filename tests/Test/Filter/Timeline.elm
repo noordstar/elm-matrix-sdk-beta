@@ -63,6 +63,14 @@ suite =
                         (Filter.onlyTypes (head :: tail))
                         (Filter.onlySenders (head :: tail))
                 )
+            , fuzz2 fuzzer
+                fuzzer
+                "Filter.and f1 f2 == pass iff f1 == f2 == pass"
+                (\filter1 filter2 ->
+                    Expect.equal
+                        (Filter.and filter1 filter2 == Filter.pass)
+                        (filter1 == Filter.pass && filter2 == Filter.pass)
+                )
             ]
         , describe "Event filters"
             [ fuzz TestEvent.fuzzer
