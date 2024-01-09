@@ -43,8 +43,8 @@ settings that can be adjusted manually.
 -}
 
 import Internal.Config.Default as Default
-import Internal.Tools.Decode as D
-import Internal.Tools.Encode as E
+import Internal.Tools.DecodeExtra as D
+import Internal.Tools.EncodeExtra as E
 import Internal.Values.Context as Context exposing (Context)
 import Internal.Values.Settings as Settings
 import Json.Decode as D

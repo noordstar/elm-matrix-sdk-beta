@@ -21,8 +21,8 @@ data types.
 -}
 
 import Internal.Config.Default as Default
-import Internal.Tools.Decode as D
-import Internal.Tools.Encode as E
+import Internal.Tools.DecodeExtra as D
+import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
 import Json.Encode as E
 

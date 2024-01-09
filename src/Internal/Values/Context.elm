@@ -50,8 +50,8 @@ information that can be inserted.
 -}
 
 import Internal.Config.Leaks as L
-import Internal.Tools.Decode as D
-import Internal.Tools.Encode as E
+import Internal.Tools.DecodeExtra as D
+import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
 import Json.Encode as E
 
