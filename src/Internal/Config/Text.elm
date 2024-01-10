@@ -1,7 +1,8 @@
 module Internal.Config.Text exposing
-    ( versionsFoundLocally, versionsReceived, versionsFailedToDecode
-    , accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
+    ( accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
+    , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
+    , decodedDictSize, leakingValueFound
     )
 
 {-| Throughout the Elm SDK, there are lots of pieces of text being used for
@@ -23,14 +24,6 @@ This is a risky feature, keep in mind that even a patch update might break this!
 You should only do this if you know what you're doing.
 
 
-## API Versions
-
-Messages sent as API logs while the Elm SDK is figuring out how modern the
-homeserver is and how it can best communicate.
-
-@docs versionsFoundLocally, versionsReceived, versionsFailedToDecode
-
-
 ## API Authentication
 
 Messages sent as API logs during the authentication phase of the API
@@ -41,11 +34,26 @@ interaction.
 offers room for translation, re-wording and refactors.
 
 
+## API Versions
+
+Messages sent as API logs while the Elm SDK is figuring out how modern the
+homeserver is and how it can best communicate.
+
+@docs versionsFoundLocally, versionsReceived, versionsFailedToDecode
+
+
 ## API miscellaneous messages
 
 Messages sent as API logs during communication with the API.
 
 @docs unsupportedVersionForEndpoint
+
+
+## JSON decoder
+
+Messages sent as API logs when a JSON value is being decoded.
+
+@docs decodedDictSize, leakingValueFound
 
 -}
 
@@ -71,6 +79,27 @@ mentioning a reason.
 accessTokenInvalid : String
 accessTokenInvalid =
     "Matrix API rejected access token as invalid"
+
+
+decodedDictSize : Int -> Int -> String
+decodedDictSize from to =
+    String.concat
+        [ "JSON dict contained duplicate keys (JSON had "
+        , String.fromInt from
+        , " keys, Elm dict has "
+        , String.fromInt to
+        , " keys)"
+        ]
+
+
+{-| The Elm SDK occassionally uses [leaking values](Internal-Config-Leaks),
+which might indicate exceptional behaviour. As such, this log is sent when one
+of those leaking values is found: to alert the user that something fishy might
+be going on.
+-}
+leakingValueFound : String -> String
+leakingValueFound leaking_value =
+    "Found leaking value : " ++ leaking_value
 
 
 {-| The Matrix homeserver can specify how it wishes to communicate, and the Elm

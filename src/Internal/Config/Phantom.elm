@@ -29,7 +29,7 @@ The phantom types in this module help you in the following way:
 
 {-| Opaque type that encapsulates a bool.
 -}
-type PBool a
+type PBool ph
     = PBool Bool
 
 

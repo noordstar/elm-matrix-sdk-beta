@@ -1,4 +1,7 @@
-module Internal.Config.Leaks exposing (accessToken, baseUrl, transaction, versions)
+module Internal.Config.Leaks exposing
+    ( accessToken, baseUrl, transaction, versions
+    , allLeaks
+    )
 
 {-|
 
@@ -29,7 +32,13 @@ know 100% sure that the value isn't `Nothing`.
 
 @docs accessToken, baseUrl, transaction, versions
 
+For safety purposes, all leaking values are stored in the following value:
+
+@docs allLeaks
+
 -}
+
+import Set exposing (Set)
 
 
 {-| Placeholder access token.
@@ -37,6 +46,18 @@ know 100% sure that the value isn't `Nothing`.
 accessToken : String
 accessToken =
     "elm-sdk-placeholder-access-token-leaks"
+
+
+allLeaks : Set String
+allLeaks =
+    Set.union
+        (Set.fromList versions)
+        (Set.fromList
+            [ accessToken
+            , baseUrl
+            , transaction
+            ]
+        )
 
 
 {-| Placeholder base URL.
