@@ -4,6 +4,8 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Values.Event as Event
+import Json.Decode as D
+import Json.Encode as E
 import Set
 import Test exposing (..)
 import Test.Values.Event as TestEvent
@@ -416,6 +418,17 @@ suite =
                             |> always
                         ]
                         ()
+                )
+            ]
+        , describe "JSON"
+            [ fuzz fuzzer
+                "encode -> decode is the same"
+                (\filter ->
+                    filter
+                        |> Filter.encode
+                        |> E.encode 0
+                        |> D.decodeString Filter.decoder
+                        |> Expect.equal (Ok filter)
                 )
             ]
         ]

@@ -4,6 +4,7 @@ module Internal.Filter.Timeline exposing
     , match, run
     , and
     , subsetOf
+    , encode, decoder
     )
 
 {-|
@@ -39,10 +40,16 @@ for interacting with the Matrix API.
 
 @docs subsetOf
 
+
+## JSON coders
+
+@docs encode, decoder
+
 -}
 
+import Json.Decode as D
+import Json.Encode as E
 import Set exposing (Set)
-import Task exposing (fail)
 
 
 {-| Placeholder Event type so the real Event doesn't need to be imported.
@@ -151,6 +158,45 @@ and (Filter f1) (Filter f2) =
 
             else
                 stdAnd
+
+
+{-| Decode a Filter from a JSON value.
+-}
+decoder : D.Decoder Filter
+decoder =
+    D.map4
+        (\s sb t tb ->
+            Filter
+                { senders = s
+                , sendersAllowOthers = sb
+                , types = t
+                , typesAllowOthers = tb
+                }
+        )
+        (D.string
+            |> D.list
+            |> D.map Set.fromList
+            |> D.field "senders"
+        )
+        (D.field "sendersAllowOthers" D.bool)
+        (D.string
+            |> D.list
+            |> D.map Set.fromList
+            |> D.field "types"
+        )
+        (D.field "typesAllowOthers" D.bool)
+
+
+{-| Encode a Filter into a JSON value.
+-}
+encode : Filter -> E.Value
+encode (Filter f) =
+    E.object
+        [ ( "senders", E.set E.string f.senders )
+        , ( "sendersAllowOthers", E.bool f.sendersAllowOthers )
+        , ( "types", E.set E.string f.types )
+        , ( "typesAllowOthers", E.bool f.typesAllowOthers )
+        ]
 
 
 {-| Allow no events. This filter is likely quite useless in practice, but it is

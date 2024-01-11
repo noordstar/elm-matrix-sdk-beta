@@ -3,6 +3,7 @@ module Internal.Values.Timeline exposing
     , empty, singleton
     , mostRecentEvents
     , addSync, insert
+    , encode, decoder
     )
 
 {-|
@@ -35,12 +36,19 @@ and maintain this room state.
 
 @docs addSync, insert
 
+
+## JSON coder
+
+@docs encode, decoder
+
 -}
 
 import FastDict as Dict exposing (Dict)
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
+import Json.Decode as D
+import Json.Encode as E
 import Set exposing (Set)
 
 
@@ -233,6 +241,153 @@ empty =
         }
 
 
+{-| Decode a Timeline from a JSON value.
+-}
+decoder : D.Decoder Timeline
+decoder =
+    D.map5
+        (\batches events filled sync tokens ->
+            Timeline
+                { batches = batches
+                , events = events
+                , filledBatches = filled
+                , mostRecentSync = sync
+                , tokens = tokens
+                }
+        )
+        (D.field "batches" <| Iddict.decoder decoderIBatch)
+        (D.map2 Tuple.pair
+            (D.field "head" decoderIBatchPTR)
+            (D.field "tail" <| D.list decoderIBatchPTR)
+            |> D.keyValuePairs
+            |> D.map Dict.fromList
+            |> D.field "events"
+        )
+        (D.succeed 0)
+        (D.field "mostRecentSync" decoderITokenPTR)
+        (D.field "tokens" <| Hashdict.decoder .name decoderIToken)
+        |> D.map recountFilledBatches
+
+
+decoderIBatch : D.Decoder IBatch
+decoderIBatch =
+    D.map4 IBatch
+        (D.field "events" <| D.list D.string)
+        (D.field "filter" Filter.decoder)
+        (D.field "start" decoderITokenPTR)
+        (D.field "end" decoderITokenPTR)
+
+
+decoderIBatchPTR : D.Decoder IBatchPTR
+decoderIBatchPTR =
+    D.map IBatchPTR decoderIBatchPTRValue
+
+
+decoderIBatchPTRValue : D.Decoder IBatchPTRValue
+decoderIBatchPTRValue =
+    D.int
+
+
+decoderIToken : D.Decoder IToken
+decoderIToken =
+    D.map5 IToken
+        (D.field "name" decoderTokenValue)
+        (D.field "starts" <| D.map Set.fromList <| D.list decoderIBatchPTRValue)
+        (D.field "ends" <| D.map Set.fromList <| D.list decoderIBatchPTRValue)
+        (D.field "inFrontOf" <| D.map Set.fromList <| D.list decoderITokenPTRValue)
+        (D.field "behind" <| D.map Set.fromList <| D.list decoderITokenPTRValue)
+
+
+decoderITokenPTR : D.Decoder ITokenPTR
+decoderITokenPTR =
+    D.oneOf
+        [ D.map ITokenPTR decoderITokenPTRValue
+        , D.null StartOfTimeline
+        ]
+
+
+decoderITokenPTRValue : D.Decoder ITokenPTRValue
+decoderITokenPTRValue =
+    D.string
+
+
+decoderTokenValue : D.Decoder TokenValue
+decoderTokenValue =
+    D.string
+
+
+{-| Encode a Timeline to a JSON value.
+-}
+encode : Timeline -> E.Value
+encode (Timeline tl) =
+    E.object
+        [ ( "batches", Iddict.encode encodeIBatch tl.batches )
+        , ( "events"
+          , E.dict identity
+                (\( head, tail ) ->
+                    E.object
+                        [ ( "head", encodeIBatchPTR head )
+                        , ( "tail", E.list encodeIBatchPTR tail )
+                        ]
+                )
+                (Dict.toCoreDict tl.events)
+          )
+        , ( "mostRecentSync", encodeITokenPTR tl.mostRecentSync )
+        , ( "tokens", Hashdict.encode encodeIToken tl.tokens )
+        ]
+
+
+encodeIBatch : IBatch -> E.Value
+encodeIBatch batch =
+    E.object
+        [ ( "events", E.list E.string batch.events )
+        , ( "filter", Filter.encode batch.filter )
+        , ( "start", encodeITokenPTR batch.start )
+        , ( "end", encodeITokenPTR batch.end )
+        ]
+
+
+encodeIBatchPTR : IBatchPTR -> E.Value
+encodeIBatchPTR (IBatchPTR value) =
+    encodeIBatchPTRValue value
+
+
+encodeIBatchPTRValue : IBatchPTRValue -> E.Value
+encodeIBatchPTRValue =
+    E.int
+
+
+encodeIToken : IToken -> E.Value
+encodeIToken itoken =
+    E.object
+        [ ( "name", encodeTokenValue itoken.name )
+        , ( "starts", E.set encodeIBatchPTRValue itoken.starts )
+        , ( "ends", E.set encodeIBatchPTRValue itoken.ends )
+        , ( "inFrontOf", E.set encodeITokenPTRValue itoken.inFrontOf )
+        , ( "behind", E.set encodeITokenPTRValue itoken.behind )
+        ]
+
+
+encodeITokenPTR : ITokenPTR -> E.Value
+encodeITokenPTR token =
+    case token of
+        ITokenPTR value ->
+            encodeITokenPTRValue value
+
+        StartOfTimeline ->
+            E.null
+
+
+encodeITokenPTRValue : ITokenPTRValue -> E.Value
+encodeITokenPTRValue =
+    E.string
+
+
+encodeTokenValue : TokenValue -> E.Value
+encodeTokenValue =
+    E.string
+
+
 {-| Get an IBatch from the Timeline.
 -}
 getIBatch : IBatchPTR -> Timeline -> Maybe IBatch
@@ -240,6 +395,8 @@ getIBatch (IBatchPTR ptr) (Timeline { batches }) =
     Iddict.get ptr batches
 
 
+{-| Get an IToken from the Timeline.
+-}
 getITokenFromPTR : ITokenPTR -> Timeline -> Maybe IToken
 getITokenFromPTR pointer (Timeline { tokens }) =
     case pointer of
