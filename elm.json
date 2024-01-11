@@ -11,6 +11,7 @@
         "Internal.Config.Default",
         "Internal.Config.Leaks",
         "Internal.Config.Text",
+        "Internal.Filter.Timeline",
         "Internal.Tools.Decode",
         "Internal.Tools.Encode",
         "Internal.Tools.Hashdict",
@@ -23,6 +24,7 @@
         "Internal.Values.Event",
         "Internal.Values.Settings",
         "Internal.Values.StateManager",
+        "Internal.Values.Timeline",
         "Internal.Values.Vault",
         "Types"
     ],
