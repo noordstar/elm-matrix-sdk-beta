@@ -43,20 +43,23 @@ and maintain this room state.
 
 -}
 
-import Internal.Filter.Timeline as Filter exposing (Filter)
-import Internal.Tools.Mashdict as Mashdict exposing (Mashdict)
-import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import FastDict as Dict exposing (Dict)
+import Internal.Filter.Timeline as Filter exposing (Filter)
+import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
+import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Set exposing (Set)
 
 
 {-| A batch is a batch of events that is placed onto the Timeline. Functions
 that require an insertion, generally require this data type.
 -}
-type Batch
-    = StartOfTimeline
-    | BatchToken String
-    | BatchSlice Batch (List String) Filter String
+type alias Batch =
+    { events : List String
+    , filter : Filter
+    , start : Maybe TokenValue
+    , end : TokenValue
+    }
+
 
 {-| Internal batch that's being saved by the Timeline to track a list of events.
 -}
@@ -67,33 +70,53 @@ type alias IBatch =
     , end : ITokenPTR
     }
 
+
 {-| Pointer to an IBatch in the Timeline.
 -}
-type IBatchPTR = IBatchPTR Int
+type IBatchPTR
+    = IBatchPTR IBatchPTRValue
+
+
+{-| Location indicator of an IBatch in the Timeline.
+-}
+type alias IBatchPTRValue =
+    Int
+
 
 {-| Internal token value that's being stored by the Timeline.
 
 If name is `Nothing`, it indicates the start of the timeline.
+
 -}
 type alias IToken =
-    { name : Maybe String
-    , starts : Set Int      -- This itoken starts the following batches
-    , ends : Set Int        -- This itoken ends the following batches
-    , inFrontOf : Set Int   -- This itoken is in front of the following tokens
-    , behind : Set Int      -- This itoken is behind the following tokens
+    { name : TokenValue
+    , starts : Set IBatchPTRValue -- This itoken starts the following batches
+    , ends : Set IBatchPTRValue -- This itoken ends the following batches
+    , inFrontOf : Set ITokenPTRValue -- This itoken is in front of the following tokens
+    , behind : Set ITokenPTRValue -- This itoken is behind the following tokens
     }
+
 
 {-| Pointer to an IToken in the Timeline.
 -}
-type ITokenPTR = ITokenPTR String
+type ITokenPTR
+    = ITokenPTR ITokenPTRValue
+    | StartOfTimeline
+
+
+{-| Location indicator of an IToken in the Timeline.
+-}
+type alias ITokenPTRValue =
+    String
+
 
 {-| The Timeline type represents the timeline state in a Matrix room.
 
 Following the description of the Matrix spec, a timeline contains the following
 items:
 
-- Events that indicate timeline events
-- Batch values that can be used to paginate through the timeline
+  - Events that indicate timeline events
+  - Batch values that can be used to paginate through the timeline
 
 The topological shape of the timeline makes older API responses somewhat
 unreliable - as a result,
@@ -102,9 +125,17 @@ unreliable - as a result,
 type Timeline
     = Timeline
         { batches : Iddict IBatch
+        , events : Dict String ( IBatchPTR, List IBatchPTR )
+        , filledBatches : Int
         , mostRecentSync : ITokenPTR
-        , tokens : Mashdict IToken
+        , tokens : Hashdict IToken
         }
+
+
+{-| Opaque token value sent by the Matrix API
+-}
+type alias TokenValue =
+    String
 
 
 {-| When syncing a Matrix room to its most recent state, add the most recent
@@ -114,36 +145,87 @@ addSync : Batch -> Timeline -> Timeline
 addSync _ timeline =
     timeline
 
+
+{-| Append a token at the end of a batch.
+-}
+connectIBatchToIToken : IBatchPTR -> ITokenPTR -> Timeline -> Timeline
+connectIBatchToIToken (IBatchPTR bptr) pointer (Timeline tl) =
+    case pointer of
+        StartOfTimeline ->
+            Timeline tl
+
+        ITokenPTR tptr ->
+            Timeline
+                { tl
+                    | batches =
+                        Iddict.map bptr
+                            (\batch -> { batch | end = pointer })
+                            tl.batches
+                    , tokens =
+                        Hashdict.map tptr
+                            (\token -> { token | ends = Set.insert bptr token.ends })
+                            tl.tokens
+                }
+
+
+{-| Append a token at the start of a batch.
+-}
+connectITokenToIBatch : ITokenPTR -> IBatchPTR -> Timeline -> Timeline
+connectITokenToIBatch pointer (IBatchPTR bptr) (Timeline tl) =
+    case pointer of
+        StartOfTimeline ->
+            Timeline tl
+
+        ITokenPTR tptr ->
+            Timeline
+                { tl
+                    | tokens =
+                        Hashdict.map tptr
+                            (\token -> { token | starts = Set.insert bptr token.starts })
+                            tl.tokens
+                    , batches =
+                        Iddict.map bptr
+                            (\batch -> { batch | start = pointer })
+                            tl.batches
+                }
+
+
 {-| Connect two tokens to each other, revealing their relative location.
 -}
-connectITokentoIToken : ITokenPTR -> ITokenPTR -> Timeline -> Timeline
-connectITokentoIToken (ITokenPTR early) (ITokenPTR late) (Timeline tl) =
-    Timeline
-        { tl
-        | tokens =
-            tl.tokens
-                |> Iddict.map early
-                    (\data ->
-                        { data | behind = Set.insert late data.behind }
-                    )
-                |> Iddict.map late
-                    (\data -> 
-                        { data | inFrontOf = Set.insert early data.inFrontOf }
-                    )
-        }
+connectITokenToIToken : ITokenPTR -> ITokenPTR -> Timeline -> Timeline
+connectITokenToIToken pointer1 pointer2 (Timeline tl) =
+    case ( pointer1, pointer2 ) of
+        ( ITokenPTR early, ITokenPTR late ) ->
+            Timeline
+                { tl
+                    | tokens =
+                        tl.tokens
+                            |> Hashdict.map early
+                                (\data ->
+                                    { data | behind = Set.insert late data.behind }
+                                )
+                            |> Hashdict.map late
+                                (\data ->
+                                    { data | inFrontOf = Set.insert early data.inFrontOf }
+                                )
+                }
+
+        ( _, _ ) ->
+            Timeline tl
+
 
 {-| Create a new empty timeline.
 -}
 empty : Timeline
 empty =
-    case Iddict.singleton Nothing of
-        ( key, iddict ) ->
-            Timeline
-                { batches = Iddict.empty
-                , mostRecentSync = ITokenPTR key
-                , tokens = iddict
-                , tokenToPtr = Dict.empty
-                }
+    Timeline
+        { batches = Iddict.empty
+        , events = Dict.empty
+        , filledBatches = 0
+        , mostRecentSync = StartOfTimeline
+        , tokens = Hashdict.empty .name
+        }
+
 
 {-| Get an IBatch from the Timeline.
 -}
@@ -151,110 +233,92 @@ getIBatch : IBatchPTR -> Timeline -> Maybe IBatch
 getIBatch (IBatchPTR ptr) (Timeline { batches }) =
     Iddict.get ptr batches
 
+
 getITokenFromPTR : ITokenPTR -> Timeline -> Maybe IToken
-getITokenFromPTR (ITokenPTR ptr) ( Timeline { tokens }) =
-    Iddict.get ptr tokens
+getITokenFromPTR pointer (Timeline { tokens }) =
+    case pointer of
+        ITokenPTR ptr ->
+            Hashdict.get ptr tokens
 
-{-| Turn a single token into a batch.
--}
-fromToken : String -> Batch
-fromToken token =
-    BatchToken token
-
-
-{-| Turn a slice of events into a batch.
-
-NOTE: `start` must generally be a value. If it is `Nothing`, then it is
-connected until the start of the timeline.
-
--}
-fromSlice : { start : Maybe String, events : List String, filter : Filter, end : String } -> Batch
-fromSlice data =
-    BatchSlice
-        ( case data.start of
-                Just s ->
-                    BatchToken s
-                
-                Nothing ->
-                    StartOfTimeline
-        )
-        data.events data.filter data.end
+        StartOfTimeline ->
+            Nothing
 
 
 {-| Insert a batch anywhere else in the timeline.
 -}
 insert : Batch -> Timeline -> Timeline
 insert batch (Timeline tl) =
-    (Timeline tl)
+    Timeline tl
 
--- {-| Insert a batch anywhere else in the timeline, and gain a ptr to its
--- location.
--- -}
--- insertBatch : Batch -> Timeline -> { start : ITokenPTR, end : ITokenPTR, tl : Timeline }
--- insertBatch batch (Timeline tl) =
---     case batch of
---         StartOfTimeline ->
---             case Iddict.insert Nothing tl.tokens of
---                 ( key, iddict ) ->
---                     { start = ITokenPTR key
---                     , end = ITokenPTR key
---                     , tl = Timeline { tl | tokens = iddict }
---                     }
-        
---         BatchToken token ->
---             -- TODO: Do not insert if it already exists
---             case Iddict.insert (Just token) tl.tokens of
---                 ( key, iddict ) ->
---                     { start = ITokenPTR key
---                     , end = ITokenPTR key
---                     , tl = Timeline
---                             { tl
---                             | tokens = iddict
---                             , tokenToPtr =
---                                 Dict.insert token (ITokenPTR key) tl.tokenToPtr
---                             }
---                     }
-        
---         BatchSlice prevBatch events filter end ->
---             -- Insert previous batch
---             case insertBatch prevBatch (Timeline tl) of
---                 result ->
---                     case result.tl of
---                         (Timeline tl2) ->
---                             { start = result.start
---                             , end = 
---                             }
+
+{-| Insert a batch into the timeline.
+-}
+insertBatch : Batch -> Timeline -> Timeline
+insertBatch batch timeline =
+    case batch.start of
+        Just start ->
+            timeline
+                |> invokeIToken start
+                |> Tuple.mapSecond (invokeIToken batch.end)
+                |> (\( startPTR, ( endPTR, newTimeline ) ) ->
+                        insertIBatch
+                            { events = batch.events
+                            , filter = batch.filter
+                            , start = startPTR
+                            , end = endPTR
+                            }
+                            newTimeline
+                   )
+
+        Nothing ->
+            timeline
+                |> invokeIToken batch.end
+                |> (\( endPTR, newTimeline ) ->
+                        insertIBatch
+                            { events = batch.events
+                            , filter = batch.filter
+                            , start = StartOfTimeline
+                            , end = endPTR
+                            }
+                            newTimeline
+                   )
+
 
 {-| Insert an internal batch into the timeline, and determine its result.
 -}
-insertIBatch : IBatch -> Timeline -> ( IBatchPTR, Timeline )
+insertIBatch : IBatch -> Timeline -> Timeline
 insertIBatch ibatch (Timeline tl) =
     case Iddict.insert ibatch tl.batches of
-        ( key, iddict ) ->
-            ( IBatchPTR key, Timeline { tl | batches = iddict } )
+        ( batchPTR, newBatches ) ->
+            { tl | batches = newBatches }
+                |> Timeline
+                |> connectITokenToIBatch ibatch.start (IBatchPTR batchPTR)
+                |> connectIBatchToIToken (IBatchPTR batchPTR) ibatch.end
 
-insertIToken : IToken -> Timeline -> ( ITokenPTR, Timeline )
-insertIToken itoken (Timeline tl) =
-    case Maybe.andThen (\n -> Dict.get n tl.tokenToPtr) itoken.name of
-        -- Already exists: merge
-        Just ((ITokenPTR ptr) as pointer) ->
-            ( pointer
-            , Timeline
-                { tl
-                | tokens =
-                    Iddict.map ptr
-                        (\data ->
-                            { name = data.name
-                            , 
+
+{-| Invoke an itoken to guarantee that it exists.
+-}
+invokeIToken : TokenValue -> Timeline -> ( ITokenPTR, Timeline )
+invokeIToken value (Timeline tl) =
+    ( ITokenPTR value
+    , Timeline
+        { tl
+            | tokens =
+                case Hashdict.get value tl.tokens of
+                    Just _ ->
+                        tl.tokens
+
+                    Nothing ->
+                        Hashdict.insert
+                            { name = value
+                            , starts = Set.empty
+                            , ends = Set.empty
+                            , inFrontOf = Set.empty
+                            , behind = Set.empty
                             }
-                        )
-                }
-            )
-
-        -- Doesn't exist yet: insert!
-        Nothing ->
-            (ITokenPTR 0, Timeline tl)
-
+                            tl.tokens
+        }
+    )
 
 
 {-| Under a given filter, find the most recent events.
@@ -262,6 +326,22 @@ insertIToken itoken (Timeline tl) =
 mostRecentEvents : Filter -> Timeline -> List String
 mostRecentEvents _ _ =
     []
+
+
+{-| Recount the Timeline's amount of filled batches. Since the Timeline
+automatically tracks the count on itself, this is generally exclusively used in
+specific scenarios like decoding JSON values.
+-}
+recountFilledBatches : Timeline -> Timeline
+recountFilledBatches (Timeline tl) =
+    Timeline
+        { tl
+            | filledBatches =
+                tl.batches
+                    |> Iddict.values
+                    |> List.filter (\v -> v.events /= [])
+                    |> List.length
+        }
 
 
 {-| Create a timeline with a single batch inserted. This batch is considered the

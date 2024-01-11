@@ -3,7 +3,7 @@ module Internal.Tools.Hashdict exposing
     , empty, singleton, insert, remove, removeKey
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
-    , rehash, union
+    , rehash, union, map
     , encode, decoder, softDecoder
     )
 
@@ -35,7 +35,7 @@ This allows you to store values based on an externally defined identifier.
 
 ## Transform
 
-@docs rehash, union
+@docs rehash, union, map
 
 
 ## JSON coders
@@ -171,6 +171,34 @@ isEmpty (Hashdict h) =
 keys : Hashdict a -> List String
 keys (Hashdict h) =
     Dict.keys h.values
+
+
+{-| Map a value on a given key. If the outcome of the function changes the hash,
+the operation does nothing.
+-}
+map : String -> (a -> a) -> Hashdict a -> Hashdict a
+map key f (Hashdict h) =
+    Hashdict
+        { h
+            | values =
+                Dict.update
+                    key
+                    (Maybe.map
+                        (\value ->
+                            let
+                                newValue : a
+                                newValue =
+                                    f value
+                            in
+                            if h.hash newValue == h.hash value then
+                                newValue
+
+                            else
+                                value
+                        )
+                    )
+                    h.values
+        }
 
 
 {-| Determine if a value's hash is in a hashdict.
