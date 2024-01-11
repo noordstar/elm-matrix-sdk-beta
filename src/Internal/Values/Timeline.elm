@@ -1,6 +1,5 @@
 module Internal.Values.Timeline exposing
-    ( Batch, fromToken, fromSlice
-    , Timeline
+    ( Batch, Timeline
     , empty, singleton
     , mostRecentEvents
     , addSync, insert
@@ -19,12 +18,7 @@ and maintain this room state.
 
 ## Batch
 
-@docs Batch, fromToken, fromSlice
-
-
-## Timeline
-
-@docs Timeline
+@docs Batch, Timeline
 
 
 ## Create
@@ -142,8 +136,16 @@ type alias TokenValue =
 batch to the front of the Timeline.
 -}
 addSync : Batch -> Timeline -> Timeline
-addSync _ timeline =
-    timeline
+addSync batch timeline =
+    case insertBatch batch timeline of
+        ( Timeline tl, { start, end } ) ->
+            let
+                oldSync : ITokenPTR
+                oldSync =
+                    tl.mostRecentSync
+            in
+            Timeline { tl | mostRecentSync = end }
+                |> connectITokenToIToken oldSync start
 
 
 {-| Append a token at the end of a batch.
@@ -196,19 +198,23 @@ connectITokenToIToken : ITokenPTR -> ITokenPTR -> Timeline -> Timeline
 connectITokenToIToken pointer1 pointer2 (Timeline tl) =
     case ( pointer1, pointer2 ) of
         ( ITokenPTR early, ITokenPTR late ) ->
-            Timeline
-                { tl
-                    | tokens =
-                        tl.tokens
-                            |> Hashdict.map early
-                                (\data ->
-                                    { data | behind = Set.insert late data.behind }
-                                )
-                            |> Hashdict.map late
-                                (\data ->
-                                    { data | inFrontOf = Set.insert early data.inFrontOf }
-                                )
-                }
+            if early == late then
+                Timeline tl
+
+            else
+                Timeline
+                    { tl
+                        | tokens =
+                            tl.tokens
+                                |> Hashdict.map early
+                                    (\data ->
+                                        { data | behind = Set.insert late data.behind }
+                                    )
+                                |> Hashdict.map late
+                                    (\data ->
+                                        { data | inFrontOf = Set.insert early data.inFrontOf }
+                                    )
+                    }
 
         ( _, _ ) ->
             Timeline tl
@@ -247,13 +253,15 @@ getITokenFromPTR pointer (Timeline { tokens }) =
 {-| Insert a batch anywhere else in the timeline.
 -}
 insert : Batch -> Timeline -> Timeline
-insert batch (Timeline tl) =
-    Timeline tl
+insert batch timeline =
+    timeline
+        |> insertBatch batch
+        |> Tuple.first
 
 
 {-| Insert a batch into the timeline.
 -}
-insertBatch : Batch -> Timeline -> Timeline
+insertBatch : Batch -> Timeline -> ( Timeline, { start : ITokenPTR, end : ITokenPTR } )
 insertBatch batch timeline =
     case batch.start of
         Just start ->
@@ -261,26 +269,30 @@ insertBatch batch timeline =
                 |> invokeIToken start
                 |> Tuple.mapSecond (invokeIToken batch.end)
                 |> (\( startPTR, ( endPTR, newTimeline ) ) ->
-                        insertIBatch
+                        ( insertIBatch
                             { events = batch.events
                             , filter = batch.filter
                             , start = startPTR
                             , end = endPTR
                             }
                             newTimeline
+                        , { start = startPTR, end = endPTR }
+                        )
                    )
 
         Nothing ->
             timeline
                 |> invokeIToken batch.end
                 |> (\( endPTR, newTimeline ) ->
-                        insertIBatch
+                        ( insertIBatch
                             { events = batch.events
                             , filter = batch.filter
                             , start = StartOfTimeline
                             , end = endPTR
                             }
                             newTimeline
+                        , { start = StartOfTimeline, end = endPTR }
+                        )
                    )
 
 
@@ -290,7 +302,31 @@ insertIBatch : IBatch -> Timeline -> Timeline
 insertIBatch ibatch (Timeline tl) =
     case Iddict.insert ibatch tl.batches of
         ( batchPTR, newBatches ) ->
-            { tl | batches = newBatches }
+            { tl
+                | batches = newBatches
+                , events =
+                    List.foldl
+                        (\event dict ->
+                            Dict.update event
+                                (\value ->
+                                    case value of
+                                        Nothing ->
+                                            Just ( IBatchPTR batchPTR, [] )
+
+                                        Just ( head, tail ) ->
+                                            Just ( IBatchPTR batchPTR, head :: tail )
+                                )
+                                dict
+                        )
+                        tl.events
+                        ibatch.events
+                , filledBatches =
+                    if List.isEmpty ibatch.events then
+                        tl.filledBatches
+
+                    else
+                        tl.filledBatches + 1
+            }
                 |> Timeline
                 |> connectITokenToIBatch ibatch.start (IBatchPTR batchPTR)
                 |> connectIBatchToIToken (IBatchPTR batchPTR) ibatch.end
