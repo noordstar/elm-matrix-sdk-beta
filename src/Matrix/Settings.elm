@@ -68,4 +68,4 @@ getSyncTime (Vault vault) =
 -}
 setSyncTime : Int -> Vault -> Vault
 setSyncTime time (Vault vault) =
-    Vault <| Envelope.mapSettings (\s -> { s | syncTime = time }) vault
+    Vault <| Envelope.mapSettings (\s -> { s | syncTime = max 1 time }) vault
