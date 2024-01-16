@@ -81,6 +81,9 @@ accessTokenInvalid =
     "Matrix API rejected access token as invalid"
 
 
+{-| Logs when the JSON decoder detects that an imported dictionary contained
+duplicate keys.
+-}
 decodedDictSize : Int -> Int -> String
 decodedDictSize from to =
     String.concat

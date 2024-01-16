@@ -1,7 +1,4 @@
-module Internal.Config.Log exposing
-    ( Log, log
-    , caughtError, debug, error, info, securityWarn, warn
-    )
+module Internal.Config.Log exposing (Log, log)
 
 {-|
 
@@ -21,10 +18,19 @@ without triggering a major update.
 -- @docs caughtError, debug, error, info, securityWarn, warn
 
 
+{-| Common pattern for a log message. The log message consists of a log channel
+like `debug`, `warn`, `error`, etc. and the content of the message.
+
+These logs are completely optional: they can be ignored, they can be sent to the
+console, or a dialog may be created that presents the log messages.
+
+-}
 type alias Log =
     { channel : String, content : String }
 
 
+{-| Create a log message of various log types.
+-}
 log :
     { caughtError : String -> Log
     , debug : String -> Log

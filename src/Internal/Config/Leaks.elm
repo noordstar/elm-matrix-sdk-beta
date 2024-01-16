@@ -48,6 +48,8 @@ accessToken =
     "elm-sdk-placeholder-access-token-leaks"
 
 
+{-| Complete set of all leaking values. Commonly using for testing purposes.
+-}
 allLeaks : Set String
 allLeaks =
     Set.union
