@@ -1,4 +1,11 @@
-module Internal.Tools.Json exposing (..)
+module Internal.Tools.Json exposing
+    ( Coder, string, bool, int, float
+    , encode, decode
+    , Docs(..), RequiredField(..), toDocs
+    , list, slowDict, fastDict, maybe
+    , Field, field
+    , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+    )
 
 {-|
 
@@ -21,6 +28,36 @@ data types. Because this module uses dynamic builder types, this also means it
 is relatively easy to write documentation for any data type that uses this
 module to build its encoders and decoders.
 
+@docs Coder, string, bool, int, float
+
+
+## JSON Coding
+
+@docs encode, decode
+
+
+## Documentation
+
+@docs Docs, RequiredField, toDocs
+
+
+## Data types
+
+@docs list, slowDict, fastDict, maybe
+
+
+## Objects
+
+This section creates objects that can be (re)used in the library's JSON
+specification. For this, the user needs to construct fields for the object
+first.
+
+@docs Field, field
+
+Once all fields are constructed, the user can create JSON objects.
+
+@docs object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+
 -}
 
 import Dict as SlowDict
@@ -32,32 +69,55 @@ import Json.Decode as D
 import Json.Encode as E
 
 
+{-| A field of type `a` as a subtype of an object `object`.
+
+In concrete terms, to construct a data type
+
+    type alias User =
+        { name : String
+        , age : Int
+        , hobbies : List String
+        }
+
+The user needs to construct the field types:
+
+  - `Field String User`,
+  - `Field Int User`,
+  - and `Field (List String) User`.
+
+-}
 type Field a object
     = Field
         { fieldName : String
         , description : List String
         , encoder : a -> Maybe E.Value
         , decoder : D.Decoder ( a, List Log )
-        , docs : JSONDocs
+        , docs : Docs
         , toField : object -> a
         , requiredness : RequiredField
         }
 
 
-type JSONCoder a
-    = JSONCoder
+{-| Builder type that helps create JSON encoders, JSON decoders, data type
+documentation and various other data types.
+-}
+type Coder a
+    = Coder
         { encoder : a -> E.Value
         , decoder : D.Decoder ( a, List Log )
-        , docs : JSONDocs
+        , docs : Docs
         }
 
 
-type JSONDocs
+{-| Structure of JSON documentation. It is up to an external module to turn the
+documentation structure into a readable format.
+-}
+type Docs
     = DocsBool
-    | DocsDict JSONDocs
+    | DocsDict Docs
     | DocsFloat
     | DocsInt
-    | DocsList JSONDocs
+    | DocsList Docs
     | DocsObject
         { name : String
         , description : List String
@@ -66,22 +126,28 @@ type JSONDocs
                 { field : String
                 , description : List String
                 , required : RequiredField
-                , content : JSONDocs
+                , content : Docs
                 }
         }
-    | DocsOptional JSONDocs
+    | DocsOptional Docs
     | DocsString
 
 
+{-| Value that tells whether an object field is required to be included. If it
+is not required, it can either be omitted - or a given default will be assumed.
+The given default is a string representation, not the actual value.
+-}
 type RequiredField
     = RequiredField
     | OptionalField
     | OptionalFieldWithDefault String
 
 
-bool : JSONCoder Bool
+{-| Define a boolean value.
+-}
+bool : Coder Bool
 bool =
-    JSONCoder
+    Coder
         { encoder = E.bool
         , decoder = D.map empty D.bool
         , docs = DocsBool
@@ -90,9 +156,16 @@ bool =
 
 {-| Get a JSON coder's decode value
 -}
-decode : JSONCoder a -> D.Decoder ( a, List Log )
-decode (JSONCoder data) =
+decode : Coder a -> D.Decoder ( a, List Log )
+decode (Coder data) =
     data.decoder
+
+
+{-| Generate documentation from a Coder definition.
+-}
+toDocs : Coder a -> Docs
+toDocs (Coder data) =
+    data.docs
 
 
 {-| Create a tuple with no logs
@@ -103,17 +176,25 @@ empty x =
 
 
 {-| Get a JSON coder's encode value
+
+
+    text : Json.Encode.Value
+    text =
+        encode string "test"
+
+    -- == Json.Encode.string "test"
+
 -}
-encode : JSONCoder a -> (a -> E.Value)
-encode (JSONCoder data) =
+encode : Coder a -> (a -> E.Value)
+encode (Coder data) =
     data.encoder
 
 
 {-| Define a fast dict. The dict can only have strings as keys.
 -}
-fastDict : JSONCoder value -> JSONCoder (FastDict.Dict String value)
-fastDict (JSONCoder value) =
-    JSONCoder
+fastDict : Coder value -> Coder (FastDict.Dict String value)
+fastDict (Coder value) =
+    Coder
         { encoder = FastDict.toCoreDict >> E.dict identity value.encoder
         , decoder =
             value.decoder
@@ -132,26 +213,63 @@ fastDict (JSONCoder value) =
         }
 
 
-{-| Create a new field
+{-| Create a new field using any of the three provided options.
+
+For example, suppose we are creating a `Field String User` to represent the
+`name` field in
+
+    type alias User =
+        { name : String
+        , age : Int
+        , hobbies : List String
+        }
+
+then the following field type would be used:
+
+    field.required
+        { fieldName = "name" -- Field name when encoded into JSON
+        , toField = .name
+        , description =
+            [ "This description describes this field's information content."
+            , "Here's another paragraph!"
+            ]
+        , coder = string
+        }
+
+Suppose the JSO isn't obligated to provide a list of hobbies, and the list would
+by default be overriden with an empty list, then we would use the following
+field type:
+
+    field.optional.withDefault
+        { fieldName = "hobbies"
+        , toField = .hobbies
+        , description =
+            [ "The hobbies of the person. Can be omitted."
+            ]
+        , coder = list string
+        , default = ( [], [] ) -- The `List Log` can be inserted in case you wish to insert a message when relying on a default
+        , defaultToString = always "[]" -- Default converted to a string
+        }
+
 -}
 field :
-    { required : { fieldName : String, toField : object -> a, description : List String, coder : JSONCoder a } -> Field a object
+    { required : { fieldName : String, toField : object -> a, description : List String, coder : Coder a } -> Field a object
     , optional :
-        { value : { fieldName : String, toField : object -> Maybe a, description : List String, coder : JSONCoder a } -> Field (Maybe a) object
-        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : JSONCoder a, default : ( a, List Log ), defaultToString : a -> String } -> Field a object
+        { value : { fieldName : String, toField : object -> Maybe a, description : List String, coder : Coder a } -> Field (Maybe a) object
+        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : Coder a, default : ( a, List Log ), defaultToString : a -> String } -> Field a object
         }
     }
 field =
     { required =
         \{ fieldName, toField, description, coder } ->
             case coder of
-                JSONCoder { encoder, decoder, docs } ->
+                Coder { encoder, decoder, docs } ->
                     Field
                         { fieldName = fieldName
                         , toField = toField
                         , description = description
                         , encoder = encoder >> Maybe.Just
-                        , decoder = decoder
+                        , decoder = D.field fieldName decoder
                         , docs = docs
                         , requiredness = RequiredField
                         }
@@ -159,7 +277,7 @@ field =
         { value =
             \{ fieldName, toField, description, coder } ->
                 case coder of
-                    JSONCoder { encoder, decoder, docs } ->
+                    Coder { encoder, decoder, docs } ->
                         Field
                             { fieldName = fieldName
                             , toField = toField
@@ -183,7 +301,7 @@ field =
         , withDefault =
             \{ fieldName, toField, description, coder, default, defaultToString } ->
                 case coder of
-                    JSONCoder { encoder, decoder, docs } ->
+                    Coder { encoder, decoder, docs } ->
                         Field
                             { fieldName = fieldName
                             , toField = toField
@@ -201,22 +319,22 @@ field =
     }
 
 
-{-| Define a float.
+{-| Define a float value.
 -}
-float : JSONCoder Float
+float : Coder Float
 float =
-    JSONCoder
+    Coder
         { encoder = E.float
         , decoder = D.map empty D.float
         , docs = DocsFloat
         }
 
 
-{-| Define an int.
+{-| Define an int value.
 -}
-int : JSONCoder Int
+int : Coder Int
 int =
-    JSONCoder
+    Coder
         { encoder = E.int
         , decoder = D.map empty D.int
         , docs = DocsInt
@@ -225,9 +343,9 @@ int =
 
 {-| Define a list.
 -}
-list : JSONCoder a -> JSONCoder (List a)
-list (JSONCoder old) =
-    JSONCoder
+list : Coder a -> Coder (List a)
+list (Coder old) =
+    Coder
         { encoder = E.list old.encoder
         , decoder =
             old.decoder
@@ -242,9 +360,15 @@ list (JSONCoder old) =
         }
 
 
-maybe : JSONCoder a -> JSONCoder (Maybe a)
-maybe (JSONCoder old) =
-    JSONCoder
+{-| Define a maybe value.
+
+NOTE: most of the time, you wish to avoid this function! Make sure to look at
+objects instead.
+
+-}
+maybe : Coder a -> Coder (Maybe a)
+maybe (Coder old) =
+    Coder
         { encoder = Maybe.map old.encoder >> Maybe.withDefault E.null
         , decoder =
             old.decoder
@@ -272,14 +396,46 @@ objectEncoder items object =
 
 
 {-| Define an object with 2 keys
+
+    type alias Human =
+        { name : String, age : Maybe Int }
+
+    humanCoder : Coder Human
+    humanCoder =
+        object2
+            { name = "Human"
+            , description =
+                [ "Documentation description of the human type."
+                ]
+            , init = Human
+            }
+            (field.required
+                { fieldName = "name"
+                , toField = .name
+                , description =
+                    [ "Human's name."
+                    ]
+                , coder = string
+                }
+            )
+            (field.optional.value
+                { fieldName = "age"
+                , toField = .age
+                , description =
+                    [ "(Optional) human's age"
+                    ]
+                , coder = int
+                }
+            )
+
 -}
 object2 :
     { name : String, description : List String, init : a -> b -> object }
     -> Field a object
     -> Field b object
-    -> JSONCoder object
+    -> Coder object
 object2 { name, description, init } fa fb =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -313,9 +469,9 @@ object3 :
     -> Field a object
     -> Field b object
     -> Field c object
-    -> JSONCoder object
+    -> Coder object
 object3 { name, description, init } fa fb fc =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -353,9 +509,9 @@ object4 :
     -> Field b object
     -> Field c object
     -> Field d object
-    -> JSONCoder object
+    -> Coder object
 object4 { name, description, init } fa fb fc fd =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -397,9 +553,9 @@ object5 :
     -> Field c object
     -> Field d object
     -> Field e object
-    -> JSONCoder object
+    -> Coder object
 object5 { name, description, init } fa fb fc fd fe =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -445,9 +601,9 @@ object6 :
     -> Field d object
     -> Field e object
     -> Field f object
-    -> JSONCoder object
+    -> Coder object
 object6 { name, description, init } fa fb fc fd fe ff =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -497,9 +653,9 @@ object7 :
     -> Field e object
     -> Field f object
     -> Field g object
-    -> JSONCoder object
+    -> Coder object
 object7 { name, description, init } fa fb fc fd fe ff fg =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -553,9 +709,9 @@ object8 :
     -> Field f object
     -> Field g object
     -> Field h object
-    -> JSONCoder object
+    -> Coder object
 object8 { name, description, init } fa fb fc fd fe ff fg fh =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -613,9 +769,9 @@ object9 :
     -> Field g object
     -> Field h object
     -> Field i object
-    -> JSONCoder object
+    -> Coder object
 object9 { name, description, init } fa fb fc fd fe ff fg fh fi =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -677,9 +833,9 @@ object10 :
     -> Field h object
     -> Field i object
     -> Field j object
-    -> JSONCoder object
+    -> Coder object
 object10 { name, description, init } fa fb fc fd fe ff fg fh fi fj =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -745,9 +901,9 @@ object11 :
     -> Field i object
     -> Field j object
     -> Field k object
-    -> JSONCoder object
+    -> Coder object
 object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
-    JSONCoder
+    Coder
         { encoder =
             objectEncoder
                 [ toEncodeField fa
@@ -801,11 +957,11 @@ object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
         }
 
 
-{-| Define a slow dict from the elm/core library.
+{-| Define a slow dict from the `elm/core` library.
 -}
-slowDict : JSONCoder value -> JSONCoder (SlowDict.Dict String value)
-slowDict (JSONCoder data) =
-    JSONCoder
+slowDict : Coder value -> Coder (SlowDict.Dict String value)
+slowDict (Coder data) =
+    Coder
         { encoder = E.dict identity data.encoder
         , decoder =
             data.decoder
@@ -824,11 +980,11 @@ slowDict (JSONCoder data) =
         }
 
 
-{-| Define a string.
+{-| Define a string value.
 -}
-string : JSONCoder String
+string : Coder String
 string =
-    JSONCoder
+    Coder
         { encoder = E.string
         , decoder = D.map empty D.string
         , docs = DocsString
@@ -844,7 +1000,7 @@ toDecoderField (Field data) =
 
 {-| Turn a Field type into a descriptive field documentation
 -}
-toDocsField : Field a object -> { field : String, description : List String, required : RequiredField, content : JSONDocs }
+toDocsField : Field a object -> { field : String, description : List String, required : RequiredField, content : Docs }
 toDocsField x =
     case x of
         Field { fieldName, description, docs, requiredness } ->
