@@ -1,4 +1,7 @@
-module Internal.Config.Log exposing (caughtError, debug, error, info, securityWarn, warn)
+module Internal.Config.Log exposing
+    ( Log, log
+    , caughtError, debug, error, info, securityWarn, warn
+    )
 
 {-|
 
@@ -8,12 +11,36 @@ module Internal.Config.Log exposing (caughtError, debug, error, info, securityWa
 The logs module exposes various log types that can be used to indicate logs.
 This helps users filter for the logs that they care about.
 
+@docs Log, log
+
 The logs are encoded as strings as to allow the addition of new log types
 without triggering a major update.
 
-@docs caughtError, debug, error, info, securityWarn, warn
-
 -}
+
+-- @docs caughtError, debug, error, info, securityWarn, warn
+
+
+type alias Log =
+    { channel : String, content : String }
+
+
+log :
+    { caughtError : String -> Log
+    , debug : String -> Log
+    , error : String -> Log
+    , info : String -> Log
+    , securityWarn : String -> Log
+    , warn : String -> Log
+    }
+log =
+    { caughtError = Log caughtError
+    , debug = Log debug
+    , error = Log error
+    , info = Log info
+    , securityWarn = Log securityWarn
+    , warn = Log warn
+    }
 
 
 {-| A caught error is an error that has been caught elsewhere in the code, hence
