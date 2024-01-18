@@ -33,6 +33,50 @@ type alias Human5 =
     }
 
 
+type alias Human6 =
+    { name : String
+    , age : Maybe Int
+    , hobbies : List String
+    , weight : Maybe Float
+    , height : Float
+    , invitedToParty : Bool
+    }
+
+
+type alias Human7 =
+    { name : String
+    , age : Maybe Int
+    , hobbies : List String
+    , weight : Maybe Float
+    , height : Float
+    , invitedToParty : Bool
+    , presentGiven : Maybe String
+    }
+
+
+type alias Human8 =
+    { name : String
+    , age : Maybe Int
+    , hobbies : List String
+    , weight : Maybe Float
+    , height : Float
+    , invitedToParty : Bool
+    , presentGiven : Maybe String
+    , grid : List (List Int)
+    }
+
+
+type alias MegaHuman =
+    { human2 : Human2
+    , human3 : Human3
+    , human4 : Human4
+    , human5 : Human5
+    , human6 : Human6
+    , human7 : Human7
+    , human8 : Human8
+    }
+
+
 ageField : Json.Field (Maybe Int) { a | age : Maybe Int }
 ageField =
     Json.field.optional.value
@@ -46,6 +90,23 @@ ageField =
 ageFuzzer : Fuzzer (Maybe Int)
 ageFuzzer =
     Fuzz.maybe Fuzz.int
+
+
+gridField : Json.Field (List (List Int)) { a | grid : List (List Int) }
+gridField =
+    Json.field.optional.withDefault
+        { fieldName = "grid"
+        , toField = .grid
+        , description = []
+        , coder = Json.list (Json.list Json.int)
+        , default = ( [], [] )
+        , defaultToString = always "[]"
+        }
+
+
+gridFuzzer : Fuzzer (List (List Int))
+gridFuzzer =
+    Fuzz.list (Fuzz.list Fuzz.int)
 
 
 heightField : Json.Field Float { a | height : Float }
@@ -80,6 +141,29 @@ hobbiesFuzzer =
     Fuzz.list Fuzz.string
 
 
+invitedToPartyField : Json.Field Bool { a | invitedToParty : Bool }
+invitedToPartyField =
+    Json.field.optional.withDefault
+        { fieldName = "invitedToParty"
+        , toField = .invitedToParty
+        , description = []
+        , coder = Json.bool
+        , default = ( False, [] )
+        , defaultToString =
+            \b ->
+                if b then
+                    "True"
+
+                else
+                    "False"
+        }
+
+
+invitedToPartyFuzzer : Fuzzer Bool
+invitedToPartyFuzzer =
+    Fuzz.bool
+
+
 nameField : Json.Field String { a | name : String }
 nameField =
     Json.field.required
@@ -93,6 +177,21 @@ nameField =
 nameFuzzer : Fuzzer String
 nameFuzzer =
     Fuzz.string
+
+
+presentGivenField : Json.Field (Maybe String) { a | presentGiven : Maybe String }
+presentGivenField =
+    Json.field.required
+        { fieldName = "presentGiven"
+        , toField = .presentGiven
+        , description = []
+        , coder = Json.maybe Json.string
+        }
+
+
+presentGivenFuzzer : Fuzzer (Maybe String)
+presentGivenFuzzer =
+    Fuzz.maybe Fuzz.string
 
 
 weightField : Json.Field (Maybe Float) { a | weight : Maybe Float }
@@ -195,6 +294,118 @@ human5Fuzzer =
         heightFuzzer
 
 
+human6Coder : Json.Coder Human6
+human6Coder =
+    Json.object6
+        { name = "Human6"
+        , description = []
+        , init = Human6
+        }
+        nameField
+        ageField
+        hobbiesField
+        weightField
+        heightField
+        invitedToPartyField
+
+
+human6Fuzzer : Fuzzer Human6
+human6Fuzzer =
+    Fuzz.map6 Human6
+        nameFuzzer
+        ageFuzzer
+        hobbiesFuzzer
+        weightFuzzer
+        heightFuzzer
+        invitedToPartyFuzzer
+
+
+human7Coder : Json.Coder Human7
+human7Coder =
+    Json.object7
+        { name = "Human7"
+        , description = []
+        , init = Human7
+        }
+        nameField
+        ageField
+        hobbiesField
+        weightField
+        heightField
+        invitedToPartyField
+        presentGivenField
+
+
+human7Fuzzer : Fuzzer Human7
+human7Fuzzer =
+    Fuzz.map7 Human7
+        nameFuzzer
+        ageFuzzer
+        hobbiesFuzzer
+        weightFuzzer
+        heightFuzzer
+        invitedToPartyFuzzer
+        presentGivenFuzzer
+
+
+human8Coder : Json.Coder Human8
+human8Coder =
+    Json.object8
+        { name = "Human8"
+        , description = []
+        , init = Human8
+        }
+        nameField
+        ageField
+        hobbiesField
+        weightField
+        heightField
+        invitedToPartyField
+        presentGivenField
+        gridField
+
+
+human8Fuzzer : Fuzzer Human8
+human8Fuzzer =
+    Fuzz.map8 Human8
+        nameFuzzer
+        ageFuzzer
+        hobbiesFuzzer
+        weightFuzzer
+        heightFuzzer
+        invitedToPartyFuzzer
+        presentGivenFuzzer
+        gridFuzzer
+
+
+megaHumanCoder : Json.Coder MegaHuman
+megaHumanCoder =
+    Json.object7
+        { name = "MegaHuman"
+        , description = []
+        , init = MegaHuman
+        }
+        (Json.field.required { fieldName = "h2", toField = .human2, description = [], coder = human2Coder })
+        (Json.field.required { fieldName = "h3", toField = .human3, description = [], coder = human3Coder })
+        (Json.field.required { fieldName = "h4", toField = .human4, description = [], coder = human4Coder })
+        (Json.field.required { fieldName = "h5", toField = .human5, description = [], coder = human5Coder })
+        (Json.field.required { fieldName = "h6", toField = .human6, description = [], coder = human6Coder })
+        (Json.field.required { fieldName = "h7", toField = .human7, description = [], coder = human7Coder })
+        (Json.field.required { fieldName = "h8", toField = .human8, description = [], coder = human8Coder })
+
+
+megahumanFuzzer : Fuzzer MegaHuman
+megahumanFuzzer =
+    Fuzz.map7 MegaHuman
+        human2Fuzzer
+        human3Fuzzer
+        human4Fuzzer
+        human5Fuzzer
+        human6Fuzzer
+        human7Fuzzer
+        human8Fuzzer
+
+
 suite : Test
 suite =
     describe "JSON module"
@@ -244,6 +455,54 @@ suite =
                         |> D.decodeString (Json.decode human5Coder)
                         |> Result.map Tuple.first
                         |> Expect.equal (Ok human)
+                )
+            ]
+        , describe "Human6"
+            [ fuzz human6Fuzzer
+                "Recoding succeeds"
+                (\human ->
+                    human
+                        |> Json.encode human6Coder
+                        |> E.encode 0
+                        |> D.decodeString (Json.decode human6Coder)
+                        |> Result.map Tuple.first
+                        |> Expect.equal (Ok human)
+                )
+            ]
+        , describe "Human7"
+            [ fuzz human7Fuzzer
+                "Recoding succeeds"
+                (\human ->
+                    human
+                        |> Json.encode human7Coder
+                        |> E.encode 0
+                        |> D.decodeString (Json.decode human7Coder)
+                        |> Result.map Tuple.first
+                        |> Expect.equal (Ok human)
+                )
+            ]
+        , describe "Human8"
+            [ fuzz human8Fuzzer
+                "Recoding succeeds"
+                (\human ->
+                    human
+                        |> Json.encode human8Coder
+                        |> E.encode 0
+                        |> D.decodeString (Json.decode human8Coder)
+                        |> Result.map Tuple.first
+                        |> Expect.equal (Ok human)
+                )
+            ]
+        , describe "MegaHuman"
+            [ fuzz megahumanFuzzer
+                "Recoding succeeds"
+                (\megahuman ->
+                    megahuman
+                        |> Json.encode megaHumanCoder
+                        |> E.encode 0
+                        |> D.decodeString (Json.decode megaHumanCoder)
+                        |> Result.map Tuple.first
+                        |> Expect.equal (Ok megahuman)
                 )
             ]
         ]
