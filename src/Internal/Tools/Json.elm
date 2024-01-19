@@ -1,10 +1,12 @@
 module Internal.Tools.Json exposing
-    ( Coder, string, bool, int, float
-    , encode, decode
+    ( Coder, string, bool, int, float, value
+    , Encoder, encode, Decoder, decode, Value
+    , succeed, fail, andThen, lazy
     , Docs(..), RequiredField(..), toDocs
     , list, slowDict, fastDict, maybe
     , Field, field
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+    , map
     )
 
 {-|
@@ -28,12 +30,17 @@ data types. Because this module uses dynamic builder types, this also means it
 is relatively easy to write documentation for any data type that uses this
 module to build its encoders and decoders.
 
-@docs Coder, string, bool, int, float
+@docs Coder, string, bool, int, float, value
 
 
 ## JSON Coding
 
-@docs encode, decode
+@docs Encoder, encode, Decoder, decode, Value
+
+
+## Optional coding
+
+@docs succeed, fail, andThen, lazy
 
 
 ## Documentation
@@ -109,6 +116,22 @@ type Coder a
         }
 
 
+type DecodeResult a
+    = Success ( a, List Log )
+    | Fail ( String, List Log )
+
+
+{-| Decoder type that describes the format of a JSON value that can be decoded
+as a given type.
+-}
+type alias Decoder a =
+    D.Decoder ( a, List Log )
+
+
+type alias Descriptive a =
+    { a | name : String, description : List String }
+
+
 {-| Structure of JSON documentation. It is up to an external module to turn the
 documentation structure into a readable format.
 -}
@@ -117,20 +140,30 @@ type Docs
     | DocsDict Docs
     | DocsFloat
     | DocsInt
+    | DocsLazy (() -> Docs)
     | DocsList Docs
+    | DocsMap (Descriptive { content : Docs })
     | DocsObject
-        { name : String
-        , description : List String
-        , keys :
-            List
-                { field : String
-                , description : List String
-                , required : RequiredField
-                , content : Docs
-                }
-        }
+        (Descriptive
+            { keys :
+                List
+                    { field : String
+                    , description : List String
+                    , required : RequiredField
+                    , content : Docs
+                    }
+            }
+        )
     | DocsOptional Docs
+    | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
     | DocsString
+    | DocsValue
+
+
+{-| Encoder type that takes an input and converts it to a JSON value.
+-}
+type alias Encoder a =
+    a -> E.Value
 
 
 {-| Value that tells whether an object field is required to be included. If it
@@ -141,6 +174,42 @@ type RequiredField
     = RequiredField
     | OptionalField
     | OptionalFieldWithDefault String
+
+
+type alias Value =
+    E.Value
+
+
+{-| Continue decoding a result. This function tests if it meets the criteria,
+and then it manages the results.
+-}
+andThen : Descriptive { back : b -> a, forth : a -> DecodeResult b, failure : List String } -> Coder a -> Coder b
+andThen { name, description, failure, back, forth } (Coder old) =
+    Coder
+        { encoder = back >> old.encoder
+        , decoder =
+            old.decoder
+                |> D.andThen
+                    (\result ->
+                        case result of
+                            ( out, logs ) ->
+                                case forth out of
+                                    Success x ->
+                                        x
+                                            |> Tuple.mapSecond (List.append logs)
+                                            |> D.succeed
+
+                                    Fail ( f, _ ) ->
+                                        D.fail f
+                    )
+        , docs =
+            DocsRiskyMap
+                { name = name
+                , description = description
+                , content = old.docs
+                , failure = failure
+                }
+        }
 
 
 {-| Define a boolean value.
@@ -190,14 +259,21 @@ encode (Coder data) =
     data.encoder
 
 
+{-| Fail a decoder.
+-}
+fail : String -> List Log -> DecodeResult a
+fail reason logs =
+    Fail ( reason, logs )
+
+
 {-| Define a fast dict. The dict can only have strings as keys.
 -}
 fastDict : Coder value -> Coder (FastDict.Dict String value)
-fastDict (Coder value) =
+fastDict (Coder old) =
     Coder
-        { encoder = FastDict.toCoreDict >> E.dict identity value.encoder
+        { encoder = FastDict.toCoreDict >> E.dict identity old.encoder
         , decoder =
-            value.decoder
+            old.decoder
                 |> D.keyValuePairs
                 |> D.map
                     (\items ->
@@ -209,7 +285,7 @@ fastDict (Coder value) =
                             |> List.concatMap Tuple.second
                         )
                     )
-        , docs = DocsDict value.docs
+        , docs = DocsDict old.docs
         }
 
 
@@ -287,8 +363,8 @@ field =
                                 decoder
                                     |> D.opField fieldName
                                     |> D.map
-                                        (\value ->
-                                            case value of
+                                        (\out ->
+                                            case out of
                                                 Just ( v, l ) ->
                                                     ( Just v, l )
 
@@ -341,6 +417,25 @@ int =
         }
 
 
+lazy : (() -> Coder value) -> Coder value
+lazy f =
+    Coder
+        { encoder =
+            \v ->
+                case f () of
+                    Coder old ->
+                        old.encoder v
+        , decoder =
+            D.lazy
+                (\() ->
+                    case f () of
+                        Coder old ->
+                            old.decoder
+                )
+        , docs = DocsLazy (f >> toDocs)
+        }
+
+
 {-| Define a list.
 -}
 list : Coder a -> Coder (List a)
@@ -360,6 +455,23 @@ list (Coder old) =
         }
 
 
+{-| Map a value.
+
+Given that the value needs to be both encoded and decoded, the map function
+should be invertible.
+
+-}
+map : Descriptive { back : b -> a, forth : a -> b } -> Coder a -> Coder b
+map { name, description, back, forth } (Coder old) =
+    Coder
+        { encoder = back >> old.encoder
+        , decoder = D.map (Tuple.mapFirst forth) old.decoder
+        , docs =
+            DocsMap
+                { name = name, description = description, content = old.docs }
+        }
+
+
 {-| Define a maybe value.
 
 NOTE: most of the time, you wish to avoid this function! Make sure to look at
@@ -374,8 +486,8 @@ maybe (Coder old) =
             old.decoder
                 |> D.nullable
                 |> D.map
-                    (\value ->
-                        case value of
+                    (\out ->
+                        case out of
                             Just ( v, logs ) ->
                                 ( Just v, logs )
 
@@ -430,7 +542,7 @@ objectEncoder items object =
 
 -}
 object2 :
-    { name : String, description : List String, init : a -> b -> object }
+    Descriptive { init : a -> b -> object }
     -> Field a object
     -> Field b object
     -> Coder object
@@ -465,7 +577,7 @@ object2 { name, description, init } fa fb =
 {-| Define an object with 3 keys
 -}
 object3 :
-    { name : String, description : List String, init : a -> b -> c -> object }
+    Descriptive { init : a -> b -> c -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -504,7 +616,7 @@ object3 { name, description, init } fa fb fc =
 {-| Define an object with 4 keys
 -}
 object4 :
-    { name : String, description : List String, init : a -> b -> c -> d -> object }
+    Descriptive { init : a -> b -> c -> d -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -547,7 +659,7 @@ object4 { name, description, init } fa fb fc fd =
 {-| Define an object with 5 keys
 -}
 object5 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -594,7 +706,7 @@ object5 { name, description, init } fa fb fc fd fe =
 {-| Define an object with 6 keys
 -}
 object6 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -645,7 +757,7 @@ object6 { name, description, init } fa fb fc fd fe ff =
 {-| Define an object with 7 keys
 -}
 object7 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> g -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -700,7 +812,7 @@ object7 { name, description, init } fa fb fc fd fe ff fg =
 {-| Define an object with 8 keys
 -}
 object8 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> g -> h -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -759,7 +871,7 @@ object8 { name, description, init } fa fb fc fd fe ff fg fh =
 {-| Define an object with 9 keys
 -}
 object9 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> g -> h -> i -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -822,7 +934,7 @@ object9 { name, description, init } fa fb fc fd fe ff fg fh fi =
 {-| Define an object with 10 keys
 -}
 object10 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -889,7 +1001,7 @@ object10 { name, description, init } fa fb fc fd fe ff fg fh fi fj =
 {-| Define an object with 11 keys
 -}
 object11 :
-    { name : String, description : List String, init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> object }
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> object }
     -> Field a object
     -> Field b object
     -> Field c object
@@ -991,6 +1103,13 @@ string =
         }
 
 
+{-| Succeed a decoder.
+-}
+succeed : a -> List Log -> DecodeResult a
+succeed x logs =
+    Success ( x, logs )
+
+
 {-| Turn a Field type into a usable JSON decoder
 -}
 toDecoderField : Field a object -> D.Decoder ( a, List Log )
@@ -1016,3 +1135,12 @@ toDocsField x =
 toEncodeField : Field a object -> ( String, object -> Maybe E.Value )
 toEncodeField (Field data) =
     ( data.fieldName, data.toField >> data.encoder )
+
+
+value : Coder Value
+value =
+    Coder
+        { encoder = identity
+        , decoder = D.map (\v -> ( v, [] )) D.value
+        , docs = DocsValue
+        }
