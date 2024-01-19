@@ -1,8 +1,9 @@
 module Internal.Config.Text exposing
-    ( accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
+    ( docs, failures, fields
+    , accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
     , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
-    , decodedDictSize, leakingValueFound
+    , decodedDictSize, invalidHashInHashdict, invalidHashInMashdict, leakingValueFound
     )
 
 {-| Throughout the Elm SDK, there are lots of pieces of text being used for
@@ -22,6 +23,11 @@ side. This could be used to automatically detect when the Vault is failing to
 authenticate, for example, so that a new login screen can be shown. **WARNING:**
 This is a risky feature, keep in mind that even a patch update might break this!
 You should only do this if you know what you're doing.
+
+
+## Type documentation
+
+@docs docs, failures, fields
 
 
 ## API Authentication
@@ -53,9 +59,17 @@ Messages sent as API logs during communication with the API.
 
 Messages sent as API logs when a JSON value is being decoded.
 
-@docs decodedDictSize, leakingValueFound
+@docs decodedDictSize, invalidHashInHashdict, invalidHashInMashdict, leakingValueFound
 
 -}
+
+
+type alias Desc =
+    List String
+
+
+type alias TypeDocs =
+    { name : String, description : Desc }
 
 
 {-| Logs when the Matrix API returns that an access token is no longer valid.
@@ -93,6 +107,117 @@ decodedDictSize from to =
         , String.fromInt to
         , " keys)"
         ]
+
+
+{-| Documentation used for all functions and data types in JSON coders
+-}
+docs :
+    { event : TypeDocs
+    , hashdict : TypeDocs
+    , mashdict : TypeDocs
+    , stateManager : TypeDocs
+    , unsigned : TypeDocs
+    }
+docs =
+    { event =
+        { name = "Event"
+        , description =
+            [ "The Event type represents a single value that contains all the information for a single event in the room."
+            ]
+        }
+    , hashdict =
+        { name = "Hashdict"
+        , description =
+            [ "This allows you to store values based on an externally defined identifier."
+            , "For example, the hashdict can store events and use their event id as their key."
+            ]
+        }
+    , mashdict =
+        { name = "Mashdict"
+        , description =
+            [ "The mashdict exclusively stores values for which the hashing algorithm returns a value, and it ignores the outcome for all other scenarios."
+            ]
+        }
+    , stateManager =
+        { name = "StateManager"
+        , description =
+            [ "The StateManager tracks the room state based on events, their event types and the optional state keys they provide."
+            , "Instead of making the user loop through the room's timeline of events, the StateManager offers the user a dictionary-like experience to navigate through the Matrix room state."
+            ]
+        }
+    , unsigned =
+        { name = "Unsigned Data"
+        , description =
+            [ "Unsigned data is optional data that might come along with the event."
+            , "This information is often supportive but not necessary to the context."
+            ]
+        }
+    }
+
+
+{-| Description of all edge cases where a JSON decoder can fail.
+-}
+failures : { hashdict : Desc, mashdict : Desc }
+failures =
+    { hashdict =
+        [ "Not all values map to thir respected hash with the given hash function."
+        ]
+    , mashdict =
+        [ "Not all values map to thir respected hash with the given hash function."
+        ]
+    }
+
+
+
+-- TODO
+
+
+fields :
+    { event :
+        { content : Desc
+        , eventId : Desc
+        , originServerTs : Desc
+        , roomId : Desc
+        , sender : Desc
+        , stateKey : Desc
+        , eventType : Desc
+        , unsigned : Desc
+        }
+    , unsigned :
+        { age : Desc
+        , prevContent : Desc
+        , redactedBecause : Desc
+        , transactionId : Desc
+        }
+    }
+fields =
+    { event =
+        { content = []
+        , eventId = []
+        , originServerTs = []
+        , roomId = []
+        , sender = []
+        , stateKey = []
+        , eventType = []
+        , unsigned = []
+        }
+    , unsigned =
+        { age = []
+        , prevContent = []
+        , redactedBecause = []
+        , transactionId = []
+        }
+    }
+
+
+invalidHashInHashdict : String
+invalidHashInHashdict =
+    "Invalid hash function: not all elements hash to their JSON-stored hashes"
+
+
+invalidHashInMashdict : String
+invalidHashInMashdict =
+    "Invalid hash function: not all elements hash to their JSON-stored hashes"
 
 
 {-| The Elm SDK occassionally uses [leaking values](Internal-Config-Leaks),

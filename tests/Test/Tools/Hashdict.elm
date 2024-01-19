@@ -3,6 +3,7 @@ module Test.Tools.Hashdict exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
+import Internal.Tools.Json as Json
 import Internal.Values.Event as Event
 import Json.Decode as D
 import Json.Encode as E
@@ -93,11 +94,11 @@ suite =
                 "JSON encode -> JSON decode"
                 (\indent ->
                     Hashdict.empty identity
-                        |> Hashdict.encode E.string
+                        |> Json.encode (Hashdict.coder identity Json.string)
                         |> E.encode indent
-                        |> D.decodeString (Hashdict.decoder identity D.string)
-                        |> Result.map (Hashdict.isEqual (Hashdict.empty String.toUpper))
-                        |> Expect.equal (Ok True)
+                        |> D.decodeString (Json.decode <| Hashdict.coder identity Json.string)
+                        |> Result.map (Tuple.mapFirst (Hashdict.isEqual (Hashdict.empty String.toUpper)))
+                        |> Expect.equal (Ok ( True, [] ))
                 )
             ]
         , describe "singleton"
@@ -164,11 +165,11 @@ suite =
                 "JSON encode -> JSON decode"
                 (\hashdict indent ->
                     hashdict
-                        |> Hashdict.encode Event.encode
+                        |> Json.encode (Hashdict.coder .eventId Event.coder)
                         |> E.encode indent
-                        |> D.decodeString (Hashdict.decoder .eventId Event.decoder)
-                        |> Result.map Hashdict.toList
-                        |> Expect.equal (Ok <| Hashdict.toList hashdict)
+                        |> D.decodeString (Json.decode <| Hashdict.coder .eventId Event.coder)
+                        |> Result.map (Tuple.mapFirst Hashdict.toList)
+                        |> Expect.equal (Ok ( Hashdict.toList hashdict, [] ))
                 )
             ]
         ]
