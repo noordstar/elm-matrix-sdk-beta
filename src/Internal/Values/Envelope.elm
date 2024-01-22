@@ -38,17 +38,14 @@ settings that can be adjusted manually.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
-import Internal.Config.Default as Default
-import Internal.Tools.DecodeExtra as D
-import Internal.Tools.EncodeExtra as E
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (Context)
 import Internal.Values.Settings as Settings
-import Json.Decode as D
-import Json.Encode as E
 
 
 {-| There are lots of different data types in the Elm SDK, and many of them
@@ -71,28 +68,52 @@ type alias Settings =
     Settings.Settings
 
 
+coder : Json.Coder a -> Json.Coder (Envelope a)
+coder c1 =
+    Json.object3
+        { name = Text.docs.envelope.name
+        , description = Text.docs.envelope.description
+        , init = Envelope
+        }
+        (Json.field.required
+            { fieldName = "content"
+            , toField = .content
+            , description = Text.fields.envelope.content
+            , coder = c1
+            }
+        )
+        (Json.field.required
+            { fieldName = "context"
+            , toField = .context
+            , description = Text.fields.envelope.context
+            , coder = Context.coder
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "settings"
+            , toField = .settings
+            , description = Text.fields.envelope.settings
+            , coder = Settings.coder
+            , default = Tuple.pair Settings.init []
+            , defaultToString = always "<Default settings>"
+            }
+        )
+
+
 {-| Decode an enveloped type from a JSON value. The decoder also imports any
 potential tokens, values and settings included in the JSON.
 -}
-decoder : D.Decoder a -> D.Decoder (Envelope a)
-decoder xDecoder =
-    D.map3 Envelope
-        (D.field "content" xDecoder)
-        (D.field "context" Context.decoder)
-        (D.field "settings" Settings.decoder)
+decoder : Json.Coder a -> Json.Decoder (Envelope a)
+decoder c1 =
+    Json.decode (coder c1)
 
 
 {-| Encode an enveloped type into a JSON value. The function encodes all
 non-standard settings, tokens and values.
 -}
-encode : (a -> E.Value) -> Envelope a -> E.Value
-encode encodeX data =
-    E.object
-        [ ( "content", encodeX data.content )
-        , ( "context", Context.encode data.context )
-        , ( "settings", Settings.encode data.settings )
-        , ( "version", E.string Default.currentVersion )
-        ]
+encode : Json.Coder a -> Json.Encoder (Envelope a)
+encode c1 =
+    Json.encode (coder c1)
 
 
 {-| Map a function, then get its content. This is useful for getting information

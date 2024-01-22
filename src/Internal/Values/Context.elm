@@ -1,5 +1,5 @@
 module Internal.Values.Context exposing
-    ( Context, init, encode, decoder
+    ( Context, init, coder, encode, decoder
     , APIContext, apiFormat
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
@@ -14,7 +14,7 @@ the Matrix API.
 
 ## Context
 
-@docs Context, init, encode, decoder
+@docs Context, init, coder, encode, decoder
 
 
 ## APIContext
@@ -50,10 +50,8 @@ information that can be inserted.
 -}
 
 import Internal.Config.Leaks as L
-import Internal.Tools.DecodeExtra as D
-import Internal.Tools.EncodeExtra as E
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 
 
 {-| The Context type stores all the information in the Vault. This data type is
@@ -97,33 +95,76 @@ apiFormat context =
         }
 
 
+coder : Json.Coder Context
+coder =
+    Json.object7
+        { name = Text.docs.context.name
+        , description = Text.docs.context.description
+        , init = Context
+        }
+        (Json.field.optional.value
+            { fieldName = "accessToken"
+            , toField = .accessToken
+            , description = Text.fields.context.accessToken
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "baseUrl"
+            , toField = .baseUrl
+            , description = Text.fields.context.baseUrl
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "password"
+            , toField = .password
+            , description = Text.fields.context.password
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "refreshToken"
+            , toField = .refreshToken
+            , description = Text.fields.context.refreshToken
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "username"
+            , toField = .username
+            , description = Text.fields.context.username
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "transaction"
+            , toField = .transaction
+            , description = Text.fields.context.transaction
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "versions"
+            , toField = .versions
+            , description = Text.fields.context.versions
+            , coder = Json.list Json.string
+            }
+        )
+
+
 {-| Decode a Context type from a JSON value.
 -}
-decoder : D.Decoder Context
+decoder : Json.Decoder Context
 decoder =
-    D.map7 Context
-        (D.opField "accessToken" D.string)
-        (D.opField "baseUrl" D.string)
-        (D.opField "password" D.string)
-        (D.opField "refreshToken" D.string)
-        (D.opField "username" D.string)
-        (D.opField "transaction" D.string)
-        (D.opField "versions" (D.list D.string))
+    Json.decode coder
 
 
 {-| Encode a Context type into a JSON value.
 -}
-encode : Context -> E.Value
-encode context =
-    E.maybeObject
-        [ ( "accessToken", Maybe.map E.string context.accessToken )
-        , ( "baseUrl", Maybe.map E.string context.baseUrl )
-        , ( "password", Maybe.map E.string context.password )
-        , ( "refreshToken", Maybe.map E.string context.refreshToken )
-        , ( "username", Maybe.map E.string context.username )
-        , ( "transaction", Maybe.map E.string context.transaction )
-        , ( "versions", Maybe.map (E.list E.string) context.versions )
-        ]
+encode : Json.Encoder Context
+encode =
+    Json.encode coder
 
 
 {-| A basic, untouched version of the Context, containing no information.

@@ -112,14 +112,30 @@ decodedDictSize from to =
 {-| Documentation used for all functions and data types in JSON coders
 -}
 docs :
-    { event : TypeDocs
+    { context : TypeDocs
+    , envelope : TypeDocs
+    , event : TypeDocs
     , hashdict : TypeDocs
     , mashdict : TypeDocs
+    , settings : TypeDocs
     , stateManager : TypeDocs
     , unsigned : TypeDocs
     }
 docs =
-    { event =
+    { context =
+        { name = "Context"
+        , description =
+            [ "The Context is the set of variables that the user (mostly) cannot control."
+            , "The Context contains tokens, values and other bits that the Vault receives from the Matrix API."
+            ]
+        }
+    , envelope =
+        { name = "Envelope"
+        , description =
+            [ "The Envelope module wraps existing data types with lots of values and settings that can be adjusted manually."
+            ]
+        }
+    , event =
         { name = "Event"
         , description =
             [ "The Event type represents a single value that contains all the information for a single event in the room."
@@ -136,6 +152,12 @@ docs =
         { name = "Mashdict"
         , description =
             [ "The mashdict exclusively stores values for which the hashing algorithm returns a value, and it ignores the outcome for all other scenarios."
+            ]
+        }
+    , settings =
+        { name = "Settings"
+        , description =
+            [ "The settings type is a data type to configure settings in the enveloped data type."
             ]
         }
     , stateManager =
@@ -173,7 +195,21 @@ failures =
 
 
 fields :
-    { event :
+    { context :
+        { accessToken : Desc
+        , baseUrl : Desc
+        , password : Desc
+        , refreshToken : Desc
+        , username : Desc
+        , transaction : Desc
+        , versions : Desc
+        }
+    , envelope :
+        { content : Desc
+        , context : Desc
+        , settings : Desc
+        }
+    , event :
         { content : Desc
         , eventId : Desc
         , originServerTs : Desc
@@ -183,6 +219,11 @@ fields :
         , eventType : Desc
         , unsigned : Desc
         }
+    , settings :
+        { currentVersion : Desc
+        , deviceName : Desc
+        , syncTime : Desc
+        }
     , unsigned :
         { age : Desc
         , prevContent : Desc
@@ -191,7 +232,21 @@ fields :
         }
     }
 fields =
-    { event =
+    { context =
+        { accessToken = []
+        , baseUrl = []
+        , password = []
+        , refreshToken = []
+        , username = []
+        , transaction = []
+        , versions = []
+        }
+    , envelope =
+        { content = []
+        , context = []
+        , settings = []
+        }
+    , event =
         { content = []
         , eventId = []
         , originServerTs = []
@@ -200,6 +255,11 @@ fields =
         , stateKey = []
         , eventType = []
         , unsigned = []
+        }
+    , settings =
+        { currentVersion = []
+        , deviceName = []
+        , syncTime = []
         }
     , unsigned =
         { age = []

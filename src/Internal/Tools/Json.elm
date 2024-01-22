@@ -69,7 +69,7 @@ Once all fields are constructed, the user can create JSON objects.
 
 import Dict as SlowDict
 import FastDict
-import Internal.Config.Log exposing (Log, log)
+import Internal.Config.Log exposing (Log)
 import Internal.Tools.DecodeExtra as D
 import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
@@ -382,7 +382,14 @@ field =
                             { fieldName = fieldName
                             , toField = toField
                             , description = description
-                            , encoder = encoder >> Maybe.Just
+                            , encoder =
+                                \o ->
+                                    -- If the value matches the default, do not record
+                                    if o == Tuple.first default then
+                                        Nothing
+
+                                    else
+                                        Maybe.Just (encoder o)
                             , decoder = D.opFieldWithDefault fieldName default decoder
                             , docs = docs
                             , requiredness =

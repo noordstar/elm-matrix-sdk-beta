@@ -1,6 +1,6 @@
 module Internal.Values.Settings exposing
     ( Settings, init
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-|
@@ -16,15 +16,13 @@ data types.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
 import Internal.Config.Default as Default
-import Internal.Tools.DecodeExtra as D
-import Internal.Tools.EncodeExtra as E
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 
 
 {-| Custom settings that can be manipulated by the user. These serve as a
@@ -41,46 +39,54 @@ type alias Settings =
     }
 
 
+coder : Json.Coder Settings
+coder =
+    Json.object3
+        { name = Text.docs.settings.name
+        , description = Text.docs.settings.description
+        , init = Settings
+        }
+        (Json.field.optional.withDefault
+            { fieldName = "currentVersion"
+            , toField = .currentVersion
+            , description = Text.fields.settings.currentVersion
+            , coder = Json.string
+            , default = Tuple.pair Default.currentVersion []
+            , defaultToString = identity
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "deviceName"
+            , toField = .deviceName
+            , description = Text.fields.settings.deviceName
+            , coder = Json.string
+            , default = Tuple.pair Default.deviceName []
+            , defaultToString = identity
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "syncTime"
+            , toField = .syncTime
+            , description = Text.fields.settings.syncTime
+            , coder = Json.int
+            , default = Tuple.pair Default.syncTime []
+            , defaultToString = String.fromInt
+            }
+        )
+
+
 {-| Decode settings from a JSON value.
 -}
-decoder : D.Decoder Settings
+decoder : Json.Decoder Settings
 decoder =
-    D.map3 Settings
-        (D.opFieldWithDefault "currentVersion" Default.currentVersion D.string)
-        (D.opFieldWithDefault "deviceName" Default.deviceName D.string)
-        (D.opFieldWithDefault "syncTime" Default.syncTime D.int)
+    Json.decode coder
 
 
 {-| Encode the settings into a JSON value.
 -}
-encode : Settings -> E.Value
-encode settings =
-    let
-        differentFrom : b -> b -> Maybe b
-        differentFrom defaultValue currentValue =
-            if currentValue == defaultValue then
-                Nothing
-
-            else
-                Just currentValue
-    in
-    E.maybeObject
-        [ ( "currentVersion"
-          , settings.currentVersion
-                |> differentFrom Default.currentVersion
-                |> Maybe.map E.string
-          )
-        , ( "deviceName"
-          , settings.deviceName
-                |> differentFrom Default.deviceName
-                |> Maybe.map E.string
-          )
-        , ( "syncTime"
-          , settings.syncTime
-                |> differentFrom Default.syncTime
-                |> Maybe.map E.int
-          )
-        ]
+encode : Json.Encoder Settings
+encode =
+    Json.encode coder
 
 
 {-| Create a new Settings module based on default values
