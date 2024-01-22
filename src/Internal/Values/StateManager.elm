@@ -93,6 +93,8 @@ cleanKey key (StateManager manager) =
         |> StateManager
 
 
+{-| Define how a StateManager can be encoded to and decoded from a JSON object.
+-}
 coder : Json.Coder StateManager
 coder =
     Event.coder

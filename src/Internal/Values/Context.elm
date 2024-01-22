@@ -95,6 +95,8 @@ apiFormat context =
         }
 
 
+{-| Define how a Context can be encoded to and decoded from a JSON object.
+-}
 coder : Json.Coder Context
 coder =
     Json.object7

@@ -4,7 +4,7 @@ module Internal.Values.Envelope exposing
     , Settings, mapSettings, extractSettings
     , mapContext
     , getContent, extract
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-| The Envelope module wraps existing data types with lots of values and
@@ -68,6 +68,8 @@ type alias Settings =
     Settings.Settings
 
 
+{-| Define how an Envelope can be encoded to and decoded from a JSON object.
+-}
 coder : Json.Coder a -> Json.Coder (Envelope a)
 coder c1 =
     Json.object3

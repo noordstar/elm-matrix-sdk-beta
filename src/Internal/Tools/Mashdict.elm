@@ -93,6 +93,8 @@ type Mashdict a
         }
 
 
+{-| Define how a Mashdict can be encoded to and decoded from a JSON object.
+-}
 coder : (a -> Maybe String) -> Json.Coder a -> Json.Coder (Mashdict a)
 coder f c1 =
     Json.andThen

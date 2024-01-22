@@ -1,12 +1,11 @@
 module Internal.Tools.Json exposing
     ( Coder, string, bool, int, float, value
     , Encoder, encode, Decoder, decode, Value
-    , succeed, fail, andThen, lazy
+    , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
     , list, slowDict, fastDict, maybe
     , Field, field
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
-    , map
     )
 
 {-|
@@ -40,7 +39,7 @@ module to build its encoders and decoders.
 
 ## Optional coding
 
-@docs succeed, fail, andThen, lazy
+@docs succeed, fail, andThen, lazy, map
 
 
 ## Documentation
@@ -176,6 +175,8 @@ type RequiredField
     | OptionalFieldWithDefault String
 
 
+{-| Represents an arbitary JavaScript value.
+-}
 type alias Value =
     E.Value
 
@@ -424,6 +425,8 @@ int =
         }
 
 
+{-| Define a lazy coder. This is useful when defining recursive structures.
+-}
 lazy : (() -> Coder value) -> Coder value
 lazy f =
     Coder
@@ -1144,6 +1147,9 @@ toEncodeField (Field data) =
     ( data.fieldName, data.toField >> data.encoder )
 
 
+{-| Do not do anything useful with a JSON value, just bring it to Elm as a
+JavaScript value.
+-}
 value : Coder Value
 value =
     Coder

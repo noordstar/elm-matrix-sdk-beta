@@ -39,6 +39,8 @@ type alias Settings =
     }
 
 
+{-| Define how a Settings type can be encoded to and decoded from a JSON object.
+-}
 coder : Json.Coder Settings
 coder =
     Json.object3

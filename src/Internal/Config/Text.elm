@@ -190,10 +190,9 @@ failures =
     }
 
 
-
--- TODO
-
-
+{-| Objects contain multiple fields. These fields are here described, explaining
+what they do and what they are for.
+-}
 fields :
     { context :
         { accessToken : Desc
@@ -270,11 +269,17 @@ fields =
     }
 
 
+{-| This message will be shown when a [Hashdict](Internal-Tools-Hashdict)
+encounters a hash-value pair where the value does not hash to the provided hash.
+-}
 invalidHashInHashdict : String
 invalidHashInHashdict =
     "Invalid hash function: not all elements hash to their JSON-stored hashes"
 
 
+{-| This message will be shown when a [Mashdict](Internal-Tools-Mashdict)
+encounters a hash-value pair where the value does not hash to the provided hash.
+-}
 invalidHashInMashdict : String
 invalidHashInMashdict =
     "Invalid hash function: not all elements hash to their JSON-stored hashes"

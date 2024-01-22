@@ -81,6 +81,8 @@ type Hashdict a
         }
 
 
+{-| Define how Hashdict can be encoded to and decoded from a JSON object.
+-}
 coder : (a -> String) -> Json.Coder a -> Json.Coder (Hashdict a)
 coder f c1 =
     Json.andThen
