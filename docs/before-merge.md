@@ -8,6 +8,7 @@ If you wish to merge your branch to the `develop` branch, make sure to follow th
 
 - [ ] Run `elm-format` to ensure the correct formatting of the Elm files.
 - [ ] Use `elm-doc-preview` to verify whether the documentation is up to standards.
+- [ ] Run `elm-test` to verify that all tests run successfully.
 
 ## The `develop` branch to `main`
 
@@ -17,6 +18,7 @@ Before that is being done, however, the following tasks should be done:
 
 - [ ] Run `elm-format` to ensure the correct formatting of the Elm files.
 - [ ] Use `elm-doc-preview` to verify whether the documentation is up to standards.
+- [ ] Run `elm-test --fuzz 1000` to verify that all tests run successfully.
 - [ ] Remove exposed modules from `elm.json` that do not need to be exposed modules in the release.
 - [ ] Run `elm bump` to update the library's version number
 - [ ] Update the version name in the [default values config file](../src/Internal/Config/Default.elm).
