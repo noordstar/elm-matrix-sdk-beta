@@ -6,6 +6,7 @@ module Colors exposing (..)
 import Color exposing (rgb255)
 import Element
 import Element.Background
+import Element.Border
 import Element.Font
 import Svg
 import Svg.Attributes exposing (fill)
@@ -15,8 +16,10 @@ import Widget.Material exposing (Palette)
 type alias Color =
     Color.Color
 
+
 type alias AllColors a =
     AllBlindnesses (AllModes (AllShades (AllNames a)))
+
 
 allColors : AllColors Color
 allColors =
@@ -34,9 +37,11 @@ allColors =
                 )
         )
 
+
 stdPicker : Picker
 stdPicker =
     allColors.trichromatic.lightMode
+
 
 type Name
     = Primary
@@ -47,6 +52,7 @@ type Name
     | Black
     | White
 
+
 type alias AllNames a =
     { primary : a
     , secondary : a
@@ -56,6 +62,7 @@ type alias AllNames a =
     , black : a
     , white : a
     }
+
 
 allNames : (Name -> a) -> AllNames a
 allNames builder =
@@ -68,16 +75,19 @@ allNames builder =
     , white = builder White
     }
 
+
 type Shade
     = Light
     | Medium
     | Dark
+
 
 type alias AllShades a =
     { light : a
     , medium : a
     , dark : a
     }
+
 
 allShades : (Shade -> a) -> AllShades a
 allShades builder =
@@ -86,22 +96,26 @@ allShades builder =
     , dark = builder Dark
     }
 
+
 {-| Based on the user's preferences, the website can be displayed in light mode or dark mode.
 -}
 type Mode
     = LightMode
     | DarkMode
 
+
 type alias AllModes a =
     { lightMode : a
     , darkMode : a
     }
+
 
 allModes : (Mode -> a) -> AllModes a
 allModes builder =
     { lightMode = builder LightMode
     , darkMode = builder DarkMode
     }
+
 
 {-| The website supports color blindness friendly color palettes.
 This way, everyone can enjoy the website's graphs without having to distinguish
@@ -118,6 +132,7 @@ type Blindness
     | Monochromacy -- NO COLOR
     | BlueConeMonochromacy -- BARELY COLOR
 
+
 type alias AllBlindnesses a =
     { trichromatic : a
     , protanomaly : a
@@ -129,6 +144,7 @@ type alias AllBlindnesses a =
     , monochromacy : a
     , blueConeMonochromacy : a
     }
+
 
 allBlindnesses : (Blindness -> a) -> AllBlindnesses a
 allBlindnesses builder =
@@ -142,6 +158,7 @@ allBlindnesses builder =
     , monochromacy = builder Monochromacy
     , blueConeMonochromacy = builder BlueConeMonochromacy
     }
+
 
 type alias Picker =
     AllShades (AllNames Color)
@@ -485,6 +502,11 @@ svgStroke =
 font : Color -> Element.Attribute msg
 font =
     Color.toRgba >> Element.fromRgb >> Element.Font.color
+
+
+border : Color -> Element.Attribute msg
+border =
+    Color.toRgba >> Element.fromRgb >> Element.Border.color
 
 
 background : Color -> Element.Attribute msg

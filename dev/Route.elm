@@ -18,6 +18,19 @@ toRoute url =
     P.parse routeParser url |> Maybe.withDefault NotFound
 
 
+toPath : Route -> String
+toPath route =
+    case route of
+        Home ->
+            "/"
+
+        NotFound ->
+            "/"
+
+        ViewObject o ->
+            "/object/" ++ o
+
+
 toString : Route -> String
 toString route =
     case route of
@@ -41,7 +54,7 @@ routeParser =
         , P.s "index"
             |> P.map Home
         , P.s "dev"
-            </> (P.s "Main.elm")
+            </> P.s "Main.elm"
             |> P.map Home
         , P.s "object"
             </> P.string
