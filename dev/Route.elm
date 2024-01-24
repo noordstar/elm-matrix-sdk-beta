@@ -49,12 +49,17 @@ routeParser =
     P.oneOf
         [ P.top
             |> P.map Home
+        , P.s "elm-matrix-sdk-beta"
+            |> P.map Home
         , P.s "home"
             |> P.map Home
         , P.s "index"
             |> P.map Home
         , P.s "dev"
             </> P.s "Main.elm"
+            |> P.map Home
+        , P.s "elm-matrix-sdk-beta"
+            </> P.top
             |> P.map Home
         , P.s "object"
             </> P.string

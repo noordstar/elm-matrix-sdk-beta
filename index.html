@@ -6021,6 +6021,10 @@ var $author$project$Route$routeParser = $elm$url$Url$Parser$oneOf(
 			A2(
 			$elm$url$Url$Parser$map,
 			$author$project$Route$Home,
+			$elm$url$Url$Parser$s('elm-matrix-sdk-beta')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Home,
 			$elm$url$Url$Parser$s('home')),
 			A2(
 			$elm$url$Url$Parser$map,
@@ -6033,6 +6037,13 @@ var $author$project$Route$routeParser = $elm$url$Url$Parser$oneOf(
 				$elm$url$Url$Parser$slash,
 				$elm$url$Url$Parser$s('dev'),
 				$elm$url$Url$Parser$s('Main.elm'))),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Home,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('elm-matrix-sdk-beta'),
+				$elm$url$Url$Parser$top)),
 			A2(
 			$elm$url$Url$Parser$map,
 			$author$project$Route$ViewObject,
