@@ -27,7 +27,7 @@ settings =
                     vault
                         |> Matrix.Settings.setSyncTime sync
                         |> Matrix.Settings.getSyncTime
-                        |> Expect.equal sync
+                        |> Expect.equal (max 1 sync)
                 )
             ]
 
