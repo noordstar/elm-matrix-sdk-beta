@@ -26,7 +26,7 @@ suite =
                         |> Timestamp.encode
                         |> E.encode indent
                         |> D.decodeString Timestamp.decoder
-                        |> Expect.equal (Ok time)
+                        |> Expect.equal (Ok ( time, [] ))
                 )
             , fuzz fuzzer
                 "JSON decode -> millis"
@@ -42,7 +42,7 @@ suite =
                     n
                         |> E.int
                         |> D.decodeValue Timestamp.decoder
-                        |> Expect.equal (Ok <| Time.millisToPosix n)
+                        |> Expect.equal (Ok ( Time.millisToPosix n, [] ))
                 )
             ]
         , describe "Identity"

@@ -4,7 +4,7 @@ module Internal.Tools.Hashdict exposing
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
     , rehash, union, map
-    , encode, decoder, softDecoder
+    , coder, encode, decoder, softDecoder
     )
 
 {-| This module abstracts the `Dict` type with one function that assigns a
@@ -40,13 +40,14 @@ This allows you to store values based on an externally defined identifier.
 
 ## JSON coders
 
-@docs encode, decoder, softDecoder
+@docs coder, encode, decoder, softDecoder
 
 -}
 
 import FastDict as Dict exposing (Dict)
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Config.Log as Log
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 
 
 {-| A dictionary of keys and values where each key is defined by its value. For
@@ -80,25 +81,43 @@ type Hashdict a
         }
 
 
+{-| Define how Hashdict can be encoded to and decoded from a JSON object.
+-}
+coder : (a -> String) -> Json.Coder a -> Json.Coder (Hashdict a)
+coder f c1 =
+    Json.andThen
+        { name = Text.docs.hashdict.name
+        , description = Text.docs.hashdict.description
+        , forth =
+            -- TODO: Implement fastDictWithFilter function
+            \items ->
+                case List.filter (\( k, v ) -> f v /= k) (Dict.toList items) of
+                    [] ->
+                        { hash = f, values = items }
+                            |> Hashdict
+                            |> Json.succeed
+                            |> (|>) []
+
+                    wrongHashes ->
+                        wrongHashes
+                            |> List.map Tuple.first
+                            |> List.map ((++) "Invalid hash")
+                            |> List.map Log.log.error
+                            |> Json.fail Text.invalidHashInHashdict
+        , back = \(Hashdict h) -> h.values
+        , failure =
+            Text.failures.hashdict
+        }
+        (Json.fastDict c1)
+
+
 {-| Decode a hashdict from a JSON value. To create a hashdict, you are expected
 to insert a hash function. If the hash function doesn't properly hash the values
 as expected, the decoder will fail to decode the hashdict.
 -}
-decoder : (a -> String) -> D.Decoder a -> D.Decoder (Hashdict a)
-decoder f xDecoder =
-    D.keyValuePairs xDecoder
-        |> D.andThen
-            (\items ->
-                if List.all (\( hash, value ) -> f value == hash) items then
-                    items
-                        |> Dict.fromList
-                        |> (\d -> { hash = f, values = d })
-                        |> Hashdict
-                        |> D.succeed
-
-                else
-                    D.fail "Hash function fails to properly hash all values"
-            )
+decoder : (a -> String) -> Json.Coder a -> Json.Decoder (Hashdict a)
+decoder f c1 =
+    Json.decode (coder f c1)
 
 
 {-| Create an empty hashdict.
@@ -112,12 +131,9 @@ empty hash =
 cannot be universally converted to JSON, so it is up to you to preserve that
 hash function!
 -}
-encode : (a -> E.Value) -> Hashdict a -> E.Value
-encode encodeX (Hashdict h) =
-    h.values
-        |> Dict.toList
-        |> List.map (Tuple.mapSecond encodeX)
-        |> E.object
+encode : Json.Coder a -> Json.Encoder (Hashdict a)
+encode c1 (Hashdict h) =
+    Json.encode (coder h.hash c1) (Hashdict h)
 
 
 {-| Convert an association list into a hashdict.
@@ -268,10 +284,20 @@ size (Hashdict h) =
 used hash function, (or if you simply do not care) you can use this function to
 decode and rehash the Hashdict using your new hash function.
 -}
-softDecoder : (a -> String) -> D.Decoder a -> D.Decoder (Hashdict a)
-softDecoder f xDecoder =
-    D.keyValuePairs xDecoder
-        |> D.map (List.map Tuple.second >> fromList f)
+softDecoder : (a -> String) -> Json.Coder a -> Json.Decoder (Hashdict a)
+softDecoder f c1 =
+    c1
+        |> Json.fastDict
+        |> Json.map
+            { name = Text.docs.hashdict.name
+            , description = Text.docs.hashdict.description
+            , forth =
+                \items ->
+                    Hashdict { hash = f, values = items }
+                        |> rehash f
+            , back = \(Hashdict h) -> h.values
+            }
+        |> Json.decode
 
 
 {-| Convert a hashdict into an association list of key-value pairs, sorted by

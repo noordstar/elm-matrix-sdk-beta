@@ -1,7 +1,7 @@
 module Internal.Values.Event exposing
     ( Event
     , UnsignedData(..), age, prevContent, redactedBecause, transactionId
-    , encode, decoder
+    , coder, encode, decoder
     , isEqual
     )
 
@@ -23,7 +23,7 @@ of a room.
 
 ## JSON Coder
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 
 ## Test functions
@@ -32,18 +32,15 @@ of a room.
 
 -}
 
-import Internal.Config.Default as Default
-import Internal.Tools.Decode as D
-import Internal.Tools.Encode as E
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
-import Json.Decode as D
-import Json.Encode as E
 
 
 {-| The Event type occurs everywhere on a user's timeline.
 -}
 type alias Event =
-    { content : E.Value
+    { content : Json.Value
     , eventId : String
     , originServerTs : Timestamp
     , roomId : String
@@ -60,7 +57,7 @@ helper functions.
 type UnsignedData
     = UnsignedData
         { age : Maybe Int
-        , prevContent : Maybe E.Value
+        , prevContent : Maybe Json.Value
         , redactedBecause : Maybe Event
         , transactionId : Maybe String
         }
@@ -73,59 +70,147 @@ age event =
     Maybe.andThen (\(UnsignedData data) -> data.age) event.unsigned
 
 
+{-| Define how an Event can be encoded to and decoded from a JSON object.
+-}
+coder : Json.Coder Event
+coder =
+    Json.object8
+        { name = Text.docs.event.name
+        , description = Text.docs.event.description
+        , init = Event
+        }
+        (Json.field.required
+            { fieldName = "content"
+            , toField = .content
+            , description = Text.fields.event.content
+            , coder = Json.value
+            }
+        )
+        (Json.field.required
+            { fieldName = "eventId"
+            , toField = .eventId
+            , description = Text.fields.event.eventId
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            { fieldName = "originServerTs"
+            , toField = .originServerTs
+            , description = Text.fields.event.originServerTs
+            , coder = Timestamp.coder
+            }
+        )
+        (Json.field.required
+            { fieldName = "roomId"
+            , toField = .roomId
+            , description = Text.fields.event.roomId
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            { fieldName = "sender"
+            , toField = .sender
+            , description = Text.fields.event.sender
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "stateKey"
+            , toField = .stateKey
+            , description = Text.fields.event.stateKey
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            -- NOTE! | In JSON we call it `type`, not `eventType`,
+            -- NOTE! | so that the data is easier to read for other non-Elm
+            -- NOTE! | JSON parsers
+            { fieldName = "type"
+            , toField = .eventType
+            , description = Text.fields.event.eventType
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "unsigned"
+            , toField = .unsigned
+            , description = Text.fields.event.unsigned
+            , coder = unsignedCoder
+            }
+        )
+
+
 {-| Decode an Event from a JSON value.
 -}
-decoder : D.Decoder Event
+decoder : Json.Decoder Event
 decoder =
-    D.map8 Event
-        (D.field "content" D.value)
-        (D.field "eventId" D.string)
-        (D.field "originServerTs" Timestamp.decoder)
-        (D.field "roomId" D.string)
-        (D.field "sender" D.string)
-        (D.opField "stateKey" D.string)
-        (D.field "eventType" D.string)
-        (D.opField "unsigned" decoderUnsignedData)
-
-
-{-| Decode Unsigned Data from a JSON value.
--}
-decoderUnsignedData : D.Decoder UnsignedData
-decoderUnsignedData =
-    D.map4 (\a b c d -> UnsignedData { age = a, prevContent = b, redactedBecause = c, transactionId = d })
-        (D.opField "age" D.int)
-        (D.opField "prevContent" D.value)
-        (D.opField "redactedBecause" (D.lazy (\_ -> decoder)))
-        (D.opField "transactionId" D.string)
+    Json.decode coder
 
 
 {-| Encode an Event into a JSON value.
 -}
-encode : Event -> E.Value
-encode event =
-    E.maybeObject
-        [ ( "content", Just event.content )
-        , ( "eventId", Just <| E.string event.eventId )
-        , ( "originServerTs", Just <| Timestamp.encode event.originServerTs )
-        , ( "roomId", Just <| E.string event.roomId )
-        , ( "sender", Just <| E.string event.sender )
-        , ( "stateKey", Maybe.map E.string event.stateKey )
-        , ( "eventType", Just <| E.string event.eventType )
-        , ( "unsigned", Maybe.map encodeUnsignedData event.unsigned )
-        , ( "version", Just <| E.string Default.currentVersion )
-        ]
+encode : Json.Encoder Event
+encode =
+    Json.encode coder
 
 
-{-| Encode Unsigned Data into a JSON value.
+{-| Compare two events and determine whether they're identical. Used mostly for
+testing purposes.
 -}
-encodeUnsignedData : UnsignedData -> E.Value
-encodeUnsignedData (UnsignedData data) =
-    E.maybeObject
-        [ ( "age", Maybe.map E.int data.age )
-        , ( "prevContent", data.prevContent )
-        , ( "redactedBecause", Maybe.map encode data.redactedBecause )
-        , ( "transactionId", Maybe.map E.string data.transactionId )
-        ]
+isEqual : Event -> Event -> Bool
+isEqual e1 e2 =
+    if e1.eventId /= e2.eventId then
+        False
+
+    else if e1.originServerTs /= e2.originServerTs then
+        False
+
+    else if e1.roomId /= e2.roomId then
+        False
+
+    else if e1.sender /= e2.sender then
+        False
+
+    else if e1.stateKey /= e2.stateKey then
+        False
+
+    else if e1.eventType /= e2.eventType then
+        False
+
+    else
+        case ( e1.unsigned, e2.unsigned ) of
+            ( Nothing, Nothing ) ->
+                True
+
+            ( Just _, Nothing ) ->
+                False
+
+            ( Nothing, Just _ ) ->
+                False
+
+            ( Just (UnsignedData d1), Just (UnsignedData d2) ) ->
+                if d1.age /= d2.age then
+                    False
+
+                else if d1.transactionId /= d2.transactionId then
+                    False
+
+                else if Maybe.map (E.encode 0) d1.prevContent /= Maybe.map (E.encode 0) d2.prevContent then
+                    False
+
+                else
+                    case ( d1.redactedBecause, d2.redactedBecause ) of
+                        ( Nothing, Nothing ) ->
+                            True
+
+                        ( Nothing, Just _ ) ->
+                            False
+
+                        ( Just _, Nothing ) ->
+                            False
+
+                        ( Just se1, Just se2 ) ->
+                            isEqual se1 se2
 
 
 {-| Compare two events and determine whether they're identical. Used mostly for
@@ -191,7 +276,7 @@ isEqual e1 e2 =
 `Just value` if the event is a state event, and the Matrix Vault has permission
 to see the previous content.
 -}
-prevContent : Event -> Maybe E.Value
+prevContent : Event -> Maybe Json.Value
 prevContent event =
     Maybe.andThen (\(UnsignedData data) -> data.prevContent) event.unsigned
 
@@ -210,3 +295,40 @@ display the original transaction id used for the event.
 transactionId : Event -> Maybe String
 transactionId event =
     Maybe.andThen (\(UnsignedData data) -> data.transactionId) event.unsigned
+
+
+unsignedCoder : Json.Coder UnsignedData
+unsignedCoder =
+    Json.object4
+        { name = Text.docs.unsigned.name
+        , description = Text.docs.unsigned.description
+        , init = \a b c d -> UnsignedData { age = a, prevContent = b, redactedBecause = c, transactionId = d }
+        }
+        (Json.field.optional.value
+            { fieldName = "age"
+            , toField = \(UnsignedData data) -> data.age
+            , description = Text.fields.unsigned.age
+            , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "prevContent"
+            , toField = \(UnsignedData data) -> data.prevContent
+            , description = Text.fields.unsigned.prevContent
+            , coder = Json.value
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "redactedBecause"
+            , toField = \(UnsignedData data) -> data.redactedBecause
+            , description = Text.fields.unsigned.redactedBecause
+            , coder = Json.lazy (\_ -> coder)
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "transactionId"
+            , toField = \(UnsignedData data) -> data.transactionId
+            , description = Text.fields.unsigned.transactionId
+            , coder = Json.string
+            }
+        )

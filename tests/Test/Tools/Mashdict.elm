@@ -2,6 +2,7 @@ module Test.Tools.Mashdict exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
+import Internal.Tools.Json as Json
 import Internal.Tools.Mashdict as Mashdict exposing (Mashdict)
 import Internal.Values.Event as Event
 import Json.Decode as D
@@ -93,11 +94,11 @@ suite =
                 "JSON encode -> JSON decode"
                 (\indent ->
                     Mashdict.empty Just
-                        |> Mashdict.encode E.string
+                        |> Json.encode (Mashdict.coder Just Json.string)
                         |> E.encode indent
-                        |> D.decodeString (Mashdict.decoder Just D.string)
-                        |> Result.map (Mashdict.isEqual (Mashdict.empty Just))
-                        |> Expect.equal (Ok True)
+                        |> D.decodeString (Json.decode <| Mashdict.coder Just Json.string)
+                        |> Result.map (Tuple.mapFirst <| Mashdict.isEqual (Mashdict.empty Just))
+                        |> Expect.equal (Ok ( True, [] ))
                 )
             ]
         , describe "singleton"
@@ -194,11 +195,11 @@ suite =
                 "JSON encode -> JSON decode"
                 (\hashdict indent ->
                     hashdict
-                        |> Mashdict.encode Event.encode
+                        |> Json.encode (Mashdict.coder .stateKey Event.coder)
                         |> E.encode indent
-                        |> D.decodeString (Mashdict.decoder .stateKey Event.decoder)
-                        |> Result.map Mashdict.toList
-                        |> Expect.equal (Ok <| Mashdict.toList hashdict)
+                        |> D.decodeString (Json.decode <| Mashdict.coder .stateKey Event.coder)
+                        |> Result.map (Tuple.mapFirst Mashdict.toList)
+                        |> Expect.equal (Ok ( Mashdict.toList hashdict, [] ))
                 )
             ]
         ]
