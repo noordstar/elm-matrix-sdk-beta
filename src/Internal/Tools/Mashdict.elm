@@ -4,7 +4,7 @@ module Internal.Tools.Mashdict exposing
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
     , rehash, union
-    , encode, decoder, softDecoder
+    , coder, encode, decoder, softDecoder
     )
 
 {-|
@@ -48,13 +48,14 @@ In general, you are advised to learn more about the
 
 ## JSON coders
 
-@docs encode, decoder, softDecoder
+@docs coder, encode, decoder, softDecoder
 
 -}
 
 import FastDict as Dict exposing (Dict)
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Config.Log as Log
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 
 
 {-| A dictionary of keys and values where each key is defined by its value, but
@@ -92,25 +93,41 @@ type Mashdict a
         }
 
 
+{-| Define how a Mashdict can be encoded to and decoded from a JSON object.
+-}
+coder : (a -> Maybe String) -> Json.Coder a -> Json.Coder (Mashdict a)
+coder f c1 =
+    Json.andThen
+        { name = Text.docs.mashdict.name
+        , description = Text.docs.mashdict.description
+        , forth =
+            \items ->
+                case List.filter (\( k, v ) -> f v /= Just k) (Dict.toList items) of
+                    [] ->
+                        { hash = f, values = items }
+                            |> Mashdict
+                            |> Json.succeed
+                            |> (|>) []
+
+                    wrongHashes ->
+                        wrongHashes
+                            |> List.map Tuple.first
+                            |> List.map ((++) "Invalid hash")
+                            |> List.map Log.log.error
+                            |> Json.fail Text.invalidHashInMashdict
+        , back = \(Mashdict h) -> h.values
+        , failure = Text.failures.mashdict
+        }
+        (Json.fastDict c1)
+
+
 {-| Decode a mashdict from a JSON value. To create a mashdict, you are expected
 to insert a hash function. If the hash function doesn't properly hash the values
 as expected, the decoder will fail to decode the mashdict.
 -}
-decoder : (a -> Maybe String) -> D.Decoder a -> D.Decoder (Mashdict a)
-decoder f xDecoder =
-    D.keyValuePairs xDecoder
-        |> D.andThen
-            (\items ->
-                if List.all (\( hash, value ) -> f value == Just hash) items then
-                    items
-                        |> Dict.fromList
-                        |> (\d -> { hash = f, values = d })
-                        |> Mashdict
-                        |> D.succeed
-
-                else
-                    D.fail "Hash function fails to properly hash all values"
-            )
+decoder : (a -> Maybe String) -> Json.Coder a -> Json.Decoder (Mashdict a)
+decoder f c1 =
+    Json.decode (coder f c1)
 
 
 {-| Create an empty mashdict.
@@ -124,12 +141,9 @@ empty hash =
 cannot be universally converted to JSON, so it is up to you to preserve that
 hash function!
 -}
-encode : (a -> E.Value) -> Mashdict a -> E.Value
-encode encodeX (Mashdict h) =
-    h.values
-        |> Dict.toList
-        |> List.map (Tuple.mapSecond encodeX)
-        |> E.object
+encode : Json.Coder a -> Json.Encoder (Mashdict a)
+encode c1 (Mashdict h) =
+    Json.encode (coder h.hash c1) (Mashdict h)
 
 
 {-| Convert an association list into a mashdict.
@@ -266,10 +280,20 @@ size (Mashdict h) =
 used hash function, (or if you simply do not care) you can use this function to
 decode and rehash the Mashdict using your new hash function.
 -}
-softDecoder : (a -> Maybe String) -> D.Decoder a -> D.Decoder (Mashdict a)
-softDecoder f xDecoder =
-    D.keyValuePairs xDecoder
-        |> D.map (List.map Tuple.second >> fromList f)
+softDecoder : (a -> Maybe String) -> Json.Coder a -> Json.Decoder (Mashdict a)
+softDecoder f c1 =
+    c1
+        |> Json.fastDict
+        |> Json.map
+            { name = Text.docs.hashdict.name
+            , description = Text.docs.hashdict.description
+            , forth =
+                \items ->
+                    Mashdict { hash = f, values = items }
+                        |> rehash f
+            , back = \(Mashdict h) -> h.values
+            }
+        |> Json.decode
 
 
 {-| Convert a mashdict into an association list of key-value pairs, sorted by

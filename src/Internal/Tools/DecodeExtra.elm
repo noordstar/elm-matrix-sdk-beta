@@ -1,4 +1,4 @@
-module Internal.Tools.Decode exposing
+module Internal.Tools.DecodeExtra exposing
     ( opField, opFieldWithDefault
     , map9, map10, map11
     )

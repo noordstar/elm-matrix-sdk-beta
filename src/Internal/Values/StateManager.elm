@@ -3,7 +3,7 @@ module Internal.Values.StateManager exposing
     , empty, singleton, insert, remove, append
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, fromList, toList
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-| The StateManager tracks the room state based on events, their event types
@@ -34,15 +34,15 @@ dictionary-like experience to navigate through the Matrix room state.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
 import FastDict as Dict exposing (Dict)
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 import Internal.Tools.Mashdict as Mashdict exposing (Mashdict)
 import Internal.Values.Event as Event exposing (Event)
-import Json.Decode as D
-import Json.Encode as E
 
 
 {-| The StateManager manages the room state by gathering events and looking at
@@ -93,15 +93,26 @@ cleanKey key (StateManager manager) =
         |> StateManager
 
 
+{-| Define how a StateManager can be encoded to and decoded from a JSON object.
+-}
+coder : Json.Coder StateManager
+coder =
+    Event.coder
+        |> Mashdict.coder .stateKey
+        |> Json.fastDict
+        |> Json.map
+            { name = Text.docs.stateManager.name
+            , description = Text.docs.stateManager.description
+            , forth = StateManager
+            , back = \(StateManager manager) -> manager
+            }
+
+
 {-| Decode a StateManager from a JSON value.
 -}
-decoder : D.Decoder StateManager
+decoder : Json.Decoder StateManager
 decoder =
-    Event.decoder
-        |> Mashdict.decoder .stateKey
-        |> D.keyValuePairs
-        |> D.map Dict.fromList
-        |> D.map StateManager
+    Json.decode coder
 
 
 {-| Create an empty StateManager.
@@ -113,11 +124,9 @@ empty =
 
 {-| Encode a StateManager into a JSON value.
 -}
-encode : StateManager -> E.Value
-encode (StateManager manager) =
-    manager
-        |> Dict.toCoreDict
-        |> E.dict identity (Mashdict.encode Event.encode)
+encode : Json.Encoder StateManager
+encode =
+    Json.encode coder
 
 
 {-| Build a StateManager using a list of events.
