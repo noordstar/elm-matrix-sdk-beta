@@ -35,6 +35,7 @@ of a room.
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
+import Json.Encode as E
 
 
 {-| The Event type occurs everywhere on a user's timeline.
@@ -152,65 +153,6 @@ decoder =
 encode : Json.Encoder Event
 encode =
     Json.encode coder
-
-
-{-| Compare two events and determine whether they're identical. Used mostly for
-testing purposes.
--}
-isEqual : Event -> Event -> Bool
-isEqual e1 e2 =
-    if e1.eventId /= e2.eventId then
-        False
-
-    else if e1.originServerTs /= e2.originServerTs then
-        False
-
-    else if e1.roomId /= e2.roomId then
-        False
-
-    else if e1.sender /= e2.sender then
-        False
-
-    else if e1.stateKey /= e2.stateKey then
-        False
-
-    else if e1.eventType /= e2.eventType then
-        False
-
-    else
-        case ( e1.unsigned, e2.unsigned ) of
-            ( Nothing, Nothing ) ->
-                True
-
-            ( Just _, Nothing ) ->
-                False
-
-            ( Nothing, Just _ ) ->
-                False
-
-            ( Just (UnsignedData d1), Just (UnsignedData d2) ) ->
-                if d1.age /= d2.age then
-                    False
-
-                else if d1.transactionId /= d2.transactionId then
-                    False
-
-                else if Maybe.map (E.encode 0) d1.prevContent /= Maybe.map (E.encode 0) d2.prevContent then
-                    False
-
-                else
-                    case ( d1.redactedBecause, d2.redactedBecause ) of
-                        ( Nothing, Nothing ) ->
-                            True
-
-                        ( Nothing, Just _ ) ->
-                            False
-
-                        ( Just _, Nothing ) ->
-                            False
-
-                        ( Just se1, Just se2 ) ->
-                            isEqual se1 se2
 
 
 {-| Compare two events and determine whether they're identical. Used mostly for
