@@ -61,7 +61,7 @@ suite =
             , test "JSON decode {} is init"
                 ("{}"
                     |> D.decodeString Settings.decoder
-                    |> Expect.equal (Ok Settings.init)
+                    |> Expect.equal (Ok ( Settings.init, [] ))
                     |> always
                 )
             ]
@@ -74,7 +74,7 @@ suite =
                         |> Settings.encode
                         |> E.encode indent
                         |> D.decodeString Settings.decoder
-                        |> Expect.equal (Ok settings)
+                        |> Expect.equal (Ok ( settings, [] ))
                 )
             ]
         ]

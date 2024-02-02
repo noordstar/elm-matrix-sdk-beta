@@ -84,7 +84,7 @@ suite =
                     |> StateManager.encode
                     |> E.encode 0
                     |> D.decodeString StateManager.decoder
-                    |> Expect.equal (Ok StateManager.empty)
+                    |> Expect.equal (Ok ( StateManager.empty, [] ))
                     |> always
                 )
             ]

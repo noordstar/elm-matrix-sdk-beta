@@ -1,6 +1,6 @@
 module Internal.Tools.Timestamp exposing
     ( Timestamp
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-| The Timestamp module is a simplification of the Timestamp as delivered by
@@ -14,12 +14,11 @@ elm/time. This module offers ways to work with the timestamp in meaningful ways.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Tools.Json as Json
 import Time
 
 
@@ -29,15 +28,30 @@ type alias Timestamp =
     Time.Posix
 
 
+{-| Create a Json coder
+-}
+coder : Json.Coder Timestamp
+coder =
+    Json.map
+        { back = Time.posixToMillis
+        , forth = Time.millisToPosix
+        , name = "Milliseconds to POSIX"
+        , description =
+            [ "Converts the timestamp from milliseconds to a POSIX timestamp."
+            ]
+        }
+        Json.int
+
+
 {-| Encode a timestamp into a JSON value.
 -}
-encode : Timestamp -> E.Value
+encode : Json.Encoder Timestamp
 encode =
-    Time.posixToMillis >> E.int
+    Json.encode coder
 
 
 {-| Decode a timestamp from a JSON value.
 -}
-decoder : D.Decoder Timestamp
+decoder : Json.Decoder Timestamp
 decoder =
-    D.map Time.millisToPosix D.int
+    Json.decode coder

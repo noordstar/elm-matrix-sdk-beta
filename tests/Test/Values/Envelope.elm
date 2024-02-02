@@ -3,6 +3,7 @@ module Test.Values.Envelope exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Config.Default as Default
+import Internal.Tools.Json as Json
 import Internal.Values.Envelope as Envelope exposing (Envelope)
 import Json.Decode as D
 import Json.Encode as E
@@ -56,10 +57,10 @@ suite =
                 "JSON encode -> JSON decode"
                 (\envelope indent ->
                     envelope
-                        |> Envelope.encode E.string
+                        |> Envelope.encode Json.string
                         |> E.encode indent
-                        |> D.decodeString (Envelope.decoder D.string)
-                        |> Expect.equal (Ok envelope)
+                        |> D.decodeString (Envelope.decoder Json.string)
+                        |> Expect.equal (Ok ( envelope, [] ))
                 )
             ]
         ]

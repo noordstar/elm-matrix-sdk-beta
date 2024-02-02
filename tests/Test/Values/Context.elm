@@ -138,6 +138,6 @@ json =
                 context
                     |> Context.encode
                     |> D.decodeValue Context.decoder
-                    |> Expect.equal (Ok context)
+                    |> Expect.equal (Ok ( context, [] ))
             )
         ]

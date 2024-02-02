@@ -1,4 +1,4 @@
-module Internal.Tools.Encode exposing (maybeObject)
+module Internal.Tools.EncodeExtra exposing (maybeObject)
 
 {-|
 
