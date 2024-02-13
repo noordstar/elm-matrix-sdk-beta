@@ -106,3 +106,33 @@ overlapping timeline batches have overlapping events. If they overlap yet have
 no overlapping events, then their filters must be disjoint. If the filters are
 disjoint, we do not care whether they're overlapping.
 
+### Challenge 2: same filters, same spot
+
+Suppose there is a known timeline batch, and we're trying to **Update** the
+timeline to represent the timeline between `<token_1>` and `<token_2>` for a
+different filter:
+
+```
+       |-->[■]->[■]->[●]->[■]->[■]->[●]-->|
+       |                                  |
+       |<---   filter: only ■ and ●   --->|
+       |                                  |
+     start:                              end:
+    <token_1>                          <token_2>
+```
+
+If we wish to know what's in there for a different filter `f`, then:
+
+1. If `f` equals the filter from the timeline batch, we can copy the events.
+2. If `f` is a subfilter of the batch filter (for example: `only ■`) then we can
+    copy the events from the given batch, and then locally filter the events
+    that do no match filter `f`.
+3. If the batch filter is a subfilter of `f`, then we can use an API call
+    between the same batch tokens `<token_1>` and `<token_2>`. In the worst
+    case, we receive the exact same list of events. In another scenario, we
+    might discover far more events and receive some new batch value `<token_3>`
+    in-between `<token_1>` and `<token_2>`.
+4. If neither filter is a subfilter of the other and the two are (at least
+    partially) disjoint, then they do not need to correlate and any other batch
+    values can be chosen.
+
