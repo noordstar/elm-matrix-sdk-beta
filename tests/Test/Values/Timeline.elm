@@ -21,7 +21,7 @@ fuzzer =
                             List.foldl
                                 (\b ( s, f ) ->
                                     ( b.end
-                                    , f >> Timeline.addSync { b | start = Just s, filter = globalFilter }
+                                    , f >> Timeline.insert { b | start = Just s, filter = globalFilter }
                                     )
                                 )
                                 ( start, identity )
@@ -59,41 +59,159 @@ fuzzerBatch =
         Fuzz.string
 
 
-isEqual : Timeline -> Timeline -> Expect.Expectation
-isEqual t1 t2 =
-    Expect.equal
-        (E.encode 0 <| Timeline.encode t1)
-        (E.encode 0 <| Timeline.encode t2)
-
-
 suite : Test
 suite =
     describe "Timeline"
-        [ describe "empty"
-            [ fuzz fuzzerBatch
-                "singleton = empty + sync"
-                (\batch ->
-                    isEqual
-                        (Timeline.singleton batch)
-                        (Timeline.addSync batch Timeline.empty)
+        [ describe "most recent events with filters"
+            [ fuzz TestFilter.fuzzer
+                "Events are returned properly"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = filter
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_3"
+                        |> Expect.equal
+                            [ [ "a", "b", "c", "d", "e", "f" ] ]
+                )
+            , fuzz2 TestFilter.fuzzer
+                TestFilter.fuzzer
+                "Sub-events get the same results"
+                (\f1 f2 ->
+                    let
+                        subFilter =
+                            Filter.and f1 f2
+                    in
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = f1
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = f1
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEventsFrom subFilter "token_3"
+                        |> Expect.equal
+                            [ [ "a", "b", "c", "d", "e", "f" ] ]
+                )
+            , fuzz2 TestFilter.fuzzer
+                TestFilter.fuzzer
+                "ONLY same result if sub-filter"
+                (\f1 f2 ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = f1
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = f1
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEventsFrom f2 "token_3"
+                        |> (\events ->
+                                Expect.equal
+                                    (Filter.subsetOf f1 f2)
+                                    (events == [ [ "a", "b", "c", "d", "e", "f" ] ])
+                           )
                 )
             ]
-        , describe "JSON"
-            [ fuzz fuzzer
-                "encode -> decode is same"
-                (\timeline ->
-                    timeline
-                        |> Timeline.encode
-                        |> E.encode 0
-                        |> D.decodeString Timeline.decoder
-                        |> (\t ->
-                                case t of
-                                    Ok v ->
-                                        isEqual v timeline
-
-                                    Err e ->
-                                        Expect.fail (D.errorToString e)
-                           )
+        , describe "Forks in the road"
+            [ fuzz2 TestFilter.fuzzer
+                TestFilter.fuzzer
+                "Two options returned"
+                (\f1 f2 ->
+                    let
+                        subFilter =
+                            Filter.and f1 f2
+                    in
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = f1
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = f2
+                            , start = Just "token_3"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "g", "h", "i" ]
+                            , filter = subFilter
+                            , start = Just "token_2"
+                            , end = "token_4"
+                            }
+                        |> Timeline.mostRecentEventsFrom subFilter "token_4"
+                        |> Expect.equal
+                            [ [ "a", "b", "c", "g", "h", "i" ]
+                            , [ "d", "e", "f", "g", "h", "i" ]
+                            ]
+                )
+            ]
+        , describe "Gaps"
+            [ fuzz TestFilter.fuzzer
+                "Gap leaves behind old events"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_4"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_4"
+                        |> Expect.equal [ [ "d", "e", "f" ] ]
+                )
+            , fuzz TestFilter.fuzzer
+                "Gap can be bridged"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_4"
+                            }
+                        |> Timeline.insert
+                            { events = [ "g", "h" ]
+                            , filter = filter
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_4"
+                        |> Expect.equal [ [ "a", "b", "c", "g", "h", "d", "e", "f" ] ]
                 )
             ]
         ]

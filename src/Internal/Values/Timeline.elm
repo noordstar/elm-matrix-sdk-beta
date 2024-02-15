@@ -1,9 +1,8 @@
 module Internal.Values.Timeline exposing
     ( Batch, Timeline
     , empty, singleton
-    , mostRecentEvents
+    , mostRecentEvents, mostRecentEventsFrom
     , insert
-    , encode, decoder
     )
 
 {-|
@@ -52,7 +51,7 @@ events!
 
 ## Query
 
-@docs mostRecentEvents
+@docs mostRecentEvents, mostRecentEventsFrom
 
 
 ## Manipulate
@@ -381,14 +380,19 @@ invokeIToken value (Timeline tl) =
 -}
 mostRecentEvents : Filter -> Timeline -> List (List String)
 mostRecentEvents filter (Timeline timeline) =
-    mostRecentEventsFrom filter (Timeline timeline) timeline.mostRecentBatch
+    mostRecentFrom filter (Timeline timeline) timeline.mostRecentBatch
+
+
+mostRecentEventsFrom : Filter -> ITokenPTRValue -> Timeline -> List (List String)
+mostRecentEventsFrom filter tokenName timeline =
+    mostRecentFrom filter timeline (ITokenPTR tokenName)
 
 
 {-| Under a given filter, starting from a given ITokenPTR, find the most recent
 events.
 -}
-mostRecentEventsFrom : Filter -> Timeline -> ITokenPTR -> List (List String)
-mostRecentEventsFrom filter timeline ptr =
+mostRecentFrom : Filter -> Timeline -> ITokenPTR -> List (List String)
+mostRecentFrom filter timeline ptr =
     Recursion.runRecursion
         (\p ->
             case getITokenFromPTR p.ptr timeline of
@@ -409,12 +413,18 @@ mostRecentEventsFrom filter timeline ptr =
                                     Recursion.recurseThen
                                         { ptr = ibatch.start, visited = Set.insert token.name p.visited }
                                         (\optionalTimelines ->
-                                            optionalTimelines
-                                                |> List.map
-                                                    (\outTimeline ->
-                                                        List.append outTimeline ibatch.events
-                                                    )
-                                                |> Recursion.base
+                                            case optionalTimelines of
+                                                [] ->
+                                                    List.singleton ibatch.events
+                                                        |> Recursion.base
+
+                                                _ :: _ ->
+                                                    optionalTimelines
+                                                        |> List.map
+                                                            (\outTimeline ->
+                                                                List.append outTimeline ibatch.events
+                                                            )
+                                                        |> Recursion.base
                                         )
                                 )
                             |> Recursion.map List.concat
@@ -443,4 +453,4 @@ most recent batch, as if created by a sync.
 -}
 singleton : Batch -> Timeline
 singleton b =
-    addSync b empty
+    insert b empty
