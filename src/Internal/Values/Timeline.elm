@@ -2,7 +2,7 @@ module Internal.Values.Timeline exposing
     ( Batch, Timeline
     , empty, singleton
     , mostRecentEvents
-    , addSync, insert
+    , insert
     , encode, decoder
     )
 
@@ -15,6 +15,29 @@ The Timeline data type represents a timeline in the Matrix room. The Matrix room
 timeline is quite a complex data type, as it is constantly only partially known
 by the Matrix client. This module exposes a data type that helps explore, track
 and maintain this room state.
+
+This design of the timeline uses the batches as waypoints to maintain an order.
+The Matrix API often returns batches that have the following four pieces of
+information:
+
+1.  A list of events.
+2.  A filter for which all of the events meet the criteria.
+3.  An end batch token.
+4.  _(Optional)_ A start batch token. If it is not provided, it is the start of
+    the timeline.
+
+Here's an example of such a timeline batch:
+
+           |-->[■]->[■]->[●]->[■]->[■]->[●]-->|
+           |                                  |
+           |<-- filter: only ■ and ●, no ★ -->|
+           |                                  |
+         start:                              end:
+        <token_1>                          <token_2>
+
+When the Matrix API later returns a batch token that starts with `<token_2>`,
+we know that we can connect it to the batch above and make a longer list of
+events!
 
 
 ## Batch
@@ -47,8 +70,11 @@ import FastDict as Dict exposing (Dict)
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
+import Internal.Tools.Json as Json
 import Json.Decode as D
 import Json.Encode as E
+import Recursion
+import Recursion.Traverse
 import Set exposing (Set)
 
 
@@ -129,7 +155,7 @@ type Timeline
         { batches : Iddict IBatch
         , events : Dict String ( IBatchPTR, List IBatchPTR )
         , filledBatches : Int
-        , mostRecentSync : ITokenPTR
+        , mostRecentBatch : ITokenPTR
         , tokens : Hashdict IToken
         }
 
@@ -138,22 +164,6 @@ type Timeline
 -}
 type alias TokenValue =
     String
-
-
-{-| When syncing a Matrix room to its most recent state, add the most recent
-batch to the front of the Timeline.
--}
-addSync : Batch -> Timeline -> Timeline
-addSync batch timeline =
-    case insertBatch batch timeline of
-        ( Timeline tl, { start, end } ) ->
-            let
-                oldSync : ITokenPTR
-                oldSync =
-                    tl.mostRecentSync
-            in
-            Timeline { tl | mostRecentSync = end }
-                |> connectITokenToIToken oldSync start
 
 
 {-| Append a token at the end of a batch.
@@ -236,156 +246,9 @@ empty =
         { batches = Iddict.empty
         , events = Dict.empty
         , filledBatches = 0
-        , mostRecentSync = StartOfTimeline
+        , mostRecentBatch = StartOfTimeline
         , tokens = Hashdict.empty .name
         }
-
-
-{-| Decode a Timeline from a JSON value.
--}
-decoder : D.Decoder Timeline
-decoder =
-    D.map5
-        (\batches events filled sync tokens ->
-            Timeline
-                { batches = batches
-                , events = events
-                , filledBatches = filled
-                , mostRecentSync = sync
-                , tokens = tokens
-                }
-        )
-        (D.field "batches" <| Iddict.decoder decoderIBatch)
-        (D.map2 Tuple.pair
-            (D.field "head" decoderIBatchPTR)
-            (D.field "tail" <| D.list decoderIBatchPTR)
-            |> D.keyValuePairs
-            |> D.map Dict.fromList
-            |> D.field "events"
-        )
-        (D.succeed 0)
-        (D.field "mostRecentSync" decoderITokenPTR)
-        (D.field "tokens" <| Hashdict.decoder .name decoderIToken)
-        |> D.map recountFilledBatches
-
-
-decoderIBatch : D.Decoder IBatch
-decoderIBatch =
-    D.map4 IBatch
-        (D.field "events" <| D.list D.string)
-        (D.field "filter" Filter.decoder)
-        (D.field "start" decoderITokenPTR)
-        (D.field "end" decoderITokenPTR)
-
-
-decoderIBatchPTR : D.Decoder IBatchPTR
-decoderIBatchPTR =
-    D.map IBatchPTR decoderIBatchPTRValue
-
-
-decoderIBatchPTRValue : D.Decoder IBatchPTRValue
-decoderIBatchPTRValue =
-    D.int
-
-
-decoderIToken : D.Decoder IToken
-decoderIToken =
-    D.map5 IToken
-        (D.field "name" decoderTokenValue)
-        (D.field "starts" <| D.map Set.fromList <| D.list decoderIBatchPTRValue)
-        (D.field "ends" <| D.map Set.fromList <| D.list decoderIBatchPTRValue)
-        (D.field "inFrontOf" <| D.map Set.fromList <| D.list decoderITokenPTRValue)
-        (D.field "behind" <| D.map Set.fromList <| D.list decoderITokenPTRValue)
-
-
-decoderITokenPTR : D.Decoder ITokenPTR
-decoderITokenPTR =
-    D.oneOf
-        [ D.map ITokenPTR decoderITokenPTRValue
-        , D.null StartOfTimeline
-        ]
-
-
-decoderITokenPTRValue : D.Decoder ITokenPTRValue
-decoderITokenPTRValue =
-    D.string
-
-
-decoderTokenValue : D.Decoder TokenValue
-decoderTokenValue =
-    D.string
-
-
-{-| Encode a Timeline to a JSON value.
--}
-encode : Timeline -> E.Value
-encode (Timeline tl) =
-    E.object
-        [ ( "batches", Iddict.encode encodeIBatch tl.batches )
-        , ( "events"
-          , E.dict identity
-                (\( head, tail ) ->
-                    E.object
-                        [ ( "head", encodeIBatchPTR head )
-                        , ( "tail", E.list encodeIBatchPTR tail )
-                        ]
-                )
-                (Dict.toCoreDict tl.events)
-          )
-        , ( "mostRecentSync", encodeITokenPTR tl.mostRecentSync )
-        , ( "tokens", Hashdict.encode encodeIToken tl.tokens )
-        ]
-
-
-encodeIBatch : IBatch -> E.Value
-encodeIBatch batch =
-    E.object
-        [ ( "events", E.list E.string batch.events )
-        , ( "filter", Filter.encode batch.filter )
-        , ( "start", encodeITokenPTR batch.start )
-        , ( "end", encodeITokenPTR batch.end )
-        ]
-
-
-encodeIBatchPTR : IBatchPTR -> E.Value
-encodeIBatchPTR (IBatchPTR value) =
-    encodeIBatchPTRValue value
-
-
-encodeIBatchPTRValue : IBatchPTRValue -> E.Value
-encodeIBatchPTRValue =
-    E.int
-
-
-encodeIToken : IToken -> E.Value
-encodeIToken itoken =
-    E.object
-        [ ( "name", encodeTokenValue itoken.name )
-        , ( "starts", E.set encodeIBatchPTRValue itoken.starts )
-        , ( "ends", E.set encodeIBatchPTRValue itoken.ends )
-        , ( "inFrontOf", E.set encodeITokenPTRValue itoken.inFrontOf )
-        , ( "behind", E.set encodeITokenPTRValue itoken.behind )
-        ]
-
-
-encodeITokenPTR : ITokenPTR -> E.Value
-encodeITokenPTR token =
-    case token of
-        ITokenPTR value ->
-            encodeITokenPTRValue value
-
-        StartOfTimeline ->
-            E.null
-
-
-encodeITokenPTRValue : ITokenPTRValue -> E.Value
-encodeITokenPTRValue =
-    E.string
-
-
-encodeTokenValue : TokenValue -> E.Value
-encodeTokenValue =
-    E.string
 
 
 {-| Get an IBatch from the Timeline.
@@ -516,9 +379,47 @@ invokeIToken value (Timeline tl) =
 
 {-| Under a given filter, find the most recent events.
 -}
-mostRecentEvents : Filter -> Timeline -> List String
-mostRecentEvents _ _ =
-    []
+mostRecentEvents : Filter -> Timeline -> List (List String)
+mostRecentEvents filter (Timeline timeline) =
+    mostRecentEventsFrom filter (Timeline timeline) timeline.mostRecentBatch
+
+
+{-| Under a given filter, starting from a given ITokenPTR, find the most recent
+events.
+-}
+mostRecentEventsFrom : Filter -> Timeline -> ITokenPTR -> List (List String)
+mostRecentEventsFrom filter timeline ptr =
+    Recursion.runRecursion
+        (\p ->
+            case getITokenFromPTR p.ptr timeline of
+                Nothing ->
+                    Recursion.base []
+
+                Just token ->
+                    if Set.member token.name p.visited then
+                        Recursion.base []
+
+                    else
+                        token.ends
+                            |> Set.toList
+                            |> List.filterMap (\bptrv -> getIBatch (IBatchPTR bptrv) timeline)
+                            |> List.filter (\ibatch -> Filter.subsetOf ibatch.filter filter)
+                            |> Recursion.Traverse.traverseList
+                                (\ibatch ->
+                                    Recursion.recurseThen
+                                        { ptr = ibatch.start, visited = Set.insert token.name p.visited }
+                                        (\optionalTimelines ->
+                                            optionalTimelines
+                                                |> List.map
+                                                    (\outTimeline ->
+                                                        List.append outTimeline ibatch.events
+                                                    )
+                                                |> Recursion.base
+                                        )
+                                )
+                            |> Recursion.map List.concat
+        )
+        { ptr = ptr, visited = Set.empty }
 
 
 {-| Recount the Timeline's amount of filled batches. Since the Timeline
