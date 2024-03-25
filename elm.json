@@ -23,6 +23,7 @@
         "Internal.Values.Event",
         "Internal.Values.Settings",
         "Internal.Values.StateManager",
+        "Internal.Values.Timeline",
         "Internal.Values.Vault",
         "Matrix",
         "Matrix.Event",

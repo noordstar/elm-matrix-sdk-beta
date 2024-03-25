@@ -3,7 +3,7 @@ module Internal.Tools.Json exposing
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
-    , list, slowDict, fastDict, maybe
+    , list, slowDict, fastDict, set, maybe
     , Field, field
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
@@ -49,7 +49,7 @@ module to build its encoders and decoders.
 
 ## Data types
 
-@docs list, slowDict, fastDict, maybe
+@docs list, slowDict, fastDict, set, maybe
 
 
 ## Objects
@@ -73,6 +73,7 @@ import Internal.Tools.DecodeExtra as D
 import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
 import Json.Encode as E
+import Set exposing (Set)
 
 
 {-| A field of type `a` as a subtype of an object `object`.
@@ -155,6 +156,7 @@ type Docs
         )
     | DocsOptional Docs
     | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
+    | DocsSet Docs
     | DocsString
     | DocsValue
 
@@ -1078,6 +1080,27 @@ object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
                 }
         }
 
+
+{-| Define a set.
+-}
+set : Coder comparable -> Coder (Set comparable)
+set (Coder data) =
+    Coder
+        { encoder = E.set data.encoder
+        , decoder =
+            data.decoder
+                |> D.list
+                |> D.map
+                    (\items ->
+                        ( items
+                            |> List.map Tuple.first
+                            |> Set.fromList
+                        , items
+                            |> List.concatMap Tuple.second
+                        )
+                    )
+        , docs = DocsSet data.docs
+        }
 
 {-| Define a slow dict from the `elm/core` library.
 -}

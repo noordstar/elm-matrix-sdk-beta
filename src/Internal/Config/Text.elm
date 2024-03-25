@@ -1,5 +1,5 @@
 module Internal.Config.Text exposing
-    ( docs, failures, fields
+    ( docs, failures, fields, mappings
     , accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
     , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
@@ -27,7 +27,7 @@ You should only do this if you know what you're doing.
 
 ## Type documentation
 
-@docs docs, failures, fields
+@docs docs, failures, fields, mappings
 
 
 ## API Authentication
@@ -345,6 +345,19 @@ be going on.
 leakingValueFound : String -> String
 leakingValueFound leaking_value =
     "Found leaking value : " ++ leaking_value
+
+
+{-| Function descriptions
+-}
+mappings : { itokenPTR : TypeDocs }
+mappings =
+    { itokenPTR =
+        { name = "ITokenPTR init"
+        , description =
+            [ "Converts an optional string to an Itoken pointer."
+            ]
+        }
+    }
 
 
 {-| The Matrix homeserver can specify how it wishes to communicate, and the Elm

@@ -170,7 +170,7 @@ suite =
             ]
         , describe "Gaps"
             [ fuzz TestFilter.fuzzer
-                "Gap leaves behind old events"
+                "Gaps leave behind old events"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.insert
@@ -189,7 +189,7 @@ suite =
                         |> Expect.equal [ [ "d", "e", "f" ] ]
                 )
             , fuzz TestFilter.fuzzer
-                "Gap can be bridged"
+                "Gaps can be bridged"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.insert

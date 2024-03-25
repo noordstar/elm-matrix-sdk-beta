@@ -61,7 +61,7 @@ events!
 
 ## JSON coder
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
@@ -70,6 +70,7 @@ import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Internal.Tools.Json as Json
+import Internal.Config.Text as Text
 import Json.Decode as D
 import Json.Encode as E
 import Recursion
@@ -79,6 +80,9 @@ import Set exposing (Set)
 
 {-| A batch is a batch of events that is placed onto the Timeline. Functions
 that require an insertion, generally require this data type.
+
+If the `start` value is `Nothing`, it is either the start of the timeline or the
+start of the timeline part that the user is allowed to view.
 -}
 type alias Batch =
     { events : List String
@@ -164,6 +168,83 @@ type Timeline
 type alias TokenValue =
     String
 
+coderIBatchPTR : Json.Coder IBatchPTR
+coderIBatchPTR =
+    Json.map
+        { name = Debug.todo "Add name"
+        , description = Debug.todo "Add description"
+        , back = IBatchPTR
+        , forth = (\(IBatchPTR value) -> value)
+        }
+        coderIBatchPTRValue
+
+coderIBatchPTRValue : Json.Coder IBatchPTRValue
+coderIBatchPTRValue = Json.int
+
+coderIToken : Json.Coder IToken
+coderIToken =
+    Json.object5
+        { name = "IToken"
+        , description = Debug.todo "TODO: Add description"
+        , init = IToken
+        }
+        ( Json.field.required
+            { fieldName = "name"
+            , toField = .name
+            , description = Debug.todo "TODO: Add description"
+            , coder = coderTokenValue
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "starts"
+            , toField = .starts
+            , description = Debug.todo "TODO: Add description"
+            , coder = Json.set coderIBatchPTRValue
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "ends"
+            , toField = .ends
+            , description = Debug.todo "TODO: Add description"
+            , coder = Json.set coderIBatchPTRValue
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+
+coderITokenPTR : Json.Coder ITokenPTR
+coderITokenPTR =
+    Json.maybe coderITokenPTRValue
+        |> Json.map
+            { name = Text.mappings.itokenPTR.name
+            , description = Text.mappings.itokenPTR.description
+            , back =
+                (\itokenptr ->
+                    case itokenptr of
+                        ITokenPTR name ->
+                            Just name
+                        
+                        StartOfTimeline ->
+                            Nothing
+                )
+            , forth =
+                (\value ->
+                    case value of
+                        Just name ->
+                            ITokenPTR name
+                        
+                        Nothing ->
+                            StartOfTimeline
+                )
+            }
+
+coderITokenPTRValue : Json.Coder ITokenPTRValue
+coderITokenPTRValue = Json.string
+
+coderTokenValue : Json.Coder TokenValue
+coderTokenValue = Json.string
 
 {-| Append a token at the end of a batch.
 -}
