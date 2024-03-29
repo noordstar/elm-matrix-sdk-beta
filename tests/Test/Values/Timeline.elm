@@ -44,6 +44,34 @@ fuzzer =
                         )
                         Fuzz.string
                         (Fuzz.listOfLengthBetween 0 4 fuzzerBatch)
+                    , Fuzz.map2
+                        (\start batches ->
+                            List.foldl
+                                (\b ( s, f ) ->
+                                    ( b.end
+                                    , f >> Timeline.addSync { b | start = Just s, filter = globalFilter }
+                                    )
+                                )
+                                ( start, identity )
+                                batches
+                                |> Tuple.second
+                        )
+                        Fuzz.string
+                        (Fuzz.listOfLengthBetween 0 10 fuzzerBatch)
+                    , Fuzz.map2
+                        (\start batches ->
+                            List.foldl
+                                (\b ( s, f ) ->
+                                    ( b.end
+                                    , f >> Timeline.addSync { b | start = Just s, filter = Filter.and globalFilter b.filter }
+                                    )
+                                )
+                                ( start, identity )
+                                batches
+                                |> Tuple.second
+                        )
+                        Fuzz.string
+                        (Fuzz.listOfLengthBetween 0 4 fuzzerBatch)
                     ]
                     |> Fuzz.listOfLengthBetween 0 10
                     |> Fuzz.map (List.foldl (<|) Timeline.empty)
