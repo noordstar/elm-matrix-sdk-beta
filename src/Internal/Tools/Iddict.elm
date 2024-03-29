@@ -43,8 +43,6 @@ do not need to generate identifiers yourself.
 import FastDict as Dict exposing (Dict)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
-import Json.Decode as D
-import Json.Encode as E
 
 
 {-| The Iddict data type.
@@ -66,8 +64,8 @@ coder x =
                     { cursor =
                         Dict.keys d
                             |> List.maximum
-                            |> Maybe.withDefault -1
-                            |> (+) 1
+                            |> Maybe.map ((+) 1)
+                            |> Maybe.withDefault 0
                             |> max (Dict.size d)
                             |> max c
                     , dict = d

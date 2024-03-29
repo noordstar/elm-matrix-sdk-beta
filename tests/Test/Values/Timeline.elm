@@ -5,7 +5,6 @@ import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Values.Timeline as Timeline exposing (Batch, Timeline)
 import Json.Decode as D
-import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
 import Internal.Tools.Json as Json

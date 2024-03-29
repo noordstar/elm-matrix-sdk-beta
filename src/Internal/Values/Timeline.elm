@@ -72,8 +72,6 @@ import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Internal.Tools.Json as Json
 import Internal.Config.Text as Text
-import Json.Decode as D
-import Json.Encode as E
 import Recursion
 import Recursion.Traverse
 import Set exposing (Set)
