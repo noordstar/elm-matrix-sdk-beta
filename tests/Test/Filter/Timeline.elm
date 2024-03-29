@@ -428,7 +428,7 @@ suite =
                         |> Filter.encode
                         |> E.encode 0
                         |> D.decodeString Filter.decoder
-                        |> Expect.equal (Ok filter)
+                        |> Expect.equal (Ok (filter, []))
                 )
             ]
         ]

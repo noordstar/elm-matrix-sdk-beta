@@ -3,6 +3,7 @@ module Internal.Values.Timeline exposing
     , empty, singleton
     , mostRecentEvents, mostRecentEventsFrom
     , insert
+    , coder
     )
 
 {-|
@@ -168,13 +169,100 @@ type Timeline
 type alias TokenValue =
     String
 
+coder : Json.Coder Timeline
+coder =
+    Json.object5
+        { name = Text.docs.timeline.name
+        , description = Text.docs.timeline.description
+        , init =
+            (\a b c d e ->
+                Timeline
+                    { batches = a, events = b, filledBatches = c
+                    , mostRecentBatch = d, tokens = e
+                    }
+            )
+        }
+        ( Json.field.required
+            { fieldName = "batches"
+            , toField = (\(Timeline t) -> t.batches)
+            , description = Text.fields.timeline.batches
+            , coder = Iddict.coder coderIBatch
+            }
+        )
+        ( Json.field.required
+            { fieldName = "events"
+            , toField = (\(Timeline t) -> t.events)
+            , description = Text.fields.timeline.events
+            , coder = Json.fastDict (Json.listWithOne coderIBatchPTR)
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "filledBatches"
+            , toField = (\(Timeline t) -> t.filledBatches)
+            , description = Text.fields.timeline.filledBatches
+            , coder = Json.int
+            , default = ( 0, [] )
+            , defaultToString = String.fromInt
+            }
+        )
+        ( Json.field.required
+            { fieldName = "mostRecentBatch"
+            , toField = (\(Timeline t) -> t.mostRecentBatch)
+            , description = Text.fields.timeline.mostRecentBatch
+            , coder = coderITokenPTR
+            }
+        )
+        ( Json.field.required
+            { fieldName = "tokens"
+            , toField = (\(Timeline t) -> t.tokens)
+            , description = Text.fields.timeline.tokens
+            , coder = Hashdict.coder .name coderIToken
+            }
+        )
+
+coderIBatch : Json.Coder IBatch
+coderIBatch =
+    Json.object4
+        { name = Text.docs.ibatch.name
+        , description = Text.docs.ibatch.description
+        , init = IBatch
+        }
+        ( Json.field.required
+            { fieldName = "events"
+            , toField = .events
+            , description = Text.fields.ibatch.events
+            , coder = Json.list Json.string
+            }
+        )
+        ( Json.field.required
+            { fieldName = "filter"
+            , toField = .filter
+            , description = Text.fields.ibatch.filter
+            , coder = Filter.coder
+            }
+        )
+        ( Json.field.required
+            { fieldName = "start"
+            , toField = .start
+            , description = Text.fields.ibatch.start
+            , coder = coderITokenPTR
+            }
+        )
+        ( Json.field.required
+            { fieldName = "end"
+            , toField = .end
+            , description = Text.fields.ibatch.end
+            , coder = coderITokenPTR
+            }
+        )
+
 coderIBatchPTR : Json.Coder IBatchPTR
 coderIBatchPTR =
     Json.map
-        { name = Debug.todo "Add name"
-        , description = Debug.todo "Add description"
-        , back = IBatchPTR
-        , forth = (\(IBatchPTR value) -> value)
+        { name = Text.docs.itoken.name
+        , description = Text.docs.itoken.description
+        , back = (\(IBatchPTR value) -> value)
+        , forth = IBatchPTR
         }
         coderIBatchPTRValue
 
@@ -184,21 +272,21 @@ coderIBatchPTRValue = Json.int
 coderIToken : Json.Coder IToken
 coderIToken =
     Json.object5
-        { name = "IToken"
-        , description = Debug.todo "TODO: Add description"
+        { name = Text.docs.itoken.name
+        , description = Text.docs.itoken.description
         , init = IToken
         }
         ( Json.field.required
             { fieldName = "name"
             , toField = .name
-            , description = Debug.todo "TODO: Add description"
+            , description = Text.fields.itoken.name
             , coder = coderTokenValue
             }
         )
         ( Json.field.optional.withDefault
             { fieldName = "starts"
             , toField = .starts
-            , description = Debug.todo "TODO: Add description"
+            , description = Text.fields.itoken.starts
             , coder = Json.set coderIBatchPTRValue
             , default = ( Set.empty, [] )
             , defaultToString = always "[]"
@@ -207,8 +295,26 @@ coderIToken =
         ( Json.field.optional.withDefault
             { fieldName = "ends"
             , toField = .ends
-            , description = Debug.todo "TODO: Add description"
+            , description = Text.fields.itoken.ends
             , coder = Json.set coderIBatchPTRValue
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "inFrontOf"
+            , toField = .inFrontOf
+            , description = Text.fields.itoken.inFrontOf
+            , coder = Json.set coderITokenPTRValue
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "behind"
+            , toField = .behind
+            , description = Text.fields.itoken.behind
+            , coder = Json.set coderITokenPTRValue
             , default = ( Set.empty, [] )
             , defaultToString = always "[]"
             }

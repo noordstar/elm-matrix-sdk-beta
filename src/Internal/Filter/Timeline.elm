@@ -4,7 +4,7 @@ module Internal.Filter.Timeline exposing
     , match, run
     , and
     , subsetOf
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-|
@@ -43,10 +43,12 @@ for interacting with the Matrix API.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 import Json.Decode as D
 import Json.Encode as E
 import Set exposing (Set)
@@ -159,44 +161,64 @@ and (Filter f1) (Filter f2) =
             else
                 stdAnd
 
+coder : Json.Coder Filter
+coder =
+    Json.object4
+        { name = Text.docs.timelineFilter.name
+        , description = Text.docs.timelineFilter.description
+        , init =
+            (\a b c d ->
+                Filter
+                    { senders = a, sendersAllowOthers = b
+                    , types = c, typesAllowOthers = d
+                    }
+            )
+        }
+        ( Json.field.optional.withDefault
+            { fieldName = "senders"
+            , toField = (\(Filter f) -> f.senders)
+            , description = Text.fields.timelineFilter.senders
+            , coder = Json.set Json.string
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+        ( Json.field.required
+            { fieldName = "sendersAllowOthers"
+            , toField = (\(Filter f) -> f.sendersAllowOthers)
+            , description = Text.fields.timelineFilter.sendersAllowOthers
+            , coder = Json.bool
+            }
+        )
+        ( Json.field.optional.withDefault
+            { fieldName = "types"
+            , toField = (\(Filter f) -> f.types)
+            , description = Text.fields.timelineFilter.types
+            , coder = Json.set Json.string
+            , default = ( Set.empty, [] )
+            , defaultToString = always "[]"
+            }
+        )
+        ( Json.field.required
+            { fieldName = "typesAllowOthers"
+            , toField = (\(Filter f) -> f.typesAllowOthers)
+            , description = Text.fields.timelineFilter.typesAllowOthers
+            , coder = Json.bool
+            }
+        )
 
 {-| Decode a Filter from a JSON value.
 -}
-decoder : D.Decoder Filter
+decoder : Json.Decoder Filter
 decoder =
-    D.map4
-        (\s sb t tb ->
-            Filter
-                { senders = s
-                , sendersAllowOthers = sb
-                , types = t
-                , typesAllowOthers = tb
-                }
-        )
-        (D.string
-            |> D.list
-            |> D.map Set.fromList
-            |> D.field "senders"
-        )
-        (D.field "sendersAllowOthers" D.bool)
-        (D.string
-            |> D.list
-            |> D.map Set.fromList
-            |> D.field "types"
-        )
-        (D.field "typesAllowOthers" D.bool)
+    Json.decode coder
 
 
 {-| Encode a Filter into a JSON value.
 -}
-encode : Filter -> E.Value
-encode (Filter f) =
-    E.object
-        [ ( "senders", E.set E.string f.senders )
-        , ( "sendersAllowOthers", E.bool f.sendersAllowOthers )
-        , ( "types", E.set E.string f.types )
-        , ( "typesAllowOthers", E.bool f.typesAllowOthers )
-        ]
+encode : Json.Encoder Filter
+encode =
+    Json.encode coder
 
 
 {-| Allow no events. This filter is likely quite useless in practice, but it is

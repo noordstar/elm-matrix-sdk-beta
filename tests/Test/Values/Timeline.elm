@@ -8,6 +8,7 @@ import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
+import Internal.Tools.Json as Json
 
 
 fuzzer : Fuzzer Timeline
@@ -188,8 +189,45 @@ suite =
                         |> Timeline.mostRecentEventsFrom filter "token_4"
                         |> Expect.equal [ [ "d", "e", "f" ] ]
                 )
-            , fuzz TestFilter.fuzzer
+            , fuzz3 TestFilter.fuzzer (Fuzz.list Fuzz.string) (Fuzz.pair (Fuzz.list Fuzz.string) (Fuzz.list Fuzz.string))
                 "Gaps can be bridged"
+                (\filter l1 (l2, l3) ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = l1
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = l3
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_4"
+                            }
+                        |> Timeline.insert
+                            { events = l2
+                            , filter = filter
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_4"
+                        |> Expect.equal [ List.concat [ l1, l2, l3 ] ]
+                )
+            ]
+        , describe "JSON"
+            [ fuzz fuzzer "Encode + Decode gives same output"
+                (\timeline ->
+                    timeline
+                        |> Json.encode Timeline.coder
+                        |> D.decodeValue (Json.decode Timeline.coder)
+                        |> Result.map Tuple.first
+                        |> Result.map (Timeline.mostRecentEvents Filter.pass)
+                        |> Expect.equal (Ok <| Timeline.mostRecentEvents Filter.pass timeline)
+                )
+            ]
+        , describe "Weird loops"
+            [ fuzz TestFilter.fuzzer "Weird loops stop looping"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.insert
@@ -201,17 +239,20 @@ suite =
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = filter
-                            , start = Just "token_3"
-                            , end = "token_4"
-                            }
-                        |> Timeline.insert
-                            { events = [ "g", "h" ]
-                            , filter = filter
                             , start = Just "token_2"
                             , end = "token_3"
                             }
-                        |> Timeline.mostRecentEventsFrom filter "token_4"
-                        |> Expect.equal [ [ "a", "b", "c", "g", "h", "d", "e", "f" ] ]
+                        |> Timeline.insert
+                            { events = [ "g", "h", "i" ]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_2"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_2"
+                        |> Expect.equal
+                            [ [ "a", "b", "c" ]
+                            , [ "d", "e", "f", "g", "h", "i" ]
+                            ]
                 )
             ]
         ]

@@ -3,7 +3,7 @@ module Internal.Tools.Json exposing
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
-    , list, slowDict, fastDict, set, maybe
+    , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
     , Field, field
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
@@ -49,7 +49,7 @@ module to build its encoders and decoders.
 
 ## Data types
 
-@docs list, slowDict, fastDict, set, maybe
+@docs list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
 
 
 ## Objects
@@ -68,7 +68,8 @@ Once all fields are constructed, the user can create JSON objects.
 
 import Dict as SlowDict
 import FastDict
-import Internal.Config.Log exposing (Log)
+import Internal.Config.Log as Log exposing (Log)
+import Internal.Config.Text as Text
 import Internal.Tools.DecodeExtra as D
 import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
@@ -140,8 +141,10 @@ type Docs
     | DocsDict Docs
     | DocsFloat
     | DocsInt
+    | DocsIntDict Docs
     | DocsLazy (() -> Docs)
     | DocsList Docs
+    | DocsListWithOne Docs
     | DocsMap (Descriptive { content : Docs })
     | DocsObject
         (Descriptive
@@ -291,6 +294,46 @@ fastDict (Coder old) =
         , docs = DocsDict old.docs
         }
 
+{-| Define a fast dict where the keys are integers, not strings.
+-}
+fastIntDict : Coder value -> Coder (FastDict.Dict Int value)
+fastIntDict (Coder old) =
+    Coder
+        { encoder = FastDict.toCoreDict >> E.dict String.fromInt old.encoder
+        , decoder =
+            old.decoder
+                |> D.keyValuePairs
+                |> D.map
+                    (\items ->
+                        ( items
+                            |> List.map (Tuple.mapSecond Tuple.first)
+                            |> List.filterMap
+                                (\(k, v) ->
+                                    Maybe.map (\a -> (a, v)) (String.toInt k)
+                                )
+                            |> FastDict.fromList
+                        , List.concat
+                            [ items
+                                |> List.map Tuple.first
+                                |> List.filter
+                                    (\k ->
+                                        case String.toInt k of
+                                            Just _ ->
+                                                True
+                                            
+                                            Nothing ->
+                                                False
+                                    )
+                                |> List.map Text.logs.keyIsNotAnInt
+                                |> List.map Log.log.warn
+                            , items
+                                |> List.map Tuple.second
+                                |> List.concatMap Tuple.second
+                            ]
+                        )
+                    )
+        , docs = DocsIntDict old.docs
+        }
 
 {-| Create a new field using any of the three provided options.
 
@@ -464,6 +507,31 @@ list (Coder old) =
                         )
                     )
         , docs = DocsList old.docs
+        }
+
+{-| Define a list that has at least one value
+-}
+listWithOne : Coder a -> Coder (a, List a)
+listWithOne (Coder old) =
+    Coder
+        { encoder = (\(h, t) -> E.list old.encoder (h :: t))
+        , decoder =
+            old.decoder
+                |> D.list
+                |> D.andThen
+                    (\items ->
+                        case items of
+                            [] ->
+                                D.fail "Expected at least one value in list"
+                            
+                            ( h, l1) :: t ->
+                                D.succeed
+                                    ( (h, List.map Tuple.first items)
+                                    , List.concatMap Tuple.second t
+                                        |> List.append l1
+                                    )
+                    )
+        , docs = DocsListWithOne old.docs
         }
 
 
