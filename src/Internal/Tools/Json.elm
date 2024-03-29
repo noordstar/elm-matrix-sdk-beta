@@ -525,7 +525,7 @@ listWithOne (Coder old) =
                     (\items ->
                         case items of
                             [] ->
-                                D.fail "Expected at least one value in list"
+                                D.fail Text.failures.listWithOne
 
                             ( h, l1 ) :: t ->
                                 D.succeed

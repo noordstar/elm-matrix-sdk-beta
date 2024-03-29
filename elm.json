@@ -17,7 +17,6 @@
         "Internal.Tools.Iddict",
         "Internal.Tools.Json",
         "Internal.Tools.Mashdict",
-        "Internal.Tools.RationalOrder",
         "Internal.Tools.Timestamp",
         "Internal.Tools.VersionControl",
         "Internal.Values.Context",

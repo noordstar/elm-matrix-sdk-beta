@@ -214,13 +214,14 @@ docs =
 
 {-| Description of all edge cases where a JSON decoder can fail.
 -}
-failures : { hashdict : Desc, mashdict : Desc }
+failures : { hashdict : Desc, listWithOne : String, mashdict : Desc }
 failures =
     { hashdict =
-        [ "Not all values map to thir respected hash with the given hash function."
+        [ "Not all values map to their respected hash with the given hash function."
         ]
+    , listWithOne = "Expected at least one value in the list - zero found."
     , mashdict =
-        [ "Not all values map to thir respected hash with the given hash function."
+        [ "Not all values map to their respected hash with the given hash function."
         ]
     }
 
@@ -485,7 +486,10 @@ leakingValueFound leaking_value =
     "Found leaking value : " ++ leaking_value
 
 
-{-| -}
+{-| These logs might appear during a process where something unexpected has
+happened. Most of these unexpected results, are taken account of by the Elm SDK,
+but logged so that the programmer can do something about it.
+-}
 logs : { keyIsNotAnInt : String -> String }
 logs =
     { keyIsNotAnInt =
