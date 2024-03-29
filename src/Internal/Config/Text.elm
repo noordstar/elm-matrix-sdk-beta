@@ -4,6 +4,7 @@ module Internal.Config.Text exposing
     , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
     , decodedDictSize, invalidHashInHashdict, invalidHashInMashdict, leakingValueFound
+    , parses
     )
 
 {-| Throughout the Elm SDK, there are lots of pieces of text being used for
@@ -345,6 +346,24 @@ be going on.
 leakingValueFound : String -> String
 leakingValueFound leaking_value =
     "Found leaking value : " ++ leaking_value
+
+
+parses :
+    { reservedIPs : 
+        { ipv6Toipv4 : String
+        , multicast : String
+        , futureUse : String
+        , unspecified : String
+        }
+    }
+parses =
+    { reservedIPs =
+        { ipv6Toipv4 = "Detected a reserved ip address that is formerly used as an IPv6 to IPv4 relay. It is unlikely that this IP Address is real."
+        , multicast = "Detected a reserved ip address that is used for multicasting. It is unlikely that this IP Address is real."
+        , futureUse = "Detected a reserves ip address that is reserved for future use. It is unlikely that this IP Address is real if you're running a recent version of the Elm SDK."
+        , unspecified = "This is an unspecified ip address. It is unlikely that this IP Address is real and someone might try to break something."
+        }
+    }
 
 
 {-| The Matrix homeserver can specify how it wishes to communicate, and the Elm
