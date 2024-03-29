@@ -161,51 +161,56 @@ and (Filter f1) (Filter f2) =
             else
                 stdAnd
 
+
+{-| Define how to encode and decode a Timeline Filter to and from a JSON value.
+-}
 coder : Json.Coder Filter
 coder =
     Json.object4
         { name = Text.docs.timelineFilter.name
         , description = Text.docs.timelineFilter.description
         , init =
-            (\a b c d ->
+            \a b c d ->
                 Filter
-                    { senders = a, sendersAllowOthers = b
-                    , types = c, typesAllowOthers = d
+                    { senders = a
+                    , sendersAllowOthers = b
+                    , types = c
+                    , typesAllowOthers = d
                     }
-            )
         }
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "senders"
-            , toField = (\(Filter f) -> f.senders)
+            , toField = \(Filter f) -> f.senders
             , description = Text.fields.timelineFilter.senders
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
             , defaultToString = always "[]"
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "sendersAllowOthers"
-            , toField = (\(Filter f) -> f.sendersAllowOthers)
+            , toField = \(Filter f) -> f.sendersAllowOthers
             , description = Text.fields.timelineFilter.sendersAllowOthers
             , coder = Json.bool
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "types"
-            , toField = (\(Filter f) -> f.types)
+            , toField = \(Filter f) -> f.types
             , description = Text.fields.timelineFilter.types
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
             , defaultToString = always "[]"
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "typesAllowOthers"
-            , toField = (\(Filter f) -> f.typesAllowOthers)
+            , toField = \(Filter f) -> f.typesAllowOthers
             , description = Text.fields.timelineFilter.typesAllowOthers
             , coder = Json.bool
             }
         )
+
 
 {-| Decode a Filter from a JSON value.
 -}

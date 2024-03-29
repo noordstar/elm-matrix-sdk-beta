@@ -2,7 +2,7 @@ module Internal.Values.Timeline exposing
     ( Batch, Timeline
     , empty, singleton
     , mostRecentEvents, mostRecentEventsFrom
-    , insert, addSync
+    , addSync, insert
     , coder, encode, decoder
     )
 
@@ -67,11 +67,11 @@ events!
 -}
 
 import FastDict as Dict exposing (Dict)
+import Internal.Config.Text as Text
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Internal.Tools.Json as Json
-import Internal.Config.Text as Text
 import Recursion
 import Recursion.Traverse
 import Set exposing (Set)
@@ -82,6 +82,7 @@ that require an insertion, generally require this data type.
 
 If the `start` value is `Nothing`, it is either the start of the timeline or the
 start of the timeline part that the user is allowed to view.
+
 -}
 type alias Batch =
     { events : List String
@@ -167,22 +168,26 @@ type Timeline
 type alias TokenValue =
     String
 
+
 {-| Add a new batch as a sync
 -}
 addSync : Batch -> Timeline -> Timeline
 addSync batch timeline =
     case insertBatch batch timeline of
-        ( Timeline t, { start, end }) ->
+        ( Timeline t, { start, end } ) ->
             let
                 old : ITokenPTR
-                old = t.mostRecentBatch
+                old =
+                    t.mostRecentBatch
             in
-                case Timeline { t | mostRecentBatch = end } of
-                    tl ->
-                        if old == start then
-                            tl
-                        else
-                            connectITokenToIToken old start tl
+            case Timeline { t | mostRecentBatch = end } of
+                tl ->
+                    if old == start then
+                        tl
+
+                    else
+                        connectITokenToIToken old start tl
+
 
 {-| Define how a Timeline can be encoded and decoded to and from a JSON value.
 -}
@@ -192,50 +197,53 @@ coder =
         { name = Text.docs.timeline.name
         , description = Text.docs.timeline.description
         , init =
-            (\a b c d e ->
+            \a b c d e ->
                 Timeline
-                    { batches = a, events = b, filledBatches = c
-                    , mostRecentBatch = d, tokens = e
+                    { batches = a
+                    , events = b
+                    , filledBatches = c
+                    , mostRecentBatch = d
+                    , tokens = e
                     }
-            )
         }
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "batches"
-            , toField = (\(Timeline t) -> t.batches)
+            , toField = \(Timeline t) -> t.batches
             , description = Text.fields.timeline.batches
             , coder = Iddict.coder coderIBatch
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "events"
-            , toField = (\(Timeline t) -> t.events)
+            , toField = \(Timeline t) -> t.events
             , description = Text.fields.timeline.events
             , coder = Json.fastDict (Json.listWithOne coderIBatchPTR)
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "filledBatches"
-            , toField = (\(Timeline t) -> t.filledBatches)
+            , toField = \(Timeline t) -> t.filledBatches
             , description = Text.fields.timeline.filledBatches
             , coder = Json.int
             , default = ( 0, [] )
             , defaultToString = String.fromInt
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "mostRecentBatch"
-            , toField = (\(Timeline t) -> t.mostRecentBatch)
+            , toField = \(Timeline t) -> t.mostRecentBatch
             , description = Text.fields.timeline.mostRecentBatch
             , coder = coderITokenPTR
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "tokens"
-            , toField = (\(Timeline t) -> t.tokens)
+            , toField = \(Timeline t) -> t.tokens
             , description = Text.fields.timeline.tokens
             , coder = Hashdict.coder .name coderIToken
             }
         )
+
 
 {-| Define how to encode and decode a IBatch to and from a JSON value.
 -}
@@ -246,34 +254,35 @@ coderIBatch =
         , description = Text.docs.ibatch.description
         , init = IBatch
         }
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "events"
             , toField = .events
             , description = Text.fields.ibatch.events
             , coder = Json.list Json.string
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "filter"
             , toField = .filter
             , description = Text.fields.ibatch.filter
             , coder = Filter.coder
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "start"
             , toField = .start
             , description = Text.fields.ibatch.start
             , coder = coderITokenPTR
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "end"
             , toField = .end
             , description = Text.fields.ibatch.end
             , coder = coderITokenPTR
             }
         )
+
 
 {-| Define how to encode and decode a IBatchPTR to and from a JSON value.
 -}
@@ -282,15 +291,18 @@ coderIBatchPTR =
     Json.map
         { name = Text.docs.itoken.name
         , description = Text.docs.itoken.description
-        , back = (\(IBatchPTR value) -> value)
+        , back = \(IBatchPTR value) -> value
         , forth = IBatchPTR
         }
         coderIBatchPTRValue
 
+
 {-| Define how to encode and decode a IBatchPTRValue to and from a JSON value.
 -}
 coderIBatchPTRValue : Json.Coder IBatchPTRValue
-coderIBatchPTRValue = Json.int
+coderIBatchPTRValue =
+    Json.int
+
 
 {-| Define how to encode and decode a IToken to and from a JSON value.
 -}
@@ -301,14 +313,14 @@ coderIToken =
         , description = Text.docs.itoken.description
         , init = IToken
         }
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "name"
             , toField = .name
             , description = Text.fields.itoken.name
             , coder = coderTokenValue
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "starts"
             , toField = .starts
             , description = Text.fields.itoken.starts
@@ -317,7 +329,7 @@ coderIToken =
             , defaultToString = always "[]"
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "ends"
             , toField = .ends
             , description = Text.fields.itoken.ends
@@ -326,7 +338,7 @@ coderIToken =
             , defaultToString = always "[]"
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "inFrontOf"
             , toField = .inFrontOf
             , description = Text.fields.itoken.inFrontOf
@@ -335,7 +347,7 @@ coderIToken =
             , defaultToString = always "[]"
             }
         )
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "behind"
             , toField = .behind
             , description = Text.fields.itoken.behind
@@ -344,6 +356,7 @@ coderIToken =
             , defaultToString = always "[]"
             }
         )
+
 
 {-| Define how to encode and decode a ITokenPTR to and from a JSON value.
 -}
@@ -354,34 +367,37 @@ coderITokenPTR =
             { name = Text.mappings.itokenPTR.name
             , description = Text.mappings.itokenPTR.description
             , back =
-                (\itokenptr ->
+                \itokenptr ->
                     case itokenptr of
                         ITokenPTR name ->
                             Just name
-                        
+
                         StartOfTimeline ->
                             Nothing
-                )
             , forth =
-                (\value ->
+                \value ->
                     case value of
                         Just name ->
                             ITokenPTR name
-                        
+
                         Nothing ->
                             StartOfTimeline
-                )
             }
+
 
 {-| Define how to encode and decode a ITokenPTRValue to and from a JSON value.
 -}
 coderITokenPTRValue : Json.Coder ITokenPTRValue
-coderITokenPTRValue = Json.string
+coderITokenPTRValue =
+    Json.string
+
 
 {-| Define how to encode and decode a TokenValue to and from a JSON value.
 -}
 coderTokenValue : Json.Coder TokenValue
-coderTokenValue = Json.string
+coderTokenValue =
+    Json.string
+
 
 {-| Append a token at the end of a batch.
 -}
@@ -454,10 +470,13 @@ connectITokenToIToken pointer1 pointer2 (Timeline tl) =
         ( _, _ ) ->
             Timeline tl
 
+
 {-| Timeline JSON decoder that helps decode a Timeline from JSON.
 -}
 decoder : Json.Decoder Timeline
-decoder = Json.decode coder
+decoder =
+    Json.decode coder
+
 
 {-| Create a new empty timeline.
 -}
@@ -471,10 +490,13 @@ empty =
         , tokens = Hashdict.empty .name
         }
 
+
 {-| Directly encode a Timeline into a JSON value.
 -}
 encode : Json.Encoder Timeline
-encode = Json.encode coder
+encode =
+    Json.encode coder
+
 
 {-| Get an IBatch from the Timeline.
 -}
@@ -607,6 +629,7 @@ invokeIToken value (Timeline tl) =
 mostRecentEvents : Filter -> Timeline -> List (List String)
 mostRecentEvents filter (Timeline timeline) =
     mostRecentFrom filter (Timeline timeline) timeline.mostRecentBatch
+
 
 {-| Instead of finding the most recent events from the latest sync, users can
 also find the most recent events given a token value.

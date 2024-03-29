@@ -294,6 +294,7 @@ fastDict (Coder old) =
         , docs = DocsDict old.docs
         }
 
+
 {-| Define a fast dict where the keys are integers, not strings.
 -}
 fastIntDict : Coder value -> Coder (FastDict.Dict Int value)
@@ -308,8 +309,8 @@ fastIntDict (Coder old) =
                         ( items
                             |> List.map (Tuple.mapSecond Tuple.first)
                             |> List.filterMap
-                                (\(k, v) ->
-                                    Maybe.map (\a -> (a, v)) (String.toInt k)
+                                (\( k, v ) ->
+                                    Maybe.map (\a -> ( a, v )) (String.toInt k)
                                 )
                             |> FastDict.fromList
                         , List.concat
@@ -320,7 +321,7 @@ fastIntDict (Coder old) =
                                         case String.toInt k of
                                             Just _ ->
                                                 True
-                                            
+
                                             Nothing ->
                                                 False
                                     )
@@ -334,6 +335,7 @@ fastIntDict (Coder old) =
                     )
         , docs = DocsIntDict old.docs
         }
+
 
 {-| Create a new field using any of the three provided options.
 
@@ -509,12 +511,13 @@ list (Coder old) =
         , docs = DocsList old.docs
         }
 
+
 {-| Define a list that has at least one value
 -}
-listWithOne : Coder a -> Coder (a, List a)
+listWithOne : Coder a -> Coder ( a, List a )
 listWithOne (Coder old) =
     Coder
-        { encoder = (\(h, t) -> E.list old.encoder (h :: t))
+        { encoder = \( h, t ) -> E.list old.encoder (h :: t)
         , decoder =
             old.decoder
                 |> D.list
@@ -523,10 +526,10 @@ listWithOne (Coder old) =
                         case items of
                             [] ->
                                 D.fail "Expected at least one value in list"
-                            
-                            ( h, l1) :: t ->
+
+                            ( h, l1 ) :: t ->
                                 D.succeed
-                                    ( (h, List.map Tuple.first items)
+                                    ( ( h, List.map Tuple.first items )
                                     , List.concatMap Tuple.second t
                                         |> List.append l1
                                     )
@@ -1169,6 +1172,7 @@ set (Coder data) =
                     )
         , docs = DocsSet data.docs
         }
+
 
 {-| Define a slow dict from the `elm/core` library.
 -}

@@ -10,12 +10,14 @@
         "Internal.Config.Log",
         "Internal.Config.Phantom",
         "Internal.Config.Text",
+        "Internal.Filter.Timeline",
         "Internal.Tools.DecodeExtra",
         "Internal.Tools.EncodeExtra",
         "Internal.Tools.Hashdict",
         "Internal.Tools.Iddict",
         "Internal.Tools.Json",
         "Internal.Tools.Mashdict",
+        "Internal.Tools.RationalOrder",
         "Internal.Tools.Timestamp",
         "Internal.Tools.VersionControl",
         "Internal.Values.Context",
@@ -27,7 +29,8 @@
         "Internal.Values.Vault",
         "Matrix",
         "Matrix.Event",
-        "Matrix.Settings"
+        "Matrix.Settings",
+        "Types"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {

@@ -3,11 +3,11 @@ module Test.Values.Timeline exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter exposing (Filter)
+import Internal.Tools.Json as Json
 import Internal.Values.Timeline as Timeline exposing (Batch, Timeline)
 import Json.Decode as D
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
-import Internal.Tools.Json as Json
 
 
 fuzzer : Fuzzer Timeline
@@ -216,9 +216,11 @@ suite =
                         |> Timeline.mostRecentEventsFrom filter "token_4"
                         |> Expect.equal [ [ "d", "e", "f" ] ]
                 )
-            , fuzz3 TestFilter.fuzzer (Fuzz.list Fuzz.string) (Fuzz.pair (Fuzz.list Fuzz.string) (Fuzz.list Fuzz.string))
+            , fuzz3 TestFilter.fuzzer
+                (Fuzz.list Fuzz.string)
+                (Fuzz.pair (Fuzz.list Fuzz.string) (Fuzz.list Fuzz.string))
                 "Gaps can be bridged"
-                (\filter l1 (l2, l3) ->
+                (\filter l1 ( l2, l3 ) ->
                     Timeline.empty
                         |> Timeline.insert
                             { events = l1
@@ -243,7 +245,8 @@ suite =
                 )
             ]
         , describe "JSON"
-            [ fuzz fuzzer "Encode + Decode gives same output"
+            [ fuzz fuzzer
+                "Encode + Decode gives same output"
                 (\timeline ->
                     timeline
                         |> Json.encode Timeline.coder
@@ -254,7 +257,8 @@ suite =
                 )
             ]
         , describe "Weird loops"
-            [ fuzz TestFilter.fuzzer "Weird loops stop looping"
+            [ fuzz TestFilter.fuzzer
+                "Weird loops stop looping"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.insert
@@ -283,7 +287,8 @@ suite =
                 )
             ]
         , describe "Sync"
-            [ fuzz TestFilter.fuzzer "Sync fills gaps"
+            [ fuzz TestFilter.fuzzer
+                "Sync fills gaps"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.addSync
@@ -293,7 +298,7 @@ suite =
                             , end = "token_2"
                             }
                         |> Timeline.addSync
-                            { events = [ "f", "g", "h"]
+                            { events = [ "f", "g", "h" ]
                             , filter = filter
                             , start = Just "token_3"
                             , end = "token_4"
@@ -305,9 +310,10 @@ suite =
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEvents filter
-                        |> Expect.equal [ [ "a", "b", "c", "d", "e", "f", "g", "h" ]]
+                        |> Expect.equal [ [ "a", "b", "c", "d", "e", "f", "g", "h" ] ]
                 )
-            , fuzz TestFilter.fuzzer "Sync doesn't fill open gaps"
+            , fuzz TestFilter.fuzzer
+                "Sync doesn't fill open gaps"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.addSync
@@ -317,31 +323,36 @@ suite =
                             , end = "token_2"
                             }
                         |> Timeline.addSync
-                            { events = [ "f", "g", "h"]
+                            { events = [ "f", "g", "h" ]
                             , filter = filter
                             , start = Just "token_3"
                             , end = "token_4"
                             }
                         |> Timeline.mostRecentEvents filter
-                        |> Expect.equal [ [ "f", "g", "h" ]]
+                        |> Expect.equal [ [ "f", "g", "h" ] ]
                 )
-            , fuzz3 (Fuzz.pair Fuzz.string Fuzz.string) fuzzer TestFilter.fuzzer "Getting /sync is the same as getting from the token"
-                (\(start, end) timeline filter ->
+            , fuzz3 (Fuzz.pair Fuzz.string Fuzz.string)
+                fuzzer
+                TestFilter.fuzzer
+                "Getting /sync is the same as getting from the token"
+                (\( start, end ) timeline filter ->
                     let
                         t : Timeline
-                        t = Timeline.addSync
-                            { events = [ "a", "b", "c" ]
-                            , filter = filter
-                            , start = Just start
-                            , end = end
-                            }
-                            timeline
+                        t =
+                            Timeline.addSync
+                                { events = [ "a", "b", "c" ]
+                                , filter = filter
+                                , start = Just start
+                                , end = end
+                                }
+                                timeline
                     in
-                        Expect.equal
-                            (Timeline.mostRecentEvents filter t)
-                            (Timeline.mostRecentEventsFrom filter end t)
+                    Expect.equal
+                        (Timeline.mostRecentEvents filter t)
+                        (Timeline.mostRecentEventsFrom filter end t)
                 )
-            , fuzz TestFilter.fuzzer "Weird loops stop looping"
+            , fuzz TestFilter.fuzzer
+                "Weird loops stop looping"
                 (\filter ->
                     Timeline.empty
                         |> Timeline.insert

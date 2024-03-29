@@ -485,18 +485,16 @@ leakingValueFound leaking_value =
     "Found leaking value : " ++ leaking_value
 
 
-{-| 
--}
+{-| -}
 logs : { keyIsNotAnInt : String -> String }
 logs =
     { keyIsNotAnInt =
-        (\key ->
+        \key ->
             String.concat
                 [ "Encountered a key `"
                 , key
                 , "` that cannot be converted to an Int"
                 ]
-        )
     }
 
 

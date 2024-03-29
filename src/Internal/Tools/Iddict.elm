@@ -53,6 +53,7 @@ type Iddict a
         , dict : Dict Int a
         }
 
+
 {-| Define how an Iddict can be encoded and decoded to and from a JSON value.
 -}
 coder : Json.Coder a -> Json.Coder (Iddict a)
@@ -61,7 +62,7 @@ coder x =
         { name = Text.docs.iddict.name
         , description = Text.docs.iddict.description
         , init =
-            (\c d ->
+            \c d ->
                 Iddict
                     { cursor =
                         Dict.keys d
@@ -72,24 +73,24 @@ coder x =
                             |> max c
                     , dict = d
                     }
-            )
         }
-        ( Json.field.optional.withDefault
+        (Json.field.optional.withDefault
             { fieldName = "cursor"
-            , toField = (\(Iddict i) -> i.cursor)
+            , toField = \(Iddict i) -> i.cursor
             , description = Text.fields.iddict.cursor
             , coder = Json.int
             , default = ( 0, [] )
             , defaultToString = String.fromInt
             }
         )
-        ( Json.field.required
+        (Json.field.required
             { fieldName = "dict"
-            , toField = (\(Iddict i) -> i.dict)
+            , toField = \(Iddict i) -> i.dict
             , description = Text.fields.iddict.dict
             , coder = Json.fastIntDict x
             }
         )
+
 
 {-| Decode an id-dict from a JSON value.
 -}
