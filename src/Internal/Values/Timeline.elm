@@ -3,7 +3,7 @@ module Internal.Values.Timeline exposing
     , empty, singleton
     , mostRecentEvents, mostRecentEventsFrom
     , insert, addSync
-    , coder
+    , coder, encode, decoder
     )
 
 {-|
@@ -184,6 +184,8 @@ addSync batch timeline =
                         else
                             connectITokenToIToken old start tl
 
+{-| Define how a Timeline can be encoded and decoded to and from a JSON value.
+-}
 coder : Json.Coder Timeline
 coder =
     Json.object5
@@ -235,6 +237,8 @@ coder =
             }
         )
 
+{-| Define how to encode and decode a IBatch to and from a JSON value.
+-}
 coderIBatch : Json.Coder IBatch
 coderIBatch =
     Json.object4
@@ -271,6 +275,8 @@ coderIBatch =
             }
         )
 
+{-| Define how to encode and decode a IBatchPTR to and from a JSON value.
+-}
 coderIBatchPTR : Json.Coder IBatchPTR
 coderIBatchPTR =
     Json.map
@@ -281,9 +287,13 @@ coderIBatchPTR =
         }
         coderIBatchPTRValue
 
+{-| Define how to encode and decode a IBatchPTRValue to and from a JSON value.
+-}
 coderIBatchPTRValue : Json.Coder IBatchPTRValue
 coderIBatchPTRValue = Json.int
 
+{-| Define how to encode and decode a IToken to and from a JSON value.
+-}
 coderIToken : Json.Coder IToken
 coderIToken =
     Json.object5
@@ -335,6 +345,8 @@ coderIToken =
             }
         )
 
+{-| Define how to encode and decode a ITokenPTR to and from a JSON value.
+-}
 coderITokenPTR : Json.Coder ITokenPTR
 coderITokenPTR =
     Json.maybe coderITokenPTRValue
@@ -361,9 +373,13 @@ coderITokenPTR =
                 )
             }
 
+{-| Define how to encode and decode a ITokenPTRValue to and from a JSON value.
+-}
 coderITokenPTRValue : Json.Coder ITokenPTRValue
 coderITokenPTRValue = Json.string
 
+{-| Define how to encode and decode a TokenValue to and from a JSON value.
+-}
 coderTokenValue : Json.Coder TokenValue
 coderTokenValue = Json.string
 
@@ -438,6 +454,10 @@ connectITokenToIToken pointer1 pointer2 (Timeline tl) =
         ( _, _ ) ->
             Timeline tl
 
+{-| Timeline JSON decoder that helps decode a Timeline from JSON.
+-}
+decoder : Json.Decoder Timeline
+decoder = Json.decode coder
 
 {-| Create a new empty timeline.
 -}
@@ -451,6 +471,10 @@ empty =
         , tokens = Hashdict.empty .name
         }
 
+{-| Directly encode a Timeline into a JSON value.
+-}
+encode : Json.Encoder Timeline
+encode = Json.encode coder
 
 {-| Get an IBatch from the Timeline.
 -}
@@ -584,7 +608,9 @@ mostRecentEvents : Filter -> Timeline -> List (List String)
 mostRecentEvents filter (Timeline timeline) =
     mostRecentFrom filter (Timeline timeline) timeline.mostRecentBatch
 
-
+{-| Instead of finding the most recent events from the latest sync, users can
+also find the most recent events given a token value.
+-}
 mostRecentEventsFrom : Filter -> ITokenPTRValue -> Timeline -> List (List String)
 mostRecentEventsFrom filter tokenName timeline =
     mostRecentFrom filter timeline (ITokenPTR tokenName)

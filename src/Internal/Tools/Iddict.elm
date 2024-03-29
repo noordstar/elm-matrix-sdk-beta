@@ -53,6 +53,8 @@ type Iddict a
         , dict : Dict Int a
         }
 
+{-| Define how an Iddict can be encoded and decoded to and from a JSON value.
+-}
 coder : Json.Coder a -> Json.Coder (Iddict a)
 coder x =
     Json.object2
