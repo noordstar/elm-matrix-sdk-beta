@@ -254,4 +254,91 @@ suite =
                             ]
                 )
             ]
+        , describe "Sync"
+            [ fuzz TestFilter.fuzzer "Sync fills gaps"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.addSync
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.addSync
+                            { events = [ "f", "g", "h"]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_4"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e" ]
+                            , filter = filter
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.mostRecentEvents filter
+                        |> Expect.equal [ [ "a", "b", "c", "d", "e", "f", "g", "h" ]]
+                )
+            , fuzz TestFilter.fuzzer "Sync doesn't fill open gaps"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.addSync
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.addSync
+                            { events = [ "f", "g", "h"]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_4"
+                            }
+                        |> Timeline.mostRecentEvents filter
+                        |> Expect.equal [ [ "f", "g", "h" ]]
+                )
+            , fuzz3 (Fuzz.pair Fuzz.string Fuzz.string) fuzzer TestFilter.fuzzer "Getting /sync is the same as getting from the token"
+                (\(start, end) timeline filter ->
+                    let
+                        t : Timeline
+                        t = Timeline.addSync
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just start
+                            , end = end
+                            }
+                            timeline
+                    in
+                        Expect.equal
+                            (Timeline.mostRecentEvents filter t)
+                            (Timeline.mostRecentEventsFrom filter end t)
+                )
+            , fuzz TestFilter.fuzzer "Weird loops stop looping"
+                (\filter ->
+                    Timeline.empty
+                        |> Timeline.insert
+                            { events = [ "a", "b", "c" ]
+                            , filter = filter
+                            , start = Just "token_1"
+                            , end = "token_2"
+                            }
+                        |> Timeline.insert
+                            { events = [ "d", "e", "f" ]
+                            , filter = filter
+                            , start = Just "token_2"
+                            , end = "token_3"
+                            }
+                        |> Timeline.insert
+                            { events = [ "g", "h", "i" ]
+                            , filter = filter
+                            , start = Just "token_3"
+                            , end = "token_2"
+                            }
+                        |> Timeline.mostRecentEventsFrom filter "token_2"
+                        |> Expect.equal
+                            [ [ "a", "b", "c" ]
+                            , [ "d", "e", "f", "g", "h", "i" ]
+                            ]
+                )
+            ]
         ]

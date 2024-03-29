@@ -2,7 +2,7 @@ module Internal.Values.Timeline exposing
     ( Batch, Timeline
     , empty, singleton
     , mostRecentEvents, mostRecentEventsFrom
-    , insert
+    , insert, addSync
     , coder
     )
 
@@ -166,6 +166,23 @@ type Timeline
 -}
 type alias TokenValue =
     String
+
+{-| Add a new batch as a sync
+-}
+addSync : Batch -> Timeline -> Timeline
+addSync batch timeline =
+    case insertBatch batch timeline of
+        ( Timeline t, { start, end }) ->
+            let
+                old : ITokenPTR
+                old = t.mostRecentBatch
+            in
+                case Timeline { t | mostRecentBatch = end } of
+                    tl ->
+                        if old == start then
+                            tl
+                        else
+                            connectITokenToIToken old start tl
 
 coder : Json.Coder Timeline
 coder =
