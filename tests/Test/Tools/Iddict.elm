@@ -3,6 +3,7 @@ module Test.Tools.Iddict exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Tools.Iddict as Iddict exposing (Iddict)
+import Internal.Tools.Json as Json
 import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
@@ -73,21 +74,23 @@ empty =
             )
         , test "JSON encode -> decode -> empty"
             (Iddict.empty
-                |> Iddict.encode identity
-                |> D.decodeValue (Iddict.decoder D.value)
+                |> Iddict.encode Json.value
+                |> D.decodeValue (Iddict.decoder Json.value)
+                |> Result.map Tuple.first
                 |> Expect.equal (Ok Iddict.empty)
                 |> always
             )
         , test "JSON encode"
             (Iddict.empty
-                |> Iddict.encode identity
+                |> Iddict.encode Json.value
                 |> E.encode 0
-                |> Expect.equal "{\"cursor\":0,\"dict\":{}}"
+                |> Expect.equal "{\"dict\":{}}"
                 |> always
             )
         , test "JSON decode"
-            ("{\"cursor\":0,\"dict\":{}}"
-                |> D.decodeString (Iddict.decoder D.value)
+            ("{\"dict\":{}}"
+                |> D.decodeString (Iddict.decoder Json.value)
+                |> Result.map Tuple.first
                 |> Expect.equal (Ok Iddict.empty)
                 |> always
             )
@@ -170,8 +173,9 @@ singleton =
             "JSON encode -> decode -> singleton"
             (\single ->
                 single
-                    |> Iddict.encode E.int
-                    |> D.decodeValue (Iddict.decoder D.int)
+                    |> Iddict.encode Json.int
+                    |> D.decodeValue (Iddict.decoder Json.int)
+                    |> Result.map Tuple.first
                     |> Expect.equal (Ok single)
             )
         , fuzz Fuzz.int
@@ -179,7 +183,7 @@ singleton =
             (\i ->
                 Iddict.singleton i
                     |> Tuple.second
-                    |> Iddict.encode E.int
+                    |> Iddict.encode Json.int
                     |> E.encode 0
                     |> Expect.equal ("{\"cursor\":1,\"dict\":{\"0\":" ++ String.fromInt i ++ "}}")
             )
@@ -187,7 +191,8 @@ singleton =
             "JSON decode"
             (\i ->
                 ("{\"cursor\":1,\"dict\":{\"0\":" ++ String.fromInt i ++ "}}")
-                    |> D.decodeString (Iddict.decoder D.int)
+                    |> D.decodeString (Iddict.decoder Json.int)
+                    |> Result.map Tuple.first
                     |> Tuple.pair 0
                     |> Expect.equal (Iddict.singleton i |> Tuple.mapSecond Ok)
             )
