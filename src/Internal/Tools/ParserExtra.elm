@@ -1,6 +1,7 @@
 module Internal.Tools.ParserExtra exposing (..)
 
-import Parser as P exposing (Parser, (|.), (|=))
+import Parser as P exposing ((|.), (|=), Parser)
+
 
 zeroOrMore : Parser a -> Parser (List a)
 zeroOrMore parser =
@@ -13,11 +14,13 @@ zeroOrMore parser =
                 ]
         )
 
+
 oneOrMore : Parser a -> Parser (List a)
 oneOrMore parser =
     P.succeed (::)
         |= parser
         |= zeroOrMore parser
+
 
 atLeast : Int -> Parser a -> Parser (List a)
 atLeast n parser =
@@ -26,6 +29,7 @@ atLeast n parser =
             if List.length tail < n then
                 P.succeed (\head -> P.Loop (head :: tail))
                     |= parser
+
             else
                 P.oneOf
                     [ P.succeed (\head -> P.Loop (head :: tail))
@@ -33,6 +37,7 @@ atLeast n parser =
                     , P.succeed (P.Done (List.reverse tail))
                     ]
         )
+
 
 atMost : Int -> Parser a -> Parser (List a)
 atMost n parser =
@@ -44,33 +49,40 @@ atMost n parser =
                         |= parser
                     , P.succeed (P.Done (List.reverse tail))
                     ]
+
             else
                 P.succeed (P.Done (List.reverse tail))
         )
+
 
 times : Int -> Int -> Parser a -> Parser (List a)
 times inf sup parser =
     let
         low : Int
-        low = max 0 (min inf sup)
+        low =
+            max 0 (min inf sup)
 
         high : Int
-        high = max 0 sup
+        high =
+            max 0 sup
     in
-        P.loop []
-            (\tail ->
-                if List.length tail < low then
-                    P.succeed (\head -> P.Loop (head :: tail))
+    P.loop []
+        (\tail ->
+            if List.length tail < low then
+                P.succeed (\head -> P.Loop (head :: tail))
+                    |= parser
+
+            else if List.length tail < high then
+                P.oneOf
+                    [ P.succeed (\head -> P.Loop (head :: tail))
                         |= parser
-                else if List.length tail < high then
-                    P.oneOf
-                        [ P.succeed (\head -> P.Loop (head :: tail))
-                            |= parser
-                        , P.succeed (P.Done (List.reverse tail))
-                        ]
-                else
-                    P.succeed (P.Done (List.reverse tail))
-            )
+                    , P.succeed (P.Done (List.reverse tail))
+                    ]
+
+            else
+                P.succeed (P.Done (List.reverse tail))
+        )
+
 
 exactly : Int -> Parser a -> Parser (List a)
 exactly n =
