@@ -3,7 +3,7 @@ module Internal.Tools.Iddict exposing
     , empty, singleton, insert, map, remove
     , isEmpty, member, get, size
     , keys, values
-    , encode, decoder
+    , coder, encode, decoder
     )
 
 {-| The id-dict is a data type that lets us store values in a dictionary using
@@ -36,13 +36,13 @@ do not need to generate identifiers yourself.
 
 ## JSON coders
 
-@docs encode, decoder
+@docs coder, encode, decoder
 
 -}
 
 import FastDict as Dict exposing (Dict)
-import Json.Decode as D
-import Json.Encode as E
+import Internal.Config.Text as Text
+import Internal.Tools.Json as Json
 
 
 {-| The Iddict data type.
@@ -54,41 +54,49 @@ type Iddict a
         }
 
 
+{-| Define how an Iddict can be encoded and decoded to and from a JSON value.
+-}
+coder : Json.Coder a -> Json.Coder (Iddict a)
+coder x =
+    Json.object2
+        { name = Text.docs.iddict.name
+        , description = Text.docs.iddict.description
+        , init =
+            \c d ->
+                Iddict
+                    { cursor =
+                        Dict.keys d
+                            |> List.maximum
+                            |> Maybe.map ((+) 1)
+                            |> Maybe.withDefault 0
+                            |> max (Dict.size d)
+                            |> max c
+                    , dict = d
+                    }
+        }
+        (Json.field.optional.withDefault
+            { fieldName = "cursor"
+            , toField = \(Iddict i) -> i.cursor
+            , description = Text.fields.iddict.cursor
+            , coder = Json.int
+            , default = ( 0, [] )
+            , defaultToString = String.fromInt
+            }
+        )
+        (Json.field.required
+            { fieldName = "dict"
+            , toField = \(Iddict i) -> i.dict
+            , description = Text.fields.iddict.dict
+            , coder = Json.fastIntDict x
+            }
+        )
+
+
 {-| Decode an id-dict from a JSON value.
 -}
-decoder : D.Decoder a -> D.Decoder (Iddict a)
-decoder xDecoder =
-    D.map2
-        (\c pairs ->
-            let
-                dict : Dict Int a
-                dict =
-                    pairs
-                        |> List.filterMap
-                            (\( k, v ) ->
-                                k
-                                    |> String.toInt
-                                    |> Maybe.map (\n -> ( n, v ))
-                            )
-                        |> Dict.fromList
-            in
-            Iddict
-                { cursor =
-                    Dict.keys dict
-                        -- Larger than all values in the list
-                        |> List.map ((+) 1)
-                        |> List.maximum
-                        |> Maybe.withDefault 0
-                        |> max (Dict.size dict)
-                        -- At least the dict size
-                        |> max c
-
-                -- At least the given value
-                , dict = dict
-                }
-        )
-        (D.field "cursor" D.int)
-        (D.field "dict" <| D.keyValuePairs xDecoder)
+decoder : Json.Coder a -> Json.Decoder (Iddict a)
+decoder x =
+    Json.decode (coder x)
 
 
 {-| Create an empty id-dict.
@@ -103,16 +111,9 @@ empty =
 
 {-| Encode an id-dict to a JSON value.
 -}
-encode : (a -> E.Value) -> Iddict a -> E.Value
-encode encodeX (Iddict d) =
-    E.object
-        [ ( "cursor", E.int d.cursor )
-        , ( "dict"
-          , d.dict
-                |> Dict.toCoreDict
-                |> E.dict String.fromInt encodeX
-          )
-        ]
+encode : Json.Coder a -> Json.Encoder (Iddict a)
+encode x =
+    Json.encode (coder x)
 
 
 {-| Get a value from the id-dict using its key.
