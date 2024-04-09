@@ -3,13 +3,14 @@
     "name": "noordstar/elm-matrix-sdk-beta",
     "summary": "Matrix SDK for instant communication. Unstable beta version for testing only.",
     "license": "EUPL-1.1",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "exposed-modules": [
         "Internal.Config.Default",
         "Internal.Config.Leaks",
         "Internal.Config.Log",
         "Internal.Config.Phantom",
         "Internal.Config.Text",
+        "Internal.Filter.Timeline",
         "Internal.Tools.DecodeExtra",
         "Internal.Tools.EncodeExtra",
         "Internal.Tools.Hashdict",
@@ -23,16 +24,19 @@
         "Internal.Values.Event",
         "Internal.Values.Settings",
         "Internal.Values.StateManager",
+        "Internal.Values.Timeline",
         "Internal.Values.Vault",
         "Matrix",
         "Matrix.Event",
-        "Matrix.Settings"
+        "Matrix.Settings",
+        "Types"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.0 <= v < 2.0.0",
         "elm/json": "1.0.0 <= v < 2.0.0",
         "elm/time": "1.0.0 <= v < 2.0.0",
+        "micahhahn/elm-safe-recursion": "2.0.0 <= v < 3.0.0",
         "miniBill/elm-fast-dict": "1.0.0 <= v < 2.0.0"
     },
     "test-dependencies": {

@@ -3,7 +3,7 @@ module Internal.Tools.Mashdict exposing
     , empty, singleton, insert, remove, removeKey
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
-    , rehash, union
+    , rehash, union, map
     , coder, encode, decoder, softDecoder
     )
 
@@ -43,7 +43,7 @@ In general, you are advised to learn more about the
 
 ## Transform
 
-@docs rehash, union
+@docs rehash, union, map
 
 
 ## JSON coders
@@ -203,6 +203,34 @@ isEqual h1 h2 =
 keys : Mashdict a -> List String
 keys (Mashdict h) =
     Dict.keys h.values
+
+
+{-| Map a value on a given key. If the outcome of the function changes the hash,
+the operation does nothing.
+-}
+map : String -> (a -> a) -> Mashdict a -> Mashdict a
+map key f (Mashdict h) =
+    Mashdict
+        { h
+            | values =
+                Dict.update
+                    key
+                    (Maybe.map
+                        (\value ->
+                            case h.hash (f value) of
+                                Just newHash ->
+                                    if newHash == key then
+                                        f value
+
+                                    else
+                                        value
+
+                                Nothing ->
+                                    value
+                        )
+                    )
+                    h.values
+        }
 
 
 {-| Determine if a value's hash is in a mashdict.
