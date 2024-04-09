@@ -1,5 +1,9 @@
 module Internal.Grammar.UserId exposing (..)
-{-| # User ids
+
+{-|
+
+
+# User ids
 
 Users within Matrix are uniquely identified by their Matrix user ID. The user
 ID is namespaced to the homeserver which allocated the account and has the form:
@@ -7,7 +11,7 @@ ID is namespaced to the homeserver which allocated the account and has the form:
     @localpart:domain
 
 The localpart of a user ID is an opaque identifier for that user. It MUST NOT
-be empty, and MUST contain only the characters a-z, 0-9, ., _, =, -, /, and +.
+be empty, and MUST contain only the characters a-z, 0-9, ., \_, =, -, /, and +.
 
 The domain of a user ID is the server name of the homeserver which allocated
 the account.
@@ -36,9 +40,17 @@ localparts from the expanded character set:
 
 import Internal.Grammar.ServerName as ServerName exposing (ServerName)
 import Internal.Tools.ParserExtra as PE
-import Parser as P exposing (Parser, (|.), (|=))
+import Parser as P exposing ((|.), (|=), Parser)
 
-type UserID = UserID { localpart : String, domain : ServerName }
+
+type UserID
+    = UserID { localpart : String, domain : ServerName }
+
+
+fromString : String -> Maybe UserID
+fromString =
+    P.run userIdParser >> Result.toMaybe
+
 
 localpartParser : Parser String
 localpartParser =
@@ -47,22 +59,26 @@ localpartParser =
         |> PE.times 1 255
         |> P.map String.concat
 
+
 toString : UserID -> String
 toString (UserID { localpart, domain }) =
     String.concat [ "@", localpart, ":", ServerName.toString domain ]
 
+
 userIdParser : Parser UserID
 userIdParser =
-    P.succeed (\l d -> UserID { localpart = l, domain = d } )
+    P.succeed (\l d -> UserID { localpart = l, domain = d })
         |. P.symbol "@"
         |= localpartParser
         |. P.symbol ":"
         |= ServerName.servernameParser
 
+
 validHistoricalUsernameChar : Char -> Bool
 validHistoricalUsernameChar c =
     let
         i : Int
-        i = Char.toCode c
+        i =
+            Char.toCode c
     in
-        (0x21 <= i && i <= 0x39) || (0x3B <= i && i <= 0x7E)
+    (0x21 <= i && i <= 0x39) || (0x3B <= i && i <= 0x7E)

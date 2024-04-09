@@ -349,7 +349,7 @@ leakingValueFound leaking_value =
 
 
 parses :
-    { reservedIPs : 
+    { reservedIPs :
         { ipv6Toipv4 : String
         , multicast : String
         , futureUse : String
