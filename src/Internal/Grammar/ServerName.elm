@@ -47,8 +47,8 @@ type alias IPv6Address =
 
 {-| The server name is a combination of a hostname and an optional port.
 -}
-type ServerName
-    = ServerName { host : HostName, port_ : Maybe Int }
+type alias ServerName =
+    { host : HostName, port_ : Maybe Int }
 
 
 {-| Parser for the DNS name record. The Matrix spec bases its grammar on the
@@ -214,7 +214,7 @@ portParser =
 
 servernameParser : Parser ServerName
 servernameParser =
-    P.succeed (\h p -> ServerName { host = h, port_ = p })
+    P.succeed ServerName
         |= hostnameParser
         |= P.oneOf
             [ P.succeed Just
@@ -225,7 +225,7 @@ servernameParser =
 
 
 toString : ServerName -> String
-toString (ServerName { host, port_ }) =
+toString { host, port_ } =
     let
         hostString : String
         hostString =

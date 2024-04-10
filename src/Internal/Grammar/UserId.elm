@@ -43,8 +43,8 @@ import Internal.Tools.ParserExtra as PE
 import Parser as P exposing ((|.), (|=), Parser)
 
 
-type UserID
-    = UserID { localpart : String, domain : ServerName }
+type alias UserID =
+    { localpart : String, domain : ServerName }
 
 
 fromString : String -> Maybe UserID
@@ -61,13 +61,13 @@ localpartParser =
 
 
 toString : UserID -> String
-toString (UserID { localpart, domain }) =
+toString { localpart, domain } =
     String.concat [ "@", localpart, ":", ServerName.toString domain ]
 
 
 userIdParser : Parser UserID
 userIdParser =
-    P.succeed (\l d -> UserID { localpart = l, domain = d })
+    P.succeed UserID
         |. P.symbol "@"
         |= localpartParser
         |. P.symbol ":"
