@@ -85,11 +85,17 @@ bfs queue acc =
 
                 DocsInt ->
                     bfs tail acc
+                
+                DocsIntDict d ->
+                    bfs (d :: tail) acc
 
                 DocsLazy f ->
                     bfs (f () :: tail) acc
 
                 DocsList d ->
+                    bfs (d :: tail) acc
+                
+                DocsListWithOne d ->
                     bfs (d :: tail) acc
 
                 DocsMap { content } ->
@@ -109,6 +115,9 @@ bfs queue acc =
 
                 DocsRiskyMap { content } ->
                     bfs (content :: tail) acc
+                
+                DocsSet d ->
+                    bfs (d :: tail) acc
 
                 DocsString ->
                     bfs tail acc
@@ -284,11 +293,17 @@ getFunctionBFS docs acc =
 
         DocsInt ->
             acc
+        
+        DocsIntDict d ->
+            getFunctionBFS d acc
 
         DocsLazy f ->
             getFunctionBFS (f ()) acc
 
         DocsList d ->
+            getFunctionBFS d acc
+        
+        DocsListWithOne d ->
             getFunctionBFS d acc
 
         DocsMap { name, description, content } ->
@@ -306,6 +321,9 @@ getFunctionBFS docs acc =
             getFunctionBFS
                 content
                 (List.append acc [ { name = name, description = description } ])
+        
+        DocsSet d ->
+            getFunctionBFS d acc
 
         DocsString ->
             acc
@@ -337,11 +355,25 @@ toString =
 
                 DocsInt ->
                     [ Element.text "int" ]
+                
+                DocsIntDict d ->
+                    List.concat
+                        [ [ Element.text "{int:" ]
+                        , go d
+                        , [ Element.text "}" ]
+                        ]
 
                 DocsLazy f ->
                     go (f ())
 
                 DocsList d ->
+                    List.concat
+                        [ [ Element.text "[" ]
+                        , go d
+                        , [ Element.text "]" ]
+                        ]
+                
+                DocsListWithOne d ->
                     List.concat
                         [ [ Element.text "[" ]
                         , go d
@@ -368,6 +400,13 @@ toString =
                 DocsRiskyMap { name, content } ->
                     List.concat
                         [ [ Element.text name, Element.text "(" ]
+                        , go content
+                        , [ Element.text ")" ]
+                        ]
+                    
+                DocsSet content ->
+                    List.concat
+                        [ [ Element.text "set(" ]
                         , go content
                         , [ Element.text ")" ]
                         ]

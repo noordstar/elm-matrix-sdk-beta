@@ -22,6 +22,7 @@ import Internal.Values.Envelope
 import Internal.Values.Event
 import Internal.Values.Settings
 import Internal.Values.StateManager
+import Internal.Values.Timeline
 import Json.Decode as D
 import Route exposing (Route(..))
 import Task
@@ -52,6 +53,7 @@ coders =
         , ( "Mashdict", shapeCoder <| Internal.Tools.Mashdict.coder .stateKey Internal.Values.Event.coder )
         , ( "Settings", shapeCoder <| Internal.Values.Settings.coder )
         , ( "StateManager", shapeCoder <| Internal.Values.StateManager.coder )
+        , ( "Timeline", shapeCoder <| Internal.Values.Timeline.coder )
         , ( "Timestamp", shapeCoder <| Internal.Tools.Timestamp.coder )
         ]
 
