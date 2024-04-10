@@ -1,4 +1,7 @@
-module Internal.Grammar.UserId exposing (..)
+module Internal.Grammar.UserId exposing
+    ( UserID, toString, fromString
+    , userIdParser, isHistorical
+    )
 
 {-|
 
@@ -36,6 +39,16 @@ localparts from the expanded character set:
 
     extended_user_id_char = %x21-39 / %x3B-7E  ; all ASCII printing chars except :
 
+
+## User ID
+
+@docs UserID, toString, fromString
+
+
+## Extra
+
+@docs userIdParser, isHistorical
+
 -}
 
 import Internal.Grammar.ServerName as ServerName exposing (ServerName)
@@ -43,13 +56,39 @@ import Internal.Tools.ParserExtra as PE
 import Parser as P exposing ((|.), (|=), Parser)
 
 
+{-| The User ID type defining a user.
+-}
 type alias UserID =
     { localpart : String, domain : ServerName }
 
 
+{-| Convert a Matrix User ID back into its uniquely identifying string.
+-}
 fromString : String -> Maybe UserID
 fromString =
-    P.run userIdParser >> Result.toMaybe
+    P.run (userIdParser |. P.end) >> Result.toMaybe
+
+
+{-| Return a boolean on whether a Matrix user has a historical user ID.
+Since this user ID is not SUPPOSED to be legal but clients are nevertheless
+forced to support them due to backwards compatibility, clients may occasionally
+attempt to break the rules in an attempt to find undefined behaviour.
+
+As a result, an explicit method to spot historical users is added to the SDK.
+
+-}
+isHistorical : UserID -> Bool
+isHistorical { localpart } =
+    String.any
+        (\c ->
+            let
+                i : Int
+                i =
+                    Char.toCode c
+            in
+            not ((0x61 <= i && i <= 0x7A) || Char.isAlpha c)
+        )
+        localpart
 
 
 localpartParser : Parser String
@@ -60,18 +99,23 @@ localpartParser =
         |> P.map String.concat
 
 
+{-| Convert a parsed User ID to a string.
+-}
 toString : UserID -> String
 toString { localpart, domain } =
     String.concat [ "@", localpart, ":", ServerName.toString domain ]
 
 
+{-| Parse a UserID from a string.
+-}
 userIdParser : Parser UserID
 userIdParser =
     P.succeed UserID
         |. P.symbol "@"
         |= localpartParser
         |. P.symbol ":"
-        |= ServerName.servernameParser
+        |= ServerName.serverNameParser
+        |> PE.maxLength 255
 
 
 validHistoricalUsernameChar : Char -> Bool

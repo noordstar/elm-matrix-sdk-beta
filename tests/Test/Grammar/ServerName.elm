@@ -101,8 +101,7 @@ suite =
                 (\server ->
                     SN.fromString server
                         |> Maybe.map SN.toString
-                        |> Maybe.map (String.replace "::" ":")
-                        |> Expect.equal (Just <| String.replace "::" ":" server)
+                        |> Expect.equal (Just server)
                 )
             , test "Checking spec examples"
                 (\() ->

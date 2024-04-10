@@ -1,6 +1,6 @@
 module Internal.Grammar.ServerName exposing
     ( ServerName, toString, fromString
-    , servernameParser
+    , serverNameParser
     )
 
 {-|
@@ -83,9 +83,11 @@ dnsNameParser =
         |> P.getChompedString
 
 
+{-| Convert a string to a server name.
+-}
 fromString : String -> Maybe ServerName
 fromString s =
-    P.run (servernameParser |. P.end) s
+    P.run (serverNameParser |. P.end) s
         |> (\out ->
                 case out of
                     Ok _ ->
@@ -212,8 +214,11 @@ portParser =
             )
 
 
-servernameParser : Parser ServerName
-servernameParser =
+{-| Parse a server name. Generally used by other identifiers that have a server
+name as one of its parts.
+-}
+serverNameParser : Parser ServerName
+serverNameParser =
     P.succeed ServerName
         |= hostnameParser
         |= P.oneOf
@@ -224,6 +229,8 @@ servernameParser =
             ]
 
 
+{-| Convert a parsed server name back to a string.
+-}
 toString : ServerName -> String
 toString { host, port_ } =
     let
