@@ -62,7 +62,7 @@ ipv6Fuzzer =
             |> Fuzz.andThen
                 (\front ->
                     num
-                        |> Fuzz.listOfLengthBetween 0 (8 - List.length front)
+                        |> Fuzz.listOfLengthBetween 0 (8 - 1 - List.length front)
                         |> Fuzz.map
                             (\back ->
                                 [ front

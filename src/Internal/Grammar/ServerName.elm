@@ -149,8 +149,13 @@ ipv6Parser =
     ipv6LeftParser
         |> P.andThen
             (\front ->
-                P.succeed (IPv6Address front)
-                    |= ipv6RightParser (8 - List.length front)
+                if List.length front < 8 then
+                    P.succeed (IPv6Address front)
+                        |= ipv6RightParser (8 - 1 - List.length front)
+                    -- The -1 is because :: implies one or more zeroes
+
+                else
+                    P.succeed (IPv6Address front [])
             )
 
 
@@ -175,6 +180,7 @@ ipv6RightParser n =
 
     else
         P.succeed []
+            |. P.symbol ":"
 
 
 {-| Convert an IPv6 address to a readable string format

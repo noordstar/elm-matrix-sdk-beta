@@ -87,3 +87,19 @@ times inf sup parser =
 exactly : Int -> Parser a -> Parser (List a)
 exactly n =
     times n n
+
+
+maxLength : Int -> Parser a -> Parser a
+maxLength n parser =
+    P.succeed
+        (\start value end ->
+            if abs (end - start) > n then
+                P.problem "Parsed too much text!"
+
+            else
+                P.succeed value
+        )
+        |= P.getOffset
+        |= parser
+        |= P.getOffset
+        |> P.andThen identity

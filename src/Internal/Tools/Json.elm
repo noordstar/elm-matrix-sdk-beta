@@ -74,6 +74,7 @@ import Internal.Tools.DecodeExtra as D
 import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
 import Json.Encode as E
+import Parser as P
 import Set exposing (Set)
 
 
@@ -158,6 +159,7 @@ type Docs
             }
         )
     | DocsOptional Docs
+    | DocsParser String
     | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
     | DocsSet Docs
     | DocsString
@@ -1149,6 +1151,27 @@ object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
                     , toDocsField fk
                     ]
                 }
+        }
+
+
+{-| Define a parser that converts a string into a custom Elm type.
+-}
+parser : { name : String, p : P.Parser ( a, List Log ), toString : a -> String } -> Coder a
+parser { name, p, toString } =
+    Coder
+        { encoder = toString >> E.string
+        , decoder =
+            D.string
+                |> D.andThen
+                    (\v ->
+                        case P.run p v of
+                            Err _ ->
+                                D.fail ("Failed to parse " ++ name ++ "!")
+
+                            Ok o ->
+                                D.succeed o
+                    )
+        , docs = DocsParser name
         }
 
 
