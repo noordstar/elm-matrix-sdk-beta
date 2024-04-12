@@ -1,5 +1,5 @@
 module Internal.Config.Text exposing
-    ( docs, failures, fields
+    ( docs, failures, fields, mappings, logs, parses
     , accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
     , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
@@ -27,7 +27,7 @@ You should only do this if you know what you're doing.
 
 ## Type documentation
 
-@docs docs, failures, fields
+@docs docs, failures, fields, mappings, logs, parses
 
 
 ## API Authentication
@@ -116,9 +116,14 @@ docs :
     , envelope : TypeDocs
     , event : TypeDocs
     , hashdict : TypeDocs
+    , ibatch : TypeDocs
+    , iddict : TypeDocs
+    , itoken : TypeDocs
     , mashdict : TypeDocs
     , settings : TypeDocs
     , stateManager : TypeDocs
+    , timeline : TypeDocs
+    , timelineFilter : TypeDocs
     , unsigned : TypeDocs
     }
 docs =
@@ -148,6 +153,24 @@ docs =
             , "For example, the hashdict can store events and use their event id as their key."
             ]
         }
+    , ibatch =
+        { name = "IBatch"
+        , description =
+            [ "The internal batch tracks a patch of events on the Matrix timeline."
+            ]
+        }
+    , iddict =
+        { name = "Iddict"
+        , description =
+            [ "An iddict automatically handles creating appropriate keys by incrementally assiging a new key to new values."
+            ]
+        }
+    , itoken =
+        { name = "IToken"
+        , description =
+            [ "The IToken connects batches in the timeline and maintains relative order."
+            ]
+        }
     , mashdict =
         { name = "Mashdict"
         , description =
@@ -167,6 +190,18 @@ docs =
             , "Instead of making the user loop through the room's timeline of events, the StateManager offers the user a dictionary-like experience to navigate through the Matrix room state."
             ]
         }
+    , timeline =
+        { name = "Timeline"
+        , description =
+            [ "The Timeline tracks events and orders them in a simple way for the user to view them."
+            ]
+        }
+    , timelineFilter =
+        { name = "Timeline Filter"
+        , description =
+            [ "The Timeline Filter allows the user to be very specific about which events they're interested in."
+            ]
+        }
     , unsigned =
         { name = "Unsigned Data"
         , description =
@@ -179,13 +214,14 @@ docs =
 
 {-| Description of all edge cases where a JSON decoder can fail.
 -}
-failures : { hashdict : Desc, mashdict : Desc }
+failures : { hashdict : Desc, listWithOne : String, mashdict : Desc }
 failures =
     { hashdict =
-        [ "Not all values map to thir respected hash with the given hash function."
+        [ "Not all values map to their respected hash with the given hash function."
         ]
+    , listWithOne = "Expected at least one value in the list - zero found."
     , mashdict =
-        [ "Not all values map to thir respected hash with the given hash function."
+        [ "Not all values map to their respected hash with the given hash function."
         ]
     }
 
@@ -218,10 +254,40 @@ fields :
         , eventType : Desc
         , unsigned : Desc
         }
+    , ibatch :
+        { end : Desc
+        , events : Desc
+        , filter : Desc
+        , start : Desc
+        }
+    , iddict :
+        { cursor : Desc
+        , dict : Desc
+        }
+    , itoken :
+        { behind : Desc
+        , ends : Desc
+        , inFrontOf : Desc
+        , name : Desc
+        , starts : Desc
+        }
     , settings :
         { currentVersion : Desc
         , deviceName : Desc
         , syncTime : Desc
+        }
+    , timeline :
+        { batches : Desc
+        , events : Desc
+        , filledBatches : Desc
+        , mostRecentBatch : Desc
+        , tokens : Desc
+        }
+    , timelineFilter :
+        { senders : Desc
+        , sendersAllowOthers : Desc
+        , types : Desc
+        , typesAllowOthers : Desc
         }
     , unsigned :
         { age : Desc
@@ -293,6 +359,45 @@ fields =
             [ "Contains optional extra information about the event."
             ]
         }
+    , ibatch =
+        { end =
+            [ "Pointer to the token that ends the internal batch."
+            ]
+        , events =
+            [ "List of event IDs contained within the internal batch."
+            ]
+        , filter =
+            [ "Filter that indicates how strictly the homeserver has selected when resulting into the given list of events."
+            ]
+        , start =
+            [ "Pointer to the token that starts the internal batch."
+            ]
+        }
+    , iddict =
+        { cursor =
+            [ "To ensure uniqueness of all keys and to prevent the usage of keys that were previously assigned to older values, the iddict tracks which is the smallest non-negative integer that hasn't been used yet."
+            ]
+        , dict =
+            [ "Dictionary that contains all values stored in the iddict."
+            ]
+        }
+    , itoken =
+        { behind =
+            [ "This token is behind all tokens in this field."
+            ]
+        , ends =
+            [ "This token is in front of the batches in this field."
+            ]
+        , inFrontOf =
+            [ "This token is ahead of all tokens in this field."
+            ]
+        , name =
+            [ "Opaque value provided by the homeserver."
+            ]
+        , starts =
+            [ "This token is at the start of the batches in this field."
+            ]
+        }
     , settings =
         { currentVersion =
             [ "Indicates the current version of the Elm SDK."
@@ -302,6 +407,40 @@ fields =
             ]
         , syncTime =
             [ "Indicates the frequency in miliseconds with which the Elm SDK should long-poll the /sync endpoint."
+            ]
+        }
+    , timeline =
+        { batches =
+            [ "Dictionary storing all event batches in the timeline."
+            ]
+        , events =
+            [ "Mapping that allows us to quickly zoom in on an event."
+            ]
+        , filledBatches =
+            [ "Counter that tracks how many batches are kept by the timeline."
+            , "Batches are only counted if they are filled by at least one event."
+            ]
+        , mostRecentBatch =
+            [ "Tracks the most recent batch that was sent by the homeserver - usually through `/sync`"
+            ]
+        , tokens =
+            [ "Index of all the tokens used to connect event batches on the timeline."
+            ]
+        }
+    , timelineFilter =
+        { senders =
+            [ "A list of senders that is considered an exception to the infinite pool of \"other\" users"
+            ]
+        , sendersAllowOthers =
+            [ "Value that determines whether the infinite pool of others is included."
+            , "If False, only the users mentioned in `senders` are included. If True, then all users who aren't mentioned in `senders` are included."
+            ]
+        , types =
+            [ "A list of event types that is considered an exception to the infinite pool of \"other\" event types."
+            ]
+        , typesAllowOthers =
+            [ "Value that determines whether the infinite pool of others is included."
+            , "If False, only the event types mentioned in `types` are included. If True, then all users who aren't mentioned in `types` are included."
             ]
         }
     , unsigned =
@@ -345,6 +484,57 @@ be going on.
 leakingValueFound : String -> String
 leakingValueFound leaking_value =
     "Found leaking value : " ++ leaking_value
+
+
+{-| These logs might appear during a process where something unexpected has
+happened. Most of these unexpected results, are taken account of by the Elm SDK,
+but logged so that the programmer can do something about it.
+-}
+logs : { keyIsNotAnInt : String -> String }
+logs =
+    { keyIsNotAnInt =
+        \key ->
+            String.concat
+                [ "Encountered a key `"
+                , key
+                , "` that cannot be converted to an Int"
+                ]
+    }
+
+
+{-| Function descriptions
+-}
+mappings : { itokenPTR : TypeDocs }
+mappings =
+    { itokenPTR =
+        { name = "ITokenPTR init"
+        , description =
+            [ "Converts an optional string to an Itoken pointer."
+            ]
+        }
+    }
+
+
+{-| Logs for issues that might be found while parsing strings into meaningful data.
+-}
+parses :
+    { historicalUserId : String -> String
+    , reservedIPs :
+        { ipv6Toipv4 : String
+        , multicast : String
+        , futureUse : String
+        , unspecified : String
+        }
+    }
+parses =
+    { historicalUserId = \name -> "Found a historical username `" ++ name ++ "`."
+    , reservedIPs =
+        { ipv6Toipv4 = "Detected a reserved ip address that is formerly used as an IPv6 to IPv4 relay. It is unlikely that this IP Address is real."
+        , multicast = "Detected a reserved ip address that is used for multicasting. It is unlikely that this IP Address is real."
+        , futureUse = "Detected a reserves ip address that is reserved for future use. It is unlikely that this IP Address is real if you're running a recent version of the Elm SDK."
+        , unspecified = "This is an unspecified ip address. It is unlikely that this IP Address is real and someone might try to break something."
+        }
+    }
 
 
 {-| The Matrix homeserver can specify how it wishes to communicate, and the Elm

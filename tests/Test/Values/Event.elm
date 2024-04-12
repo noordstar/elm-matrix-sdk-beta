@@ -1,9 +1,11 @@
 module Test.Values.Event exposing (..)
 
+import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Values.Event as Event exposing (Event)
 import Json.Encode as E
 import Test exposing (..)
+import Test.Grammar.UserId as UserId
 import Test.Tools.Timestamp as TestTimestamp
 
 
@@ -14,7 +16,7 @@ fuzzer =
         Fuzz.string
         TestTimestamp.fuzzer
         Fuzz.string
-        Fuzz.string
+        UserId.fullUserFuzzer
         (Fuzz.maybe Fuzz.string)
         Fuzz.string
         (Fuzz.maybe unsignedDataFuzzer)
@@ -64,4 +66,16 @@ valueFuzzer =
         , Fuzz.map (E.list E.int) (Fuzz.list Fuzz.int)
         , Fuzz.map (E.list E.string) (Fuzz.list Fuzz.string)
         , Fuzz.map Event.encode (Fuzz.lazy (\_ -> fuzzer))
+        ]
+
+
+suite : Test
+suite =
+    describe "Sanity check"
+        [ fuzz fuzzer
+            "event = event"
+            (\event ->
+                Event.isEqual event event
+                    |> Expect.equal True
+            )
         ]

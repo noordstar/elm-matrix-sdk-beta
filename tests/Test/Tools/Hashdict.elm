@@ -115,7 +115,7 @@ suite =
                 (\event ->
                     Hashdict.singleton .eventId event
                         |> Hashdict.remove event
-                        |> Hashdict.isEqual (Hashdict.empty .sender)
+                        |> Hashdict.isEqual (Hashdict.empty .roomId)
                         |> Expect.equal True
                 )
             , fuzz TestEvent.fuzzer
@@ -123,7 +123,7 @@ suite =
                 (\event ->
                     Hashdict.singleton .eventId event
                         |> Hashdict.removeKey event.eventId
-                        |> Hashdict.isEqual (Hashdict.empty .sender)
+                        |> Hashdict.isEqual (Hashdict.empty .roomId)
                         |> Expect.equal True
                 )
             , fuzz TestEvent.fuzzer
@@ -168,8 +168,8 @@ suite =
                         |> Json.encode (Hashdict.coder .eventId Event.coder)
                         |> E.encode indent
                         |> D.decodeString (Json.decode <| Hashdict.coder .eventId Event.coder)
-                        |> Result.map (Tuple.mapFirst Hashdict.toList)
-                        |> Expect.equal (Ok ( Hashdict.toList hashdict, [] ))
+                        |> Result.map (Tuple.first >> Hashdict.toList)
+                        |> Expect.equal (Ok (Hashdict.toList hashdict))
                 )
             ]
         ]

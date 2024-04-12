@@ -122,9 +122,10 @@ roomId (Event event) =
 
 {-| Determine the fully-qualified ID of the user who sent an event.
 -}
-sender : Event -> String
+sender : Event -> Types.User
 sender (Event event) =
-    Envelope.extract .sender event
+    Envelope.map .sender event
+        |> Types.User
 
 
 {-| Determine an event's state key.
