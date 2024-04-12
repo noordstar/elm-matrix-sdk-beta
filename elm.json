@@ -27,10 +27,12 @@
         "Internal.Values.Settings",
         "Internal.Values.StateManager",
         "Internal.Values.Timeline",
+        "Internal.Values.User",
         "Internal.Values.Vault",
         "Matrix",
         "Matrix.Event",
         "Matrix.Settings",
+        "Matrix.User",
         "Types"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
