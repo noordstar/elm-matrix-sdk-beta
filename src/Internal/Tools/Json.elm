@@ -4,7 +4,7 @@ module Internal.Tools.Json exposing
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
-    , Field, field
+    , Field, field, parser
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
 
@@ -58,7 +58,7 @@ This section creates objects that can be (re)used in the library's JSON
 specification. For this, the user needs to construct fields for the object
 first.
 
-@docs Field, field
+@docs Field, field, parser
 
 Once all fields are constructed, the user can create JSON objects.
 

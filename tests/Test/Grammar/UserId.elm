@@ -2,6 +2,7 @@ module Test.Grammar.UserId exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
+import Internal.Grammar.ServerName as SN
 import Internal.Grammar.UserId as U
 import Test exposing (..)
 import Test.Grammar.ServerName as ServerName
@@ -75,6 +76,13 @@ historicalUserFuzzer =
 userFuzzer : Fuzzer String
 userFuzzer =
     Fuzz.oneOf [ modernUserFuzzer, historicalUserFuzzer ]
+
+
+fullUserFuzzer : Fuzzer U.UserID
+fullUserFuzzer =
+    userFuzzer
+        |> Fuzz.map U.fromString
+        |> Fuzz.map (Maybe.withDefault { localpart = "a", domain = { host = SN.DNS "a", port_ = Nothing } })
 
 
 suite : Test

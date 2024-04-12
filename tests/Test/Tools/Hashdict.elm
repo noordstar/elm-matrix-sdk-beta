@@ -115,7 +115,7 @@ suite =
                 (\event ->
                     Hashdict.singleton .eventId event
                         |> Hashdict.remove event
-                        |> Hashdict.isEqual (Hashdict.empty .sender)
+                        |> Hashdict.isEqual (Hashdict.empty .roomId)
                         |> Expect.equal True
                 )
             , fuzz TestEvent.fuzzer
@@ -123,7 +123,7 @@ suite =
                 (\event ->
                     Hashdict.singleton .eventId event
                         |> Hashdict.removeKey event.eventId
-                        |> Hashdict.isEqual (Hashdict.empty .sender)
+                        |> Hashdict.isEqual (Hashdict.empty .roomId)
                         |> Expect.equal True
                 )
             , fuzz TestEvent.fuzzer

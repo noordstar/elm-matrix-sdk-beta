@@ -1,6 +1,7 @@
 module Internal.Values.User exposing
     ( User, toString, fromString
     , localpart, domain
+    , coder
     )
 
 {-| The Matrix user is uniquely identified by their identifier. This User type
@@ -28,16 +29,48 @@ Since the username is safely parsed, one can get these parts of the username.
 
 @docs localpart, domain
 
+
+## JSON
+
+@docs coder
+
 -}
 
+import Internal.Config.Log as Log exposing (log)
 import Internal.Grammar.ServerName as ServerName
 import Internal.Grammar.UserId as UserId
+import Internal.Tools.Json as Json
+import Parser as P
 
 
 {-| The Matrix user represents a user across multiple Matrix rooms.
 -}
 type alias User =
     UserId.UserID
+
+
+{-| Define a method to encode/decode Matrix users.
+-}
+coder : Json.Coder User
+coder =
+    Json.parser
+        { name = "Username"
+        , p =
+            P.andThen
+                (\name ->
+                    P.succeed
+                        ( name
+                        , if UserId.isHistorical name then
+                            [ log.warn "Historical user found"
+                            ]
+
+                          else
+                            []
+                        )
+                )
+                UserId.userIdParser
+        , toString = UserId.toString
+        }
 
 
 {-| The domain represents the Matrix homeserver controlling this user. It also

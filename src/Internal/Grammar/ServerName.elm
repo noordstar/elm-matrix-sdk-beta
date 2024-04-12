@@ -1,6 +1,7 @@
 module Internal.Grammar.ServerName exposing
     ( ServerName, toString, fromString
     , serverNameParser
+    , HostName(..)
     )
 
 {-|
@@ -18,6 +19,11 @@ other homeservers.
 ## Parser
 
 @docs serverNameParser
+
+
+## Debug
+
+@docs HostName
 
 -}
 

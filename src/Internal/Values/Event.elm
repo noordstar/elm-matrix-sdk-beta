@@ -35,6 +35,7 @@ of a room.
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
+import Internal.Values.User as User exposing (User)
 import Json.Encode as E
 
 
@@ -45,7 +46,7 @@ type alias Event =
     , eventId : String
     , originServerTs : Timestamp
     , roomId : String
-    , sender : String
+    , sender : User
     , stateKey : Maybe String
     , eventType : String
     , unsigned : Maybe UnsignedData
@@ -112,7 +113,7 @@ coder =
             { fieldName = "sender"
             , toField = .sender
             , description = Text.fields.event.sender
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.optional.value

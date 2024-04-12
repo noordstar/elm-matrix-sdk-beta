@@ -3,6 +3,7 @@ module Test.Filter.Timeline exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter exposing (Filter)
+import Internal.Grammar.UserId as U
 import Internal.Values.Event as Event
 import Json.Decode as D
 import Json.Encode as E
@@ -86,7 +87,7 @@ suite =
                 "Only event sender filter matches"
                 (\event ->
                     event
-                        |> Filter.match (Filter.onlySenders [ event.sender ])
+                        |> Filter.match (Filter.onlySenders [ U.toString event.sender ])
                         |> Expect.equal True
                 )
             , fuzz TestEvent.fuzzer
@@ -100,7 +101,7 @@ suite =
                 "Not event sender filter doesn't match"
                 (\event ->
                     event
-                        |> Filter.match (Filter.allSendersExcept [ event.sender ])
+                        |> Filter.match (Filter.allSendersExcept [ U.toString event.sender ])
                         |> Expect.equal False
                 )
             , fuzz2 TestEvent.fuzzer
@@ -109,7 +110,7 @@ suite =
                 (\event senders ->
                     event
                         |> Filter.match (Filter.onlySenders senders)
-                        |> Expect.equal (List.member event.sender senders)
+                        |> Expect.equal (List.member (U.toString event.sender) senders)
                 )
             , fuzz2 TestEvent.fuzzer
                 (Fuzz.list Fuzz.string)
@@ -125,7 +126,7 @@ suite =
                 (\event senders ->
                     event
                         |> Filter.match (Filter.allSendersExcept senders)
-                        |> Expect.notEqual (List.member event.sender senders)
+                        |> Expect.notEqual (List.member (U.toString event.sender) senders)
                 )
             , fuzz2 TestEvent.fuzzer
                 (Fuzz.list Fuzz.string)
@@ -302,7 +303,7 @@ suite =
                         l2 =
                             List.filter
                                 (\e ->
-                                    List.member e.sender senders
+                                    List.member (U.toString e.sender) senders
                                         && List.member e.eventType types
                                 )
                                 events
@@ -336,8 +337,8 @@ suite =
                         l2 =
                             List.filter
                                 (\e ->
-                                    List.member e.sender senders
-                                        && (not <| List.member e.eventType types)
+                                    List.member (U.toString e.sender) senders
+                                        && (not <| List.member (U.toString e.sender) types)
                                 )
                                 events
                     in
@@ -370,7 +371,7 @@ suite =
                         l2 =
                             List.filter
                                 (\e ->
-                                    (not <| List.member e.sender senders)
+                                    (not <| List.member (U.toString e.sender) senders)
                                         && List.member e.eventType types
                                 )
                                 events
@@ -404,7 +405,7 @@ suite =
                         l2 =
                             List.filter
                                 (\e ->
-                                    (not <| List.member e.sender senders)
+                                    (not <| List.member (U.toString e.sender) senders)
                                         && (not <| List.member e.eventType types)
                                 )
                                 events
