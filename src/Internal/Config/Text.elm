@@ -1,5 +1,5 @@
 module Internal.Config.Text exposing
-    ( docs, failures, fields, mappings, logs
+    ( docs, failures, fields, mappings, logs, parses
     , accessTokenFoundLocally, accessTokenExpired, accessTokenInvalid
     , versionsFoundLocally, versionsReceived, versionsFailedToDecode
     , unsupportedVersionForEndpoint
@@ -27,7 +27,7 @@ You should only do this if you know what you're doing.
 
 ## Type documentation
 
-@docs docs, failures, fields, mappings, logs
+@docs docs, failures, fields, mappings, logs, parses
 
 
 ## API Authentication
@@ -511,6 +511,28 @@ mappings =
         , description =
             [ "Converts an optional string to an Itoken pointer."
             ]
+        }
+    }
+
+
+{-| Logs for issues that might be found while parsing strings into meaningful data.
+-}
+parses :
+    { historicalUserId : String -> String
+    , reservedIPs :
+        { ipv6Toipv4 : String
+        , multicast : String
+        , futureUse : String
+        , unspecified : String
+        }
+    }
+parses =
+    { historicalUserId = \name -> "Found a historical username `" ++ name ++ "`."
+    , reservedIPs =
+        { ipv6Toipv4 = "Detected a reserved ip address that is formerly used as an IPv6 to IPv4 relay. It is unlikely that this IP Address is real."
+        , multicast = "Detected a reserved ip address that is used for multicasting. It is unlikely that this IP Address is real."
+        , futureUse = "Detected a reserves ip address that is reserved for future use. It is unlikely that this IP Address is real if you're running a recent version of the Elm SDK."
+        , unspecified = "This is an unspecified ip address. It is unlikely that this IP Address is real and someone might try to break something."
         }
     }
 

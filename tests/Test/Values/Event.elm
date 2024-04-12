@@ -5,6 +5,7 @@ import Fuzz exposing (Fuzzer)
 import Internal.Values.Event as Event exposing (Event)
 import Json.Encode as E
 import Test exposing (..)
+import Test.Grammar.UserId as UserId
 import Test.Tools.Timestamp as TestTimestamp
 
 
@@ -15,7 +16,7 @@ fuzzer =
         Fuzz.string
         TestTimestamp.fuzzer
         Fuzz.string
-        Fuzz.string
+        UserId.fullUserFuzzer
         (Fuzz.maybe Fuzz.string)
         Fuzz.string
         (Fuzz.maybe unsignedDataFuzzer)

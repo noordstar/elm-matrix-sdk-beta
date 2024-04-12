@@ -48,6 +48,7 @@ for interacting with the Matrix API.
 -}
 
 import Internal.Config.Text as Text
+import Internal.Grammar.UserId as U
 import Internal.Tools.Json as Json
 import Json.Decode as D
 import Json.Encode as E
@@ -57,7 +58,7 @@ import Set exposing (Set)
 {-| Placeholder Event type so the real Event doesn't need to be imported.
 -}
 type alias Event a =
-    { a | eventType : String, sender : String }
+    { a | eventType : String, sender : U.UserID }
 
 
 {-| The Timeline Filter filters events out of a timeline, guaranteeing that only
@@ -246,7 +247,7 @@ match (Filter f) { eventType, sender } =
     let
         mentionedSender : Bool
         mentionedSender =
-            Set.member sender f.senders
+            Set.member (U.toString sender) f.senders
 
         mentionedType : Bool
         mentionedType =

@@ -4,7 +4,7 @@ module Internal.Tools.Json exposing
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
-    , Field, field
+    , Field, field, parser
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
 
@@ -58,7 +58,7 @@ This section creates objects that can be (re)used in the library's JSON
 specification. For this, the user needs to construct fields for the object
 first.
 
-@docs Field, field
+@docs Field, field, parser
 
 Once all fields are constructed, the user can create JSON objects.
 
@@ -74,6 +74,7 @@ import Internal.Tools.DecodeExtra as D
 import Internal.Tools.EncodeExtra as E
 import Json.Decode as D
 import Json.Encode as E
+import Parser as P
 import Set exposing (Set)
 
 
@@ -158,6 +159,7 @@ type Docs
             }
         )
     | DocsOptional Docs
+    | DocsParser String
     | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
     | DocsSet Docs
     | DocsString
@@ -1149,6 +1151,27 @@ object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
                     , toDocsField fk
                     ]
                 }
+        }
+
+
+{-| Define a parser that converts a string into a custom Elm type.
+-}
+parser : { name : String, p : P.Parser ( a, List Log ), toString : a -> String } -> Coder a
+parser { name, p, toString } =
+    Coder
+        { encoder = toString >> E.string
+        , decoder =
+            D.string
+                |> D.andThen
+                    (\v ->
+                        case P.run p v of
+                            Err _ ->
+                                D.fail ("Failed to parse " ++ name ++ "!")
+
+                            Ok o ->
+                                D.succeed o
+                    )
+        , docs = DocsParser name
         }
 
 
