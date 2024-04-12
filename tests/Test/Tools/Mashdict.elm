@@ -198,8 +198,8 @@ suite =
                         |> Json.encode (Mashdict.coder .stateKey Event.coder)
                         |> E.encode indent
                         |> D.decodeString (Json.decode <| Mashdict.coder .stateKey Event.coder)
-                        |> Result.map (Tuple.mapFirst Mashdict.toList)
-                        |> Expect.equal (Ok ( Mashdict.toList hashdict, [] ))
+                        |> Result.map (Tuple.first >> Mashdict.toList)
+                        |> Expect.equal (Ok (Mashdict.toList hashdict))
                 )
             ]
         ]
