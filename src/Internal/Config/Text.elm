@@ -120,6 +120,7 @@ docs :
     , iddict : TypeDocs
     , itoken : TypeDocs
     , mashdict : TypeDocs
+    , room : TypeDocs
     , settings : TypeDocs
     , stateManager : TypeDocs
     , timeline : TypeDocs
@@ -175,6 +176,12 @@ docs =
         { name = "Mashdict"
         , description =
             [ "The mashdict exclusively stores values for which the hashing algorithm returns a value, and it ignores the outcome for all other scenarios."
+            ]
+        }
+    , room =
+        { name = "Room"
+        , description =
+            [ "The Room type represents a conversation in Matrix."
             ]
         }
     , settings =
@@ -270,6 +277,13 @@ fields :
         , inFrontOf : Desc
         , name : Desc
         , starts : Desc
+        }
+    , room :
+        { accountData : Desc
+        , events : Desc
+        , roomId : Desc
+        , state : Desc
+        , timeline : Desc
         }
     , settings :
         { currentVersion : Desc
@@ -397,6 +411,18 @@ fields =
         , starts =
             [ "This token is at the start of the batches in this field."
             ]
+        }
+    , room =
+        { accountData =
+            [ "Room account data tracking the user's private storage about this room." ]
+        , events =
+            [ "Database containing events that were sent in this room." ]
+        , roomId =
+            [ "Unique room identifier" ]
+        , state =
+            [ "Current state of the room based on state events" ]
+        , timeline =
+            [ "Current timeline of the room" ]
         }
     , settings =
         { currentVersion =
