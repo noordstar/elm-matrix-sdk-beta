@@ -3,10 +3,8 @@
     "name": "noordstar/elm-matrix-sdk-beta",
     "summary": "Matrix SDK for instant communication. Unstable beta version for testing only.",
     "license": "EUPL-1.1",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "exposed-modules": [
-        "Internal.Values.Room",
-        "Internal.Values.Timeline",
         "Matrix",
         "Matrix.Event",
         "Matrix.Room",
