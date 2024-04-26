@@ -1,6 +1,6 @@
 module Internal.Values.StateManager exposing
     ( StateManager
-    , empty, singleton, insert, remove, append
+    , empty, singleton, insert, insertIfNotExists, remove, append
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, fromList, toList
     , coder, encode, decoder
@@ -19,7 +19,7 @@ dictionary-like experience to navigate through the Matrix room state.
 
 ## Build
 
-@docs empty, singleton, insert, remove, append
+@docs empty, singleton, insert, insertIfNotExists, remove, append
 
 
 ## Query
@@ -164,6 +164,28 @@ insert event (StateManager manager) =
             )
         |> StateManager
         |> cleanKey event.eventType
+
+
+{-| Insert a new event into the state manager ONLY if no such event has already
+been defined.
+
+This function is most useful for including older state events that may have been
+overwritten in the future.
+
+-}
+insertIfNotExists : Event -> StateManager -> StateManager
+insertIfNotExists event sm =
+    case event.stateKey of
+        Nothing ->
+            sm
+
+        Just s ->
+            case get { eventType = event.eventType, stateKey = s } sm of
+                Just _ ->
+                    sm
+
+                Nothing ->
+                    insert event sm
 
 
 {-| Determine whether the StateManager contains any events.
