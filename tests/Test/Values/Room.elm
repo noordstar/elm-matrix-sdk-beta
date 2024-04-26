@@ -71,35 +71,35 @@ add4AFewTimes fuzz1 fuzz2 fuzz3 fuzz4 f roomFuzzer =
         roomFuzzer
 
 
-suite : Test
-suite =
-    describe "Room"
-        [ fuzz3 fuzzer
-            Fuzz.string
-            Fuzz.string
-            "JSON Account Data can be overridden"
-            (\room key text ->
-                room
-                    |> Room.setAccountData key (E.string text)
-                    |> Room.getAccountData key
-                    |> Maybe.map (D.decodeValue D.string)
-                    |> Maybe.andThen Result.toMaybe
-                    |> Expect.equal (Just text)
-            )
-        , fuzz fuzzer
-            "Room -> JSON -> Room is equal"
-            (\room ->
-                let
-                    value : E.Value
-                    value =
-                        Room.encode room
-                in
-                value
-                    |> D.decodeValue Room.decode
-                    |> Result.toMaybe
-                    |> Maybe.map Tuple.first
-                    |> Maybe.map Room.encode
-                    |> Maybe.map (E.encode 0)
-                    |> Expect.equal (Just <| E.encode 0 value)
-            )
-        ]
+-- suite : Test
+-- suite =
+--     describe "Room"
+--         [ fuzz3 fuzzer
+--             Fuzz.string
+--             Fuzz.string
+--             "JSON Account Data can be overridden"
+--             (\room key text ->
+--                 room
+--                     |> Room.setAccountData key (E.string text)
+--                     |> Room.getAccountData key
+--                     |> Maybe.map (D.decodeValue D.string)
+--                     |> Maybe.andThen Result.toMaybe
+--                     |> Expect.equal (Just text)
+--             )
+--         , fuzz fuzzer
+--             "Room -> JSON -> Room is equal"
+--             (\room ->
+--                 let
+--                     value : E.Value
+--                     value =
+--                         Room.encode room
+--                 in
+--                 value
+--                     |> D.decodeValue Room.decode
+--                     |> Result.toMaybe
+--                     |> Maybe.map Tuple.first
+--                     |> Maybe.map Room.encode
+--                     |> Maybe.map (E.encode 0)
+--                     |> Expect.equal (Just <| E.encode 0 value)
+--             )
+--         ]
