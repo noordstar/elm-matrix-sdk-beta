@@ -5,8 +5,11 @@
     "license": "EUPL-1.1",
     "version": "3.0.0",
     "exposed-modules": [
+        "Internal.Values.Room",
+        "Internal.Values.Timeline",
         "Matrix",
         "Matrix.Event",
+        "Matrix.Room",
         "Matrix.Settings",
         "Matrix.User"
     ],
