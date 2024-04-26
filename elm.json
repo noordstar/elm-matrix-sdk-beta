@@ -9,6 +9,7 @@
         "Internal.Values.Timeline",
         "Matrix",
         "Matrix.Event",
+        "Matrix.Room",
         "Matrix.Settings",
         "Matrix.User"
     ],

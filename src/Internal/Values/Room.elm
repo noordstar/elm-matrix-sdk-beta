@@ -1,7 +1,8 @@
 module Internal.Values.Room exposing
     ( Room, init
-    , Batch, addBatch, addSync, addEvents
+    , Batch, addBatch, addSync, addEvents, mostRecentEvents
     , getAccountData, setAccountData
+    , coder, encode, decode
     )
 
 {-|
@@ -26,19 +27,24 @@ room state reflect the homeserver state of the room.
 
 ## Timeline
 
-@docs Batch, addBatch, addSync, addEvents
+@docs Batch, addBatch, addSync, addEvents, mostRecentEvents
 
 
 ## Account data
 
 @docs getAccountData, setAccountData
 
+
+## JSON coding
+
+@docs coder, encode, decode
+
 -}
 
 import FastDict as Dict exposing (Dict)
 import Internal.Config.Log exposing (log)
 import Internal.Config.Text as Text
-import Internal.Filter.Timeline exposing (Filter)
+import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Event as Event exposing (Event)
@@ -166,6 +172,20 @@ coder =
         )
 
 
+{-| Decode a Room from JSON format.
+-}
+decode : Json.Decoder Room
+decode =
+    Json.decode coder
+
+
+{-| Encode a Room into JSON format.
+-}
+encode : Json.Encoder Room
+encode =
+    Json.encode coder
+
+
 {-| Get a piece of account data as information from the room.
 -}
 getAccountData : String -> Room -> Maybe Json.Value
@@ -183,6 +203,19 @@ init roomId =
     , state = StateManager.empty
     , timeline = Timeline.empty
     }
+
+
+{-| Get the most recent events from the timeline.
+-}
+mostRecentEvents : Room -> List Event
+mostRecentEvents room =
+    room.timeline
+        |> Timeline.mostRecentEvents Filter.pass
+        |> List.map (List.filterMap (\e -> Hashdict.get e room.events))
+        |> List.sortBy List.length
+        -- Get the largest list of events
+        |> List.head
+        |> Maybe.withDefault []
 
 
 {-| Set a piece of account data as information about the room.
