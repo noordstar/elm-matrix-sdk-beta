@@ -434,12 +434,16 @@ field =
                             , description = description
                             , encoder =
                                 \o ->
+                                    let
+                                        v =
+                                            encoder o
+                                    in
                                     -- If the value matches the default, do not record
-                                    if o == Tuple.first default then
+                                    if E.encode 0 v == E.encode 0 (encoder (Tuple.first default)) then
                                         Nothing
 
                                     else
-                                        Maybe.Just (encoder o)
+                                        Maybe.Just v
                             , decoder = D.opFieldWithDefault fieldName default decoder
                             , docs = docs
                             , requiredness =

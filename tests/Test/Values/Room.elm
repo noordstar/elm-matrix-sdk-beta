@@ -89,11 +89,17 @@ suite =
         , fuzz fuzzer
             "Room -> JSON -> Room is equal"
             (\room ->
-                room
-                    |> Room.encode
+                let
+                    value : E.Value
+                    value =
+                        Room.encode room
+                in
+                value
                     |> D.decodeValue Room.decode
                     |> Result.toMaybe
                     |> Maybe.map Tuple.first
-                    |> Expect.equal (Just room)
+                    |> Maybe.map Room.encode
+                    |> Maybe.map (E.encode 0)
+                    |> Expect.equal (Just <| E.encode 0 value)
             )
         ]
