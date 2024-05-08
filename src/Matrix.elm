@@ -24,7 +24,8 @@ import Types
 
 {-| The Vault type stores all relevant information about the Matrix API.
 
-It currently supports no functionality and it will just stay here - for fun.
+If you make sure that the data type stays up-to-date, you can use it to explore
+the latest information about an account.
 
 -}
 type alias Vault =

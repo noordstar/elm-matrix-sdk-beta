@@ -3,7 +3,7 @@ module Internal.Tools.Hashdict exposing
     , empty, singleton, insert, remove, removeKey
     , isEmpty, member, memberKey, get, size, isEqual
     , keys, values, toList, fromList
-    , rehash, union, map
+    , rehash, union, map, update
     , coder, encode, decoder, softDecoder
     )
 
@@ -35,7 +35,7 @@ This allows you to store values based on an externally defined identifier.
 
 ## Transform
 
-@docs rehash, union, map
+@docs rehash, union, map, update
 
 
 ## JSON coders
@@ -319,6 +319,24 @@ union (Hashdict h1) hd2 =
                 { hash = h1.hash
                 , values = Dict.union h1.values h2.values
                 }
+
+
+{-| Update a dict to maybe contain a value (or not). If the output does not
+have the originally expected key, it is not updated.
+-}
+update : String -> (Maybe a -> Maybe a) -> Hashdict a -> Hashdict a
+update key f ((Hashdict h) as hd) =
+    -- TODO: Write test for this
+    case f (get key hd) of
+        Just v ->
+            if h.hash v == key then
+                insert v hd
+
+            else
+                hd
+
+        Nothing ->
+            removeKey key hd
 
 
 {-| Get all values stored in the hashdict, in the order of their keys.
