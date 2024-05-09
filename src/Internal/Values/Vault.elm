@@ -1,7 +1,8 @@
 module Internal.Values.Vault exposing
-    ( fromRoomId, mapRoom, updateRoom
+    ( Vault
+    , VaultUpdate(..), update
+    , fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
-    , Vault
     )
 
 {-| This module hosts the Vault module. The Vault is the data type storing all
@@ -9,6 +10,13 @@ credentials, all user information and all other information that the user
 can receive from the Matrix API.
 
 
+## Vault type
+
+@docs Vault
+
+To update the Vault, one uses VaultUpdate types.
+
+@docs VaultUpdate, update
 
 
 ## Rooms
@@ -25,9 +33,10 @@ Rooms are environments where people can have a conversation with each other.
 -}
 
 import FastDict as Dict exposing (Dict)
+import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
-import Internal.Values.Room exposing (Room)
+import Internal.Values.Room as Room exposing (Room)
 
 
 {-| This is the Vault type.
@@ -36,6 +45,39 @@ type alias Vault =
     { accountData : Dict String Json.Value
     , rooms : Hashdict Room
     }
+
+
+{-| The VaultUpdate type is a type that instructs the Vault to update itself
+based on new information provided by the Matrix API.
+-}
+type VaultUpdate
+    = CreateRoomIfNotExists String
+    | MapRoom String Room.RoomUpdate
+    | More (List VaultUpdate)
+    | SetAccountData String Json.Value
+
+
+coder : Json.Coder Vault
+coder =
+    Json.object2
+        { name = Text.docs.vault.name
+        , description = Text.docs.vault.description
+        , init = Vault
+        }
+        (Json.field.required
+            { fieldName = "accountData"
+            , toField = .accountData
+            , description = Text.fields.vault.accountData
+            , coder = Json.fastDict Json.value
+            }
+        )
+        (Json.field.required
+            { fieldName = "rooms"
+            , toField = .rooms
+            , description = Text.fields.vault.rooms
+            , coder = Hashdict.coder .roomId Room.coder
+            }
+        )
 
 
 {-| Get a given room by its room id.
@@ -72,3 +114,23 @@ setAccountData key value vault =
 updateRoom : String -> (Maybe Room -> Maybe Room) -> Vault -> Vault
 updateRoom roomId f vault =
     { vault | rooms = Hashdict.update roomId f vault.rooms }
+
+
+{-| Update the Vault using a VaultUpdate type.
+-}
+update : VaultUpdate -> Vault -> Vault
+update vu vault =
+    case vu of
+        CreateRoomIfNotExists roomId ->
+            updateRoom roomId
+                (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
+                vault
+
+        MapRoom roomId ru ->
+            mapRoom roomId (Room.update ru) vault
+
+        More items ->
+            List.foldl update vault items
+
+        SetAccountData key value ->
+            setAccountData key value vault

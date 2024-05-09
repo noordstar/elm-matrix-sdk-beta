@@ -1,4 +1,7 @@
-module Matrix exposing (Vault)
+module Matrix exposing
+    ( Vault
+    , VaultUpdate, update
+    )
 
 {-|
 
@@ -17,9 +20,16 @@ support a monolithic public registry. (:
 
 @docs Vault
 
+
+## Keeping the Vault up-to-date
+
+@docs VaultUpdate, update
+
 -}
 
-import Types
+import Internal.Values.Envelope as Envelope
+import Internal.Values.Vault as Internal
+import Types exposing (Vault(..), VaultUpdate(..))
 
 
 {-| The Vault type stores all relevant information about the Matrix API.
@@ -30,3 +40,22 @@ the latest information about an account.
 -}
 type alias Vault =
     Types.Vault
+
+
+{-| The VaultUpdate type is the central type that keeps the Vault up-to-date.
+-}
+type alias VaultUpdate =
+    Types.VaultUpdate
+
+
+{-| Using new VaultUpdate information, update the Vault accordingly.
+
+This allows us to change our perception of the Matrix environment: has anyone
+sent a new message? Did someone send us an invite for a new room?
+
+-}
+update : VaultUpdate -> Vault -> Vault
+update (VaultUpdate vu) (Vault vault) =
+    vault
+        |> Envelope.update Internal.update vu
+        |> Vault

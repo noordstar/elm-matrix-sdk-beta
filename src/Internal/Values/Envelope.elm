@@ -4,6 +4,7 @@ module Internal.Values.Envelope exposing
     , Settings, mapSettings, extractSettings
     , mapContext
     , getContent, extract
+    , EnvelopeUpdate(..), update
     , coder, encode, decoder
     )
 
@@ -36,6 +37,11 @@ settings that can be adjusted manually.
 @docs getContent, extract
 
 
+## Update
+
+@docs EnvelopeUpdate, update
+
+
 ## JSON coders
 
 @docs coder, encode, decoder
@@ -58,6 +64,16 @@ type alias Envelope a =
     , context : Context
     , settings : Settings
     }
+
+
+{-| The Envelope update type helps update either the envelope or a content type.
+-}
+type EnvelopeUpdate a
+    = ContentUpdate a
+    | More (List (EnvelopeUpdate a))
+    | SetAccessToken String
+    | SetRefreshToken String
+    | SetVersions (List String)
 
 
 {-| Settings value from
@@ -260,3 +276,24 @@ toMaybe data =
     Maybe.map
         (\content -> map (always content) data)
         data.content
+
+
+{-| Updates the Envelope with a given EnvelopeUpdate value.
+-}
+update : (au -> a -> a) -> EnvelopeUpdate au -> Envelope a -> Envelope a
+update updateContent eu ({ context } as data) =
+    case eu of
+        ContentUpdate v ->
+            { data | content = updateContent v data.content }
+
+        More items ->
+            List.foldl (update updateContent) data items
+
+        SetAccessToken a ->
+            { data | context = { context | accessToken = Just a } }
+
+        SetRefreshToken r ->
+            { data | context = { context | refreshToken = Just r } }
+
+        SetVersions vs ->
+            { data | context = { context | versions = Just vs } }

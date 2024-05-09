@@ -1,5 +1,6 @@
 module Internal.Values.Room exposing
     ( Room, init
+    , RoomUpdate, update
     , Batch, addBatch, addSync, addEvents, mostRecentEvents
     , getAccountData, setAccountData
     , coder, encode, decode
@@ -23,6 +24,11 @@ room state reflect the homeserver state of the room.
 ## Room
 
 @docs Room, init
+
+
+## Update
+
+@docs RoomUpdate, update
 
 
 ## Timeline
@@ -69,6 +75,15 @@ type alias Room =
     , state : StateManager
     , timeline : Timeline
     }
+
+
+{-| The RoomUpdate type explains how to update a room based on new information
+from the Matrix API.
+-}
+type RoomUpdate
+    = AddSync Batch
+    | More (List RoomUpdate)
+    | SetAccountData String Json.Value
 
 
 {-| Add new events to the Room's event directory + Room's timeline.
@@ -223,3 +238,18 @@ mostRecentEvents room =
 setAccountData : String -> Json.Value -> Room -> Room
 setAccountData key value room =
     { room | accountData = Dict.insert key value room.accountData }
+
+
+{-| Update the Room based on given instructions.
+-}
+update : RoomUpdate -> Room -> Room
+update ru room =
+    case ru of
+        AddSync batch ->
+            addSync batch room
+
+        More items ->
+            List.foldl update room items
+
+        SetAccountData key value ->
+            setAccountData key value room
