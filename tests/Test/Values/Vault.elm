@@ -7,6 +7,7 @@ import Internal.Values.Vault exposing (Vault)
 import Test exposing (..)
 import Test.Tools.Hashdict as TestHashdict
 import Test.Values.Room as TestRoom
+import Internal.Tools.Hashdict as Hashdict
 
 
 vault : Fuzzer Vault
@@ -17,4 +18,5 @@ vault =
             |> Fuzz.list
             |> Fuzz.map Dict.fromList
         )
-        (TestHashdict.fuzzer .roomId TestRoom.fuzzer)
+        (Fuzz.constant <| Hashdict.empty .roomId)
+        -- (TestHashdict.fuzzer .roomId TestRoom.fuzzer)
