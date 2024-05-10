@@ -326,7 +326,6 @@ have the originally expected key, it is not updated.
 -}
 update : String -> (Maybe a -> Maybe a) -> Hashdict a -> Hashdict a
 update key f ((Hashdict h) as hd) =
-    -- TODO: Write test for this
     case f (get key hd) of
         Just v ->
             if h.hash v == key then
