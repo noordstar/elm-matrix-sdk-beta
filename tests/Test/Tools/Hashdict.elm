@@ -103,7 +103,7 @@ suite =
             ]
         , describe "singleton"
             [ fuzz TestEvent.fuzzer
-                "singletong = empty + insert"
+                "singleton = empty + insert"
                 (\event ->
                     Hashdict.empty .eventId
                         |> Hashdict.insert event
@@ -157,6 +157,26 @@ suite =
                         Hashdict.singleton .eventId event
                             |> Hashdict.memberKey event.roomId
                             |> Expect.equal False
+                )
+            ]
+        , describe "update"
+            [ fuzz2 (fuzzer identity Fuzz.string)
+                Fuzz.string
+                "add = insert"
+                (\hashdict value ->
+                    Hashdict.isEqual
+                        (Hashdict.insert value hashdict)
+                        (Hashdict.update value (always (Just value)) hashdict)
+                        |> Expect.equal True
+                )
+            , fuzz2 (fuzzer identity Fuzz.string)
+                Fuzz.string
+                "remove = removeKey"
+                (\hashdict value ->
+                    Hashdict.isEqual
+                        (Hashdict.removeKey value hashdict)
+                        (Hashdict.update value (always Nothing) hashdict)
+                        |> Expect.equal True
                 )
             ]
         , describe "JSON"

@@ -1,4 +1,4 @@
-module Types exposing (Vault(..), Event(..), Room(..), User(..))
+module Types exposing (Vault(..), Event(..), Room(..), User(..), VaultUpdate(..))
 
 {-| The Elm SDK uses a lot of records and values that are easy to manipulate.
 Yet, the [Elm design guidelines](https://package.elm-lang.org/help/design-guidelines#keep-tags-and-record-constructors-secret)
@@ -12,7 +12,7 @@ access their content directly.
 The opaque types are placed in a central module so all exposed modules can
 safely access all exposed data types without risking to create circular imports.
 
-@docs Vault, Event, Room, User
+@docs Vault, Event, Room, User, VaultUpdate
 
 -}
 
@@ -45,3 +45,9 @@ type User
 -}
 type Vault
     = Vault (Envelope.Envelope Vault.Vault)
+
+
+{-| Opaque type for Matrix VaultUpdate
+-}
+type VaultUpdate
+    = VaultUpdate (Envelope.EnvelopeUpdate Vault.VaultUpdate)

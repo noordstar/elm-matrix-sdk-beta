@@ -1,8 +1,21 @@
-module Internal.Tools.ParserExtra exposing (..)
+module Internal.Tools.ParserExtra exposing (zeroOrMore, oneOrMore, exactly, atLeast, atMost, times, maxLength)
+
+{-|
+
+
+# Extra parsers
+
+To help the Elm SDK with parsing complex text values, this modules offers a few functions.
+
+@docs zeroOrMore, oneOrMore, exactly, atLeast, atMost, times, maxLength
+
+-}
 
 import Parser as P exposing ((|.), (|=), Parser)
 
 
+{-| Parses an item zero or more times. The result is combined into a list.
+-}
 zeroOrMore : Parser a -> Parser (List a)
 zeroOrMore parser =
     P.loop []
@@ -15,6 +28,9 @@ zeroOrMore parser =
         )
 
 
+{-| Parses an item at least once, but up to any number of times.
+The result is combined into a list.
+-}
 oneOrMore : Parser a -> Parser (List a)
 oneOrMore parser =
     P.succeed (::)
@@ -22,6 +38,9 @@ oneOrMore parser =
         |= zeroOrMore parser
 
 
+{-| Parses an item at least a given number of times, but up to any number.
+The result is combined into a list.
+-}
 atLeast : Int -> Parser a -> Parser (List a)
 atLeast n parser =
     P.loop []
@@ -39,6 +58,10 @@ atLeast n parser =
         )
 
 
+{-| Parses an item any number of times (can be zero), but does not exceed a
+given number of times.
+The result is combined into a list.
+-}
 atMost : Int -> Parser a -> Parser (List a)
 atMost n parser =
     P.loop []
@@ -55,6 +78,10 @@ atMost n parser =
         )
 
 
+{-| Parses an item a given number of times, ranging from the given minimum up
+to the given maximum.
+The result is combined into a list.
+-}
 times : Int -> Int -> Parser a -> Parser (List a)
 times inf sup parser =
     let
@@ -84,11 +111,21 @@ times inf sup parser =
         )
 
 
+{-| Repeat pasing an item an exact number of times.
+The result is combined into a list.
+-}
 exactly : Int -> Parser a -> Parser (List a)
 exactly n =
     times n n
 
 
+{-| After having parsed the item, make sure that the parsed text has not
+exceeded a given length. If so, the parser fails.
+
+This modification can be useful if a text has a maximum length requirement -
+for example, usernames on Matrix cannot have a length of over 255 characters.
+
+-}
 maxLength : Int -> Parser a -> Parser a
 maxLength n parser =
     P.succeed

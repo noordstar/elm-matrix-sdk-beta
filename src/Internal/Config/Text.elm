@@ -126,6 +126,7 @@ docs :
     , timeline : TypeDocs
     , timelineFilter : TypeDocs
     , unsigned : TypeDocs
+    , vault : TypeDocs
     }
 docs =
     { context =
@@ -214,6 +215,12 @@ docs =
         , description =
             [ "Unsigned data is optional data that might come along with the event."
             , "This information is often supportive but not necessary to the context."
+            ]
+        }
+    , vault =
+        { name = "Vault"
+        , description =
+            [ "Main type storing all relevant information from the Matrix API."
             ]
         }
     }
@@ -308,6 +315,10 @@ fields :
         , prevContent : Desc
         , redactedBecause : Desc
         , transactionId : Desc
+        }
+    , vault :
+        { accountData : Desc
+        , rooms : Desc
         }
     }
 fields =
@@ -481,6 +492,14 @@ fields =
             ]
         , transactionId =
             [ "The client-supplied transaction ID, for example, provided via PUT /_matrix/client/v3/rooms/{roomId}/send/{eventType}/{txnId}, if the client being given the event is the same one which sent it."
+            ]
+        }
+    , vault =
+        { accountData =
+            [ "The account's global private data."
+            ]
+        , rooms =
+            [ "Directory of joined rooms that the user is a member of."
             ]
         }
     }
