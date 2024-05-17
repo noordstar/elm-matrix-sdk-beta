@@ -1,4 +1,17 @@
-module Internal.Api.Task exposing (..)
+module Internal.Api.Task exposing (Task, run)
+{-| # Task module
+
+This module is used to define how API calls are made. These completed API tasks
+can be directly converted to Cmd types that the end user of the SDK can access.
+
+These tasks do not affect the `Vault` directly, but instead, return a
+`VaultUpdate` type that the user can apply to keep their `Vault` type
+up-to-date.
+
+## Use
+
+@docs Task, run
+-}
 
 import Internal.Api.Chain as C
 import Internal.Api.Request as Request

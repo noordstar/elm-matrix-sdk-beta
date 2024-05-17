@@ -500,6 +500,8 @@ queryString key value _ =
     QueryParam <| UrlBuilder.string key value
 
 
+{-| Configure the HTTP request to time out after a given expiry time.
+-}
 timeout : Float -> Attribute a
 timeout f _ =
     Timeout f

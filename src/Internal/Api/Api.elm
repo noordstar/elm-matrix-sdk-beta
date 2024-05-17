@@ -1,4 +1,4 @@
-module Internal.Api.Api exposing (..)
+module Internal.Api.Api exposing (TaskChain, request)
 
 {-|
 
@@ -6,6 +6,11 @@ module Internal.Api.Api exposing (..)
 # API
 
 The API module is a front-end for implementing API endpoints according to spec.
+
+This module is imported by various API endpoint implementations to keep the
+implementation simple and understandable.
+
+@docs TaskChain, request
 
 -}
 
@@ -23,6 +28,8 @@ type alias TaskChain ph1 ph2 =
     C.TaskChain R.Error V.VaultUpdate { ph1 | baseUrl : () } { ph2 | baseUrl : () }
 
 
+{-| Make an HTTP request that adheres to the Matrix spec rules.
+-}
 request :
     { attributes : List (R.Attribute { ph1 | baseUrl : () })
     , coder : Json.Coder V.VaultUpdate
