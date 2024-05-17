@@ -33,6 +33,8 @@ Rooms are environments where people can have a conversation with each other.
 -}
 
 import FastDict as Dict exposing (Dict)
+import Internal.Api.Request as Request
+import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
@@ -52,6 +54,7 @@ based on new information provided by the Matrix API.
 -}
 type VaultUpdate
     = CreateRoomIfNotExists String
+    | HttpRequest (Request.Request ( Request.Error, List Log ) ( VaultUpdate, List Log ))
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
     | SetAccountData String Json.Value
@@ -125,6 +128,11 @@ update vu vault =
             updateRoom roomId
                 (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
                 vault
+
+        -- The HTTP request currently isn't used anywhere other than for
+        -- auditing the requests that the Vault is making
+        HttpRequest _ ->
+            vault
 
         MapRoom roomId ru ->
             mapRoom roomId (Room.update ru) vault

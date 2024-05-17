@@ -1,4 +1,7 @@
-module Internal.Api.Chain exposing (TaskChain, IdemChain, CompleteChain)
+module Internal.Api.Chain exposing
+    ( TaskChain, CompleteChain
+    , IdemChain, toTask
+    )
 
 {-|
 
@@ -13,7 +16,12 @@ that all information is stored and values are dealt with appropriately.
 Elm's type checking system helps making this system sufficiently rigorous to
 avoid leaking values passing through the API in unexpected ways.
 
-@docs TaskChain, IdemChain, CompleteChain
+@docs TaskChain, CompleteChain
+
+
+## Finished chain
+
+@docs IdemChain, toTask
 
 -}
 
@@ -173,3 +181,17 @@ onError onErr f =
 succeed : TaskChainPiece u a b -> TaskChain err u a b
 succeed piece _ =
     Task.succeed piece
+
+
+{-| Once the chain is complete, turn it into a valid task.
+-}
+toTask : IdemChain Never u a -> APIContext a -> Task.Task Never (Backpacked u {})
+toTask chain context =
+    chain context
+        |> Task.onError (\e -> Task.succeed <| never e.error)
+        |> Task.map
+            (\backpack ->
+                { messages = backpack.messages
+                , logs = backpack.logs
+                }
+            )

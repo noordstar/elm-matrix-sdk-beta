@@ -535,7 +535,11 @@ leakingValueFound leaking_value =
 happened. Most of these unexpected results, are taken account of by the Elm SDK,
 but logged so that the programmer can do something about it.
 -}
-logs : { keyIsNotAnInt : String -> String }
+logs :
+    { keyIsNotAnInt : String -> String
+    , serverReturnedInvalidJSON : String -> String
+    , serverReturnedUnknownJSON : String -> String
+    }
 logs =
     { keyIsNotAnInt =
         \key ->
@@ -544,6 +548,8 @@ logs =
                 , key
                 , "` that cannot be converted to an Int"
                 ]
+    , serverReturnedInvalidJSON = (++) "The server returned invalid JSON: "
+    , serverReturnedUnknownJSON = (++) "The server returned JSON that doesn't seem to live up to spec rules: "
     }
 
 
