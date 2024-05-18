@@ -1,7 +1,7 @@
 module Internal.Api.Request exposing
     ( ApiCall, ApiPlan, Attribute, callAPI, withAttributes, toChain
     , Request, Error(..)
-    , accessToken, withTransactionId, timeout
+    , accessToken, withTransactionId, timeout, onStatusCode
     , fullBody, bodyBool, bodyInt, bodyString, bodyValue, bodyOpBool, bodyOpInt, bodyOpString, bodyOpValue
     , queryBool, queryInt, queryString, queryOpBool, queryOpInt, queryOpString
     )
@@ -28,7 +28,7 @@ Sometimes, APIs might fail. As a result, you may receive an error.
 
 ### General attributes
 
-@docs accessToken, withTransactionId, timeout
+@docs accessToken, withTransactionId, timeout, onStatusCode
 
 
 ### Body
@@ -98,7 +98,9 @@ type ContextAttr
 -}
 type Error
     = InternetException Http.Error
+    | NoSupportedVersion
     | ServerReturnsBadJSON String
+    | ServerReturnsError String Json.Value
 
 
 {-| Ordinary shape of an HTTP request.
@@ -396,10 +398,35 @@ getUrl { attributes, baseUrl, path } =
         (getQueryParams attributes)
 
 
+{-| When the HTTP request cannot be deciphered but the status code is known,
+return with a given default error.
+-}
+onStatusCode : Int -> String -> Attribute a
+onStatusCode code err _ =
+    StatusCodeResponse code
+        ( err
+            |> E.string
+            |> Tuple.pair "errcode"
+            |> List.singleton
+            |> E.object
+            |> ServerReturnsError err
+        , String.concat
+            -- TODO: Move to Internal.Config.Text
+            [ "Received an invalid HTTP response from Matrix server "
+            , "but managed to decode it using the status code "
+            , String.fromInt code
+            , ": Default to errcode "
+            , err
+            ]
+            |> log.warn
+            |> List.singleton
+        )
+
+
 {-| Resolve the response of a Matrix API call.
 -}
-rawApiCallResolver : Json.Coder a -> Dict.Dict Int ( Error, List Log ) -> Http.Resolver ( Error, List Log ) ( a, List Log )
-rawApiCallResolver coder statusCodeErrors =
+rawApiCallResolver : Json.Coder a -> (a -> ( b, List Log )) -> Dict.Dict Int ( Error, List Log ) -> Http.Resolver ( Error, List Log ) ( b, List Log )
+rawApiCallResolver coder f statusCodeErrors =
     Http.stringResolver
         (\response ->
             case response of
@@ -427,12 +454,30 @@ rawApiCallResolver coder statusCodeErrors =
                 Http.BadStatus_ metadata body ->
                     statusCodeErrors
                         |> Dict.get metadata.statusCode
-                        |> decodeServerResponse (Json.decode coder) body
+                        |> decodeServerResponse
+                            (Json.decode coder
+                                |> D.map
+                                    (\( u, l ) ->
+                                        case f u of
+                                            ( u2, l2 ) ->
+                                                ( u2, List.append l l2 )
+                                    )
+                            )
+                            body
 
                 Http.GoodStatus_ metadata body ->
                     statusCodeErrors
                         |> Dict.get metadata.statusCode
-                        |> decodeServerResponse (Json.decode coder) body
+                        |> decodeServerResponse
+                            (Json.decode coder
+                                |> D.map
+                                    (\( u, l ) ->
+                                        case f u of
+                                            ( u2, l2 ) ->
+                                                ( u2, List.append l l2 )
+                                    )
+                            )
+                            body
         )
 
 
@@ -511,9 +556,10 @@ timeout f _ =
 -}
 toChain :
     { logHttp : Request ( Error, List Log ) ( update, List Log ) -> ( update, List Log )
-    , coder : Json.Coder update
+    , coder : Json.Coder httpOut
     , request : ApiPlan ph1
     , toContextChange : update -> (APIContext ph1 -> APIContext ph2)
+    , toUpdate : httpOut -> ( update, List Log )
     }
     -> C.TaskChain Error update ph1 ph2
 toChain data apiContext =
@@ -526,7 +572,7 @@ toChain data apiContext =
                         , headers = getHeaders call.attributes
                         , url = getUrl call
                         , body = Http.jsonBody (getBody call.attributes)
-                        , resolver = rawApiCallResolver data.coder (getStatusCodes call.attributes)
+                        , resolver = rawApiCallResolver data.coder data.toUpdate (getStatusCodes call.attributes)
                         , timeout = getTimeout call.attributes
                         }
                 in

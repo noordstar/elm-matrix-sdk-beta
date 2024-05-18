@@ -4,7 +4,7 @@ module Internal.Values.Context exposing
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
     , setTransaction, getTransaction
-    , setVersions, getVersions
+    , Versions, setVersions, getVersions
     )
 
 {-| The Context is the set of variables that the user (mostly) cannot control.
@@ -45,13 +45,14 @@ information that can be inserted.
 
 ### Versions
 
-@docs setVersions, getVersions
+@docs Versions, setVersions, getVersions
 
 -}
 
 import Internal.Config.Leaks as L
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
+import Set exposing (Set)
 
 
 {-| The Context type stores all the information in the Vault. This data type is
@@ -60,6 +61,7 @@ static and hence can be passed on easily.
 type alias Context =
     { accessToken : Maybe String
     , baseUrl : Maybe String
+    , experimental : Maybe (Set String)
     , password : Maybe String
     , refreshToken : Maybe String
     , username : Maybe String
@@ -78,8 +80,12 @@ type APIContext ph
         , baseUrl : String
         , context : Context
         , transaction : String
-        , versions : List String
+        , versions : Versions
         }
+
+
+type alias Versions =
+    { versions : List String, unstableFeatures : Set String }
 
 
 {-| Create an unformatted APIContext type.
@@ -91,7 +97,10 @@ apiFormat context =
         , baseUrl = context.baseUrl |> Maybe.withDefault L.baseUrl
         , context = context
         , transaction = context.transaction |> Maybe.withDefault L.transaction
-        , versions = context.versions |> Maybe.withDefault L.versions
+        , versions =
+            { versions = context.versions |> Maybe.withDefault L.versions
+            , unstableFeatures = context.experimental |> Maybe.withDefault Set.empty
+            }
         }
 
 
@@ -99,7 +108,7 @@ apiFormat context =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object7
+    Json.object8
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
@@ -116,6 +125,13 @@ coder =
             , toField = .baseUrl
             , description = Text.fields.context.baseUrl
             , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "experimental"
+            , toField = .experimental
+            , description = Text.fields.context.experimental
+            , coder = Json.set Json.string
             }
         )
         (Json.field.optional.value
@@ -175,6 +191,7 @@ init : Context
 init =
     { accessToken = Nothing
     , baseUrl = Nothing
+    , experimental = Nothing
     , refreshToken = Nothing
     , password = Nothing
     , username = Nothing
@@ -227,13 +244,13 @@ setTransaction value (APIContext c) =
 
 {-| Get an inserted versions list.
 -}
-getVersions : APIContext { a | versions : () } -> List String
+getVersions : APIContext { a | versions : () } -> Versions
 getVersions (APIContext c) =
     c.versions
 
 
 {-| Insert a versions list into the APIContext.
 -}
-setVersions : List String -> APIContext a -> APIContext { a | versions : () }
+setVersions : Versions -> APIContext a -> APIContext { a | versions : () }
 setVersions value (APIContext c) =
     APIContext { c | versions = value }

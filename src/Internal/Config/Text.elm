@@ -247,6 +247,7 @@ fields :
     { context :
         { accessToken : Desc
         , baseUrl : Desc
+        , experimental : Desc
         , password : Desc
         , refreshToken : Desc
         , username : Desc
@@ -328,6 +329,9 @@ fields =
             ]
         , baseUrl =
             [ "The base URL of the Matrix server."
+            ]
+        , experimental =
+            [ "Experimental features supported by the homeserver."
             ]
         , password =
             [ "The user's password for authentication purposes."

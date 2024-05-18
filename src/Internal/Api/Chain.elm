@@ -1,6 +1,7 @@
 module Internal.Api.Chain exposing
     ( TaskChain, CompleteChain
     , IdemChain, toTask
+    , fail, succeed
     )
 
 {-|
@@ -22,6 +23,11 @@ avoid leaking values passing through the API in unexpected ways.
 ## Finished chain
 
 @docs IdemChain, toTask
+
+
+## Operations
+
+@docs fail, succeed
 
 -}
 
