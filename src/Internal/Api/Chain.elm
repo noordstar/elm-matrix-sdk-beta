@@ -1,7 +1,7 @@
 module Internal.Api.Chain exposing
     ( TaskChain, CompleteChain
     , IdemChain, toTask
-    , fail, succeed
+    , fail, succeed, andThen
     )
 
 {-|
@@ -27,12 +27,12 @@ avoid leaking values passing through the API in unexpected ways.
 
 ## Operations
 
-@docs fail, succeed
+@docs fail, succeed, andThen
 
 -}
 
 import Internal.Config.Log exposing (Log)
-import Internal.Values.Context as Context exposing (APIContext)
+import Internal.Values.Context exposing (APIContext)
 import Task
 
 

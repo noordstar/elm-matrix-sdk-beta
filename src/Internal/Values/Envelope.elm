@@ -48,9 +48,11 @@ settings that can be adjusted manually.
 
 -}
 
+import Internal.Api.Request as Request
+import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
-import Internal.Values.Context as Context exposing (Context)
+import Internal.Values.Context as Context exposing (Context, Versions)
 import Internal.Values.Settings as Settings
 
 
@@ -70,10 +72,12 @@ type alias Envelope a =
 -}
 type EnvelopeUpdate a
     = ContentUpdate a
+    | HttpRequest (Request.Request ( Request.Error, List Log ) ( EnvelopeUpdate a, List Log ))
     | More (List (EnvelopeUpdate a))
     | SetAccessToken String
+    | SetBaseUrl String
     | SetRefreshToken String
-    | SetVersions (List String)
+    | SetVersions Versions
 
 
 {-| Settings value from
@@ -286,11 +290,17 @@ update updateContent eu ({ context } as data) =
         ContentUpdate v ->
             { data | content = updateContent v data.content }
 
+        HttpRequest _ ->
+            data
+
         More items ->
             List.foldl (update updateContent) data items
 
         SetAccessToken a ->
             { data | context = { context | accessToken = Just a } }
+
+        SetBaseUrl b ->
+            { data | context = { context | baseUrl = Just b } }
 
         SetRefreshToken r ->
             { data | context = { context | refreshToken = Just r } }

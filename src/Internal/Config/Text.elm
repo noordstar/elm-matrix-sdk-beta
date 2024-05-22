@@ -251,6 +251,7 @@ fields :
         , password : Desc
         , refreshToken : Desc
         , username : Desc
+        , serverName : Desc
         , transaction : Desc
         , versions : Desc
         }
@@ -341,6 +342,10 @@ fields =
             ]
         , username =
             [ "The username of the Matrix account."
+            ]
+        , serverName =
+            [ "The homeserver that the user is trying to communicate with."
+            , "This name doesn't need to be the address. For example, the name might be `matrix.org` even though the homeserver is at a different location."
             ]
         , transaction =
             [ "A unique identifier for a transaction initiated by the user."

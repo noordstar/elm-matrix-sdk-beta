@@ -1,5 +1,5 @@
 module Internal.Config.Leaks exposing
-    ( accessToken, baseUrl, transaction, versions
+    ( accessToken, baseUrl, field, transaction, versions
     , allLeaks
     )
 
@@ -30,7 +30,7 @@ know 100% sure that the value isn't `Nothing`.
 
     Just 5 |> Maybe.withDefault Leaks.number
 
-@docs accessToken, baseUrl, transaction, versions
+@docs accessToken, baseUrl, field, transaction, versions
 
 For safety purposes, all leaking values are stored in the following value:
 
@@ -52,14 +52,15 @@ accessToken =
 -}
 allLeaks : Set String
 allLeaks =
-    Set.union
-        (Set.fromList versions)
-        (Set.fromList
-            [ accessToken
-            , baseUrl
-            , transaction
-            ]
-        )
+    Set.fromList
+        [ accessToken
+        , baseUrl
+        , field
+        , transaction
+        , "elm-sdk-placeholder-versions-leaks" -- Old leaking value
+        ]
+        |> Set.union (Set.fromList versions.versions)
+        |> Set.union versions.unstableFeatures
 
 
 {-| Placeholder base URL.
@@ -67,6 +68,13 @@ allLeaks =
 baseUrl : String
 baseUrl =
     "elm-sdk-placeholder-baseurl-leaks.example.org"
+
+
+{-| Placeholder JSON field.
+-}
+field : String
+field =
+    "elm-sdk-placeholder-json-field"
 
 
 {-| Placeholder transaction id.
@@ -78,6 +86,8 @@ transaction =
 
 {-| Placeholder versions list.
 -}
-versions : List String
+versions : { versions : List String, unstableFeatures : Set String }
 versions =
-    [ "elm-sdk-placeholder-versions-leaks" ]
+    { versions = [ "elm-sdk-placeholder-versions-versions-leaks" ]
+    , unstableFeatures = Set.singleton "elm-sdk-placeholder-versions-unstableFeatures-leaks"
+    }
