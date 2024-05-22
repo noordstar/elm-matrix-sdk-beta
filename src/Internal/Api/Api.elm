@@ -31,6 +31,7 @@ import Internal.Api.Request as R
 import Internal.Config.Log exposing (Log, log)
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (APIContext, Versions)
+import Internal.Values.Envelope as E
 import Internal.Values.Vault as V
 import Recursion
 import Set
@@ -39,7 +40,7 @@ import Set
 {-| A TaskChain helps create a chain of HTTP requests.
 -}
 type alias TaskChain ph1 ph2 =
-    C.TaskChain R.Error V.VaultUpdate { ph1 | baseUrl : () } { ph2 | baseUrl : () }
+    C.TaskChain R.Error (E.EnvelopeUpdate V.VaultUpdate) { ph1 | baseUrl : () } { ph2 | baseUrl : () }
 
 
 {-| Make an HTTP request that adheres to the Matrix spec rules.
@@ -47,17 +48,17 @@ type alias TaskChain ph1 ph2 =
 request :
     { attributes : List (R.Attribute { ph1 | baseUrl : () })
     , coder : Json.Coder returnValue
-    , contextChange : V.VaultUpdate -> (APIContext { ph1 | baseUrl : () } -> APIContext { ph2 | baseUrl : () })
+    , contextChange : returnValue -> (APIContext { ph1 | baseUrl : () } -> APIContext { ph2 | baseUrl : () })
     , method : String
     , path : List String
-    , toUpdate : returnValue -> ( V.VaultUpdate, List Log )
+    , toUpdate : returnValue -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
     }
     -> TaskChain ph1 ph2
 request data =
     R.toChain
         { logHttp =
             \r ->
-                ( V.HttpRequest r
+                ( E.HttpRequest r
                 , String.concat
                     -- TODO: Move this to Internal.Config.Text module
                     [ "Matrix HTTP: "

@@ -423,64 +423,6 @@ onStatusCode code err _ =
         )
 
 
-{-| Resolve the response of a Matrix API call.
--}
-rawApiCallResolver : Json.Coder a -> (a -> ( b, List Log )) -> Dict.Dict Int ( Error, List Log ) -> Http.Resolver ( Error, List Log ) ( b, List Log )
-rawApiCallResolver coder f statusCodeErrors =
-    Http.stringResolver
-        (\response ->
-            case response of
-                Http.BadUrl_ s ->
-                    Http.BadUrl s
-                        |> InternetException
-                        |> Tuple.pair
-                        |> (|>) []
-                        |> Err
-
-                Http.Timeout_ ->
-                    Http.Timeout
-                        |> InternetException
-                        |> Tuple.pair
-                        |> (|>) []
-                        |> Err
-
-                Http.NetworkError_ ->
-                    Http.NetworkError
-                        |> InternetException
-                        |> Tuple.pair
-                        |> (|>) []
-                        |> Err
-
-                Http.BadStatus_ metadata body ->
-                    statusCodeErrors
-                        |> Dict.get metadata.statusCode
-                        |> decodeServerResponse
-                            (Json.decode coder
-                                |> D.map
-                                    (\( u, l ) ->
-                                        case f u of
-                                            ( u2, l2 ) ->
-                                                ( u2, List.append l l2 )
-                                    )
-                            )
-                            body
-
-                Http.GoodStatus_ metadata body ->
-                    statusCodeErrors
-                        |> Dict.get metadata.statusCode
-                        |> decodeServerResponse
-                            (Json.decode coder
-                                |> D.map
-                                    (\( u, l ) ->
-                                        case f u of
-                                            ( u2, l2 ) ->
-                                                ( u2, List.append l l2 )
-                                    )
-                            )
-                            body
-        )
-
-
 {-| Add a boolean value as a query parameter to the URL.
 -}
 queryBool : String -> Bool -> Attribute a
@@ -545,6 +487,46 @@ queryString key value _ =
     QueryParam <| UrlBuilder.string key value
 
 
+{-| Resolve the response of a Matrix API call.
+-}
+rawApiCallResolver : D.Decoder ( a, List Log ) -> Dict.Dict Int ( Error, List Log ) -> Http.Resolver ( Error, List Log ) ( a, List Log )
+rawApiCallResolver decoder statusCodeErrors =
+    Http.stringResolver
+        (\response ->
+            case response of
+                Http.BadUrl_ s ->
+                    Http.BadUrl s
+                        |> InternetException
+                        |> Tuple.pair
+                        |> (|>) []
+                        |> Err
+
+                Http.Timeout_ ->
+                    Http.Timeout
+                        |> InternetException
+                        |> Tuple.pair
+                        |> (|>) []
+                        |> Err
+
+                Http.NetworkError_ ->
+                    Http.NetworkError
+                        |> InternetException
+                        |> Tuple.pair
+                        |> (|>) []
+                        |> Err
+
+                Http.BadStatus_ metadata body ->
+                    statusCodeErrors
+                        |> Dict.get metadata.statusCode
+                        |> decodeServerResponse decoder body
+
+                Http.GoodStatus_ metadata body ->
+                    statusCodeErrors
+                        |> Dict.get metadata.statusCode
+                        |> decodeServerResponse decoder body
+        )
+
+
 {-| Configure the HTTP request to time out after a given expiry time.
 -}
 timeout : Float -> Attribute a
@@ -558,7 +540,7 @@ toChain :
     { logHttp : Request ( Error, List Log ) ( update, List Log ) -> ( update, List Log )
     , coder : Json.Coder httpOut
     , request : ApiPlan ph1
-    , toContextChange : update -> (APIContext ph1 -> APIContext ph2)
+    , toContextChange : httpOut -> (APIContext ph1 -> APIContext ph2)
     , toUpdate : httpOut -> ( update, List Log )
     }
     -> C.TaskChain Error update ph1 ph2
@@ -566,25 +548,47 @@ toChain data apiContext =
     data.request apiContext
         |> (\call ->
                 let
-                    r : Request ( Error, List Log ) ( update, List Log )
+                    r : Request ( Error, List Log ) ( httpOut, List Log )
                     r =
                         { method = call.method
                         , headers = getHeaders call.attributes
                         , url = getUrl call
                         , body = Http.jsonBody (getBody call.attributes)
-                        , resolver = rawApiCallResolver data.coder data.toUpdate (getStatusCodes call.attributes)
+                        , resolver = rawApiCallResolver (Json.decode data.coder) (getStatusCodes call.attributes)
+                        , timeout = getTimeout call.attributes
+                        }
+
+                    logR : Request ( Error, List Log ) ( update, List Log )
+                    logR =
+                        { method = call.method
+                        , headers = getHeaders call.attributes
+                        , url = getUrl call
+                        , body = Http.jsonBody (getBody call.attributes)
+                        , resolver =
+                            rawApiCallResolver
+                                (Json.decode data.coder
+                                    |> D.map
+                                        (\( out, logs ) ->
+                                            case data.toUpdate out of
+                                                ( u, uLogs ) ->
+                                                    ( u, List.append logs uLogs )
+                                        )
+                                )
+                                (getStatusCodes call.attributes)
                         , timeout = getTimeout call.attributes
                         }
                 in
-                case data.logHttp r of
+                case data.logHttp logR of
                     ( httpU, httpLogs ) ->
                         Http.task r
                             |> Task.map
-                                (\( u, logs ) ->
-                                    { contextChange = data.toContextChange u
-                                    , logs = List.append httpLogs logs
-                                    , messages = [ httpU, u ]
-                                    }
+                                (\( httpO, logs ) ->
+                                    case data.toUpdate httpO of
+                                        ( u, uLogs ) ->
+                                            { contextChange = data.toContextChange httpO
+                                            , logs = List.concat [ httpLogs, logs, uLogs ]
+                                            , messages = [ httpU, u ]
+                                            }
                                 )
                             |> Task.mapError
                                 (\( err, logs ) ->

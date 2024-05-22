@@ -1,6 +1,6 @@
 module Internal.Values.Context exposing
     ( Context, init, coder, encode, decoder
-    , APIContext, apiFormat
+    , APIContext, apiFormat, fromApiFormat
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
     , setTransaction, getTransaction
@@ -22,7 +22,7 @@ the Matrix API.
 Once the API starts needing information, that's when we use the APIContext type
 to build the right environment for the API communication to work with.
 
-@docs APIContext, apiFormat
+@docs APIContext, apiFormat, fromApiFormat
 
 Once the APIContext is ready, there's helper functions for each piece of
 information that can be inserted.
@@ -52,6 +52,7 @@ information that can be inserted.
 import Internal.Config.Leaks as L
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
+import Json.Encode as E
 import Set exposing (Set)
 
 
@@ -61,12 +62,12 @@ static and hence can be passed on easily.
 type alias Context =
     { accessToken : Maybe String
     , baseUrl : Maybe String
-    , experimental : Maybe (Set String)
     , password : Maybe String
     , refreshToken : Maybe String
-    , username : Maybe String
+    , serverName : String
     , transaction : Maybe String
-    , versions : Maybe (List String)
+    , username : Maybe String
+    , versions : Maybe Versions
     }
 
 
@@ -97,11 +98,16 @@ apiFormat context =
         , baseUrl = context.baseUrl |> Maybe.withDefault L.baseUrl
         , context = context
         , transaction = context.transaction |> Maybe.withDefault L.transaction
-        , versions =
-            { versions = context.versions |> Maybe.withDefault L.versions
-            , unstableFeatures = context.experimental |> Maybe.withDefault Set.empty
-            }
+        , versions = context.versions |> Maybe.withDefault L.versions
         }
+
+
+{-| Get the original context that contains all values from before any were
+gotten from the Matrix API.
+-}
+fromApiFormat : APIContext a -> Context
+fromApiFormat (APIContext c) =
+    c.context
 
 
 {-| Define how a Context can be encoded to and decoded from a JSON object.
@@ -128,13 +134,6 @@ coder =
             }
         )
         (Json.field.optional.value
-            { fieldName = "experimental"
-            , toField = .experimental
-            , description = Text.fields.context.experimental
-            , coder = Json.set Json.string
-            }
-        )
-        (Json.field.optional.value
             { fieldName = "password"
             , toField = .password
             , description = Text.fields.context.password
@@ -148,10 +147,10 @@ coder =
             , coder = Json.string
             }
         )
-        (Json.field.optional.value
-            { fieldName = "username"
-            , toField = .username
-            , description = Text.fields.context.username
+        (Json.field.required
+            { fieldName = "serverName"
+            , toField = .serverName
+            , description = Text.fields.context.serverName
             , coder = Json.string
             }
         )
@@ -163,10 +162,17 @@ coder =
             }
         )
         (Json.field.optional.value
+            { fieldName = "username"
+            , toField = .username
+            , description = Text.fields.context.username
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
             { fieldName = "versions"
             , toField = .versions
             , description = Text.fields.context.versions
-            , coder = Json.list Json.string
+            , coder = versionsCoder
             }
         )
 
@@ -187,15 +193,15 @@ encode =
 
 {-| A basic, untouched version of the Context, containing no information.
 -}
-init : Context
-init =
+init : String -> Context
+init sn =
     { accessToken = Nothing
     , baseUrl = Nothing
-    , experimental = Nothing
     , refreshToken = Nothing
     , password = Nothing
-    , username = Nothing
+    , serverName = sn
     , transaction = Nothing
+    , username = Nothing
     , versions = Nothing
     }
 
@@ -254,3 +260,28 @@ getVersions (APIContext c) =
 setVersions : Versions -> APIContext a -> APIContext { a | versions : () }
 setVersions value (APIContext c) =
     APIContext { c | versions = value }
+
+
+versionsCoder : Json.Coder Versions
+versionsCoder =
+    Json.object2
+        { name = Debug.todo "Add name" -- Text.docs.versions.name
+        , description = Debug.todo "Add description" -- Text.docs.versions.description
+        , init = Versions
+        }
+        (Json.field.required
+            { fieldName = "versions"
+            , toField = .versions
+            , description = Debug.todo "Add description"
+            , coder = Json.list Json.string
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "unstableFeatures"
+            , toField = .unstableFeatures
+            , description = Debug.todo "Add description"
+            , coder = Json.set Json.string
+            , default = ( Set.empty, [] )
+            , defaultToString = Json.encode (Json.set Json.string) >> E.encode 0
+            }
+        )
