@@ -19,10 +19,12 @@ up-to-date.
 
 -}
 
+import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
 import Internal.Api.Request as Request
-import Internal.Config.Log exposing (Log)
-import Internal.Values.Context exposing (APIContext)
+import Internal.Api.Versions.Api
+import Internal.Config.Log exposing (Log, log)
+import Internal.Values.Context as Context exposing (APIContext)
 import Internal.Values.Envelope exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
 import Internal.Values.Vault exposing (VaultUpdate(..))
@@ -47,6 +49,50 @@ complete Task type.
 -}
 type alias UFTask a b =
     C.TaskChain Request.Error (EnvelopeUpdate VaultUpdate) a b
+
+
+{-| Get the base URL where the Matrix API can be accessed
+-}
+getBaseUrl : UFTask a { a | baseUrl : () }
+getBaseUrl c =
+    case Context.fromApiFormat c |> .baseUrl of
+        Just b ->
+            C.succeed
+                { messages = []
+                , logs = [ log.debug "Using cached baseURL from Vault" ]
+                , contextChange = Context.setBaseUrl b
+                }
+                c
+
+        Nothing ->
+            Internal.Api.BaseUrl.Api.baseUrl
+                { url = Context.fromApiFormat c |> .serverName }
+                c
+
+
+{-| Get the versions that are potentially supported by the Matrix API
+-}
+getVersions : UFTask { a | baseUrl : () } { a | baseUrl : (), versions : () }
+getVersions c =
+    case Context.fromApiFormat c |> .versions of
+        Just v ->
+            C.succeed
+                { messages = []
+                , logs = [ log.debug "Using cached versions from Vault" ]
+                , contextChange = Context.setVersions v
+                }
+                c
+
+        Nothing ->
+            Internal.Api.Versions.Api.versions c
+
+
+{-| Establish a Task Chain context where the base URL and supported list of
+versions are known.
+-}
+makeVB : UFTask {} { a | baseUrl : (), versions : () }
+makeVB =
+    C.andThen getVersions getBaseUrl
 
 
 {-| Transform a completed task into a Cmd.
