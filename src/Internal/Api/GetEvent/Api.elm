@@ -17,6 +17,7 @@ import Internal.Api.Request as R
 import Internal.Config.Log exposing (log)
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp
+import Internal.Values.Envelope as E
 import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.Room as Room
 import Internal.Values.User as User
@@ -82,7 +83,7 @@ getEventV1 { eventId, roomId } =
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "event", eventId ]
         , toUpdate =
             \event ->
-                ( V.MapRoom roomId (Room.AddEvent event)
+                ( E.ContentUpdate <| V.MapRoom roomId (Room.AddEvent event)
                 , event.eventId
                     |> (++) "Received event id "
                     |> log.debug
@@ -106,7 +107,7 @@ getEventV2 { eventId, roomId } =
         , path = [ "_matrix", "client", "v3", "rooms", roomId, "event", eventId ]
         , toUpdate =
             \event ->
-                ( V.MapRoom roomId (Room.AddEvent event)
+                ( E.ContentUpdate <| V.MapRoom roomId (Room.AddEvent event)
                 , event.eventId
                     |> (++) "Received event id "
                     |> log.debug

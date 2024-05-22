@@ -22,6 +22,7 @@ import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Config.Log exposing (log)
 import Internal.Tools.Json as Json
+import Internal.Values.Envelope as E
 import Internal.Values.Room as Room
 import Internal.Values.User as User exposing (User)
 import Internal.Values.Vault as V
@@ -93,7 +94,7 @@ inviteV1 { roomId, user } =
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "invite" ]
         , toUpdate =
             always
-                ( V.MapRoom roomId (Room.Invite user)
+                ( E.ContentUpdate <| V.MapRoom roomId (Room.Invite user)
                 , String.concat
                     -- TODO: Move to Internal.Config.Text
                     [ "Invited user "
@@ -123,7 +124,7 @@ inviteV2 { reason, roomId, user } =
         , path = [ "_matrix", "client", "v3", "rooms", roomId, "invite" ]
         , toUpdate =
             always
-                ( V.MapRoom roomId (Room.Invite user)
+                ( E.ContentUpdate <| V.MapRoom roomId (Room.Invite user)
                 , String.concat
                     -- TODO: Move to Internal.Config.Text
                     [ "Invited user "
