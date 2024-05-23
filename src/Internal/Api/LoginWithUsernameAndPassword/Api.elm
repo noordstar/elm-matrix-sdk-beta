@@ -56,11 +56,11 @@ type alias LoginWithUsernameAndPasswordOutputV1 =
 
 
 type alias PhantomV1 a =
-    { a | baseUrl : () }
+    { a | baseUrl : (), now : () }
 
 
 loginWithUsernameAndPasswordV1 : LoginWithUsernameAndPasswordInputV1 a -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV1 { username, password } =
+loginWithUsernameAndPasswordV1 { username, password } context =
     A.request
         { attributes =
             [ R.bodyString "password" password
@@ -77,12 +77,18 @@ loginWithUsernameAndPasswordV1 { username, password } =
         , toUpdate =
             \out ->
                 ( E.More
-                    [ E.SetAccessToken out.accessToken
-                    -- , E.SetRefreshToken out.refreshToken
+                    [ E.SetAccessToken
+                        { created = Context.getNow context
+                        , expiryMs = Nothing
+                        , lastUsed = Context.getNow context
+                        , refresh = out.refreshToken
+                        , value = out.accessToken
+                        }
                     ]
                 , []
                 )
         }
+        context
 
 
 coderV1 : Json.Coder LoginWithUsernameAndPasswordOutputV1

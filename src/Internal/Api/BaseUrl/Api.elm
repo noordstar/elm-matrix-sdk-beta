@@ -9,7 +9,6 @@ This module looks for the right homeserver address.
 
 -}
 
-import Internal.Api.Api as A
 import Internal.Api.Chain as C
 import Internal.Api.Request as R
 import Internal.Config.Leaks as L
@@ -20,7 +19,7 @@ import Internal.Values.Envelope as E
 import Internal.Values.Vault as V
 
 
-baseUrl : BaseUrlInput -> C.TaskChain R.Error (E.EnvelopeUpdate V.VaultUpdate) (Phantom ph) (Phantom { ph | baseUrl : () })
+baseUrl : BaseUrlInput -> C.TaskChain R.Error (E.EnvelopeUpdate V.VaultUpdate) ph { ph | baseUrl : () }
 baseUrl data =
     R.toChain
         { logHttp =
@@ -63,10 +62,6 @@ baseUrl data =
 
 type alias BaseUrlInput =
     { url : String }
-
-
-type alias Phantom a =
-    a
 
 
 type alias DiscoveryInformation =

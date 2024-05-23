@@ -90,7 +90,7 @@ getVersions c =
 {-| Establish a Task Chain context where the base URL and supported list of
 versions are known.
 -}
-makeVB : UFTask {} { a | baseUrl : (), versions : () }
+makeVB : UFTask a { a | baseUrl : (), versions : () }
 makeVB =
     C.andThen getVersions getBaseUrl
 

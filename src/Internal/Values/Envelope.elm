@@ -51,8 +51,9 @@ settings that can be adjusted manually.
 import Internal.Api.Request as Request
 import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
+import Internal.Tools.Hashdict as Hashdict
 import Internal.Tools.Json as Json
-import Internal.Values.Context as Context exposing (Context, Versions)
+import Internal.Values.Context as Context exposing (AccessToken, Context, Versions)
 import Internal.Values.Settings as Settings
 
 
@@ -74,7 +75,8 @@ type EnvelopeUpdate a
     = ContentUpdate a
     | HttpRequest (Request.Request ( Request.Error, List Log ) ( EnvelopeUpdate a, List Log ))
     | More (List (EnvelopeUpdate a))
-    | SetAccessToken String
+    | RemoveAccessToken String
+    | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetRefreshToken String
     | SetVersions Versions
@@ -179,10 +181,10 @@ getContent =
 {-| Create a new enveloped data type. All settings are set to default values
 from the [Internal.Config.Default](Internal-Config-Default) module.
 -}
-init : a -> Envelope a
-init x =
-    { content = x
-    , context = Context.init
+init : { serverName : String, content : a } -> Envelope a
+init data =
+    { content = data.content
+    , context = Context.init data.serverName
     , settings = Settings.init
     }
 
@@ -296,8 +298,11 @@ update updateContent eu ({ context } as data) =
         More items ->
             List.foldl (update updateContent) data items
 
+        RemoveAccessToken token ->
+            { data | context = { context | accessTokens = Hashdict.removeKey token context.accessTokens } }
+
         SetAccessToken a ->
-            { data | context = { context | accessToken = Just a } }
+            { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }
 
         SetBaseUrl b ->
             { data | context = { context | baseUrl = Just b } }

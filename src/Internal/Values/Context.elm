@@ -1,8 +1,9 @@
 module Internal.Values.Context exposing
-    ( Context, init, coder, encode, decoder
+    ( Context, AccessToken, init, coder, encode, decoder
     , APIContext, apiFormat, fromApiFormat
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
+    , setNow, getNow
     , setTransaction, getTransaction
     , Versions, setVersions, getVersions
     )
@@ -14,7 +15,7 @@ the Matrix API.
 
 ## Context
 
-@docs Context, init, coder, encode, decoder
+@docs Context, AccessToken, init, coder, encode, decoder
 
 
 ## APIContext
@@ -38,6 +39,11 @@ information that can be inserted.
 @docs setBaseUrl, getBaseUrl
 
 
+### Timestamp
+
+@docs setNow, getNow
+
+
 ### Transaction id
 
 @docs setTransaction, getTransaction
@@ -51,17 +57,33 @@ information that can be inserted.
 
 import Internal.Config.Leaks as L
 import Internal.Config.Text as Text
+import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
+import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
 import Json.Encode as E
 import Set exposing (Set)
+import Time
+
+
+{-| The Access Token is a combination of access tokens, values and refresh
+tokens that contain and summarizes all properties of a known access token.
+-}
+type alias AccessToken =
+    { created : Timestamp
+    , expiryMs : Maybe Int
+    , lastUsed : Timestamp
+    , refresh : Maybe String
+    , value : String
+    }
 
 
 {-| The Context type stores all the information in the Vault. This data type is
 static and hence can be passed on easily.
 -}
 type alias Context =
-    { accessToken : Maybe String
+    { accessTokens : Hashdict AccessToken
     , baseUrl : Maybe String
+    , now : Maybe Timestamp
     , password : Maybe String
     , refreshToken : Maybe String
     , serverName : String
@@ -80,6 +102,7 @@ type APIContext ph
         { accessToken : String
         , baseUrl : String
         , context : Context
+        , now : Timestamp
         , transaction : String
         , versions : Versions
         }
@@ -94,9 +117,11 @@ type alias Versions =
 apiFormat : Context -> APIContext {}
 apiFormat context =
     APIContext
-        { accessToken = context.accessToken |> Maybe.withDefault L.accessToken
+        { accessToken =
+            mostPopularToken context |> Maybe.withDefault L.accessToken
         , baseUrl = context.baseUrl |> Maybe.withDefault L.baseUrl
         , context = context
+        , now = context.now |> Maybe.withDefault (Time.millisToPosix 0)
         , transaction = context.transaction |> Maybe.withDefault L.transaction
         , versions = context.versions |> Maybe.withDefault L.versions
         }
@@ -114,16 +139,16 @@ fromApiFormat (APIContext c) =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object8
+    Json.object9
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
         }
-        (Json.field.optional.value
-            { fieldName = "accessToken"
-            , toField = .accessToken
+        (Json.field.required
+            { fieldName = "accessTokens"
+            , toField = .accessTokens
             , description = Text.fields.context.accessToken
-            , coder = Json.string
+            , coder = Hashdict.coder .value coderAccessToken
             }
         )
         (Json.field.optional.value
@@ -131,6 +156,13 @@ coder =
             , toField = .baseUrl
             , description = Text.fields.context.baseUrl
             , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "now"
+            , toField = .now
+            , description = Debug.todo "Needs docs"
+            , coder = Timestamp.coder
             }
         )
         (Json.field.optional.value
@@ -177,6 +209,52 @@ coder =
         )
 
 
+{-| JSON coder for an Access Token.
+-}
+coderAccessToken : Json.Coder AccessToken
+coderAccessToken =
+    Json.object5
+        { name = Debug.todo "Needs docs"
+        , description = Debug.todo "Needs docs"
+        , init = AccessToken
+        }
+        (Json.field.required
+            { fieldName = "created"
+            , toField = .created
+            , description = Debug.todo "Needs docs"
+            , coder = Timestamp.coder
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "expiryMs"
+            , toField = .expiryMs
+            , description = Debug.todo "Needs docs"
+            , coder = Json.int
+            }
+        )
+        (Json.field.required
+            { fieldName = "lastUsed"
+            , toField = .lastUsed
+            , description = Debug.todo "Needs docs"
+            , coder = Timestamp.coder
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "refresh"
+            , toField = .refresh
+            , description = Debug.todo "Needs docs"
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            { fieldName = "value"
+            , toField = .value
+            , description = Debug.todo "Needs docs"
+            , coder = Json.string
+            }
+        )
+
+
 {-| Decode a Context type from a JSON value.
 -}
 decoder : Json.Decoder Context
@@ -195,8 +273,9 @@ encode =
 -}
 init : String -> Context
 init sn =
-    { accessToken = Nothing
+    { accessTokens = Hashdict.empty .value
     , baseUrl = Nothing
+    , now = Nothing
     , refreshToken = Nothing
     , password = Nothing
     , serverName = sn
@@ -204,6 +283,29 @@ init sn =
     , username = Nothing
     , versions = Nothing
     }
+
+
+{-| Get the most popular access token available, if any.
+-}
+mostPopularToken : Context -> Maybe String
+mostPopularToken c =
+    c.accessTokens
+        |> Hashdict.values
+        |> List.sortBy
+            (\token ->
+                case token.expiryMs of
+                    Nothing ->
+                        ( 0, Timestamp.toMs token.created )
+
+                    Just e ->
+                        ( 1
+                        , token.created
+                            |> Timestamp.add e
+                            |> Timestamp.toMs
+                        )
+            )
+        |> List.head
+        |> Maybe.map .value
 
 
 {-| Get an inserted access token.
@@ -232,6 +334,20 @@ getBaseUrl (APIContext c) =
 setBaseUrl : String -> APIContext a -> APIContext { a | baseUrl : () }
 setBaseUrl value (APIContext c) =
     APIContext { c | baseUrl = value }
+
+
+{-| Get an inserted timestamp.
+-}
+getNow : APIContext { a | now : () } -> Timestamp
+getNow (APIContext c) =
+    c.now
+
+
+{-| Insert a Timestamp into the APIContext.
+-}
+setNow : Timestamp -> APIContext a -> APIContext { a | now : () }
+setNow t (APIContext c) =
+    APIContext { c | now = t }
 
 
 {-| Get an inserted transaction id.
