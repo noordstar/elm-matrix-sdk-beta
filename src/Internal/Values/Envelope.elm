@@ -75,9 +75,11 @@ type EnvelopeUpdate a
     = ContentUpdate a
     | HttpRequest (Request.Request ( Request.Error, List Log ) ( EnvelopeUpdate a, List Log ))
     | More (List (EnvelopeUpdate a))
+    | Optional (Maybe (EnvelopeUpdate a))
     | RemoveAccessToken String
     | SetAccessToken AccessToken
     | SetBaseUrl String
+    | SetDeviceId String
     | SetRefreshToken String
     | SetVersions Versions
 
@@ -298,6 +300,12 @@ update updateContent eu ({ context } as data) =
         More items ->
             List.foldl (update updateContent) data items
 
+        Optional (Just u) ->
+            update updateContent u data
+
+        Optional Nothing ->
+            data
+
         RemoveAccessToken token ->
             { data | context = { context | accessTokens = Hashdict.removeKey token context.accessTokens } }
 
@@ -306,6 +314,9 @@ update updateContent eu ({ context } as data) =
 
         SetBaseUrl b ->
             { data | context = { context | baseUrl = Just b } }
+
+        SetDeviceId d ->
+            { data | context = { context | deviceId = Just d } }
 
         SetRefreshToken r ->
             { data | context = { context | refreshToken = Just r } }

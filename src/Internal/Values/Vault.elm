@@ -39,6 +39,7 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Room as Room exposing (Room)
+import Internal.Values.User as User exposing (User)
 
 
 {-| This is the Vault type.
@@ -46,6 +47,7 @@ import Internal.Values.Room as Room exposing (Room)
 type alias Vault =
     { accountData : Dict String Json.Value
     , rooms : Hashdict Room
+    , user : User
     }
 
 
@@ -57,11 +59,12 @@ type VaultUpdate
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
     | SetAccountData String Json.Value
+    | SetUser User
 
 
 coder : Json.Coder Vault
 coder =
-    Json.object2
+    Json.object3
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -78,6 +81,13 @@ coder =
             , toField = .rooms
             , description = Text.fields.vault.rooms
             , coder = Hashdict.coder .roomId Room.coder
+            }
+        )
+        (Json.field.required
+            { fieldName = "user"
+            , toField = .user
+            , description = Debug.todo "Needs description"
+            , coder = User.coder
             }
         )
 
@@ -136,3 +146,6 @@ update vu vault =
 
         SetAccountData key value ->
             setAccountData key value vault
+
+        SetUser user ->
+            { vault | user = user }

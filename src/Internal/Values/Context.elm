@@ -83,6 +83,7 @@ static and hence can be passed on easily.
 type alias Context =
     { accessTokens : Hashdict AccessToken
     , baseUrl : Maybe String
+    , deviceId : Maybe String
     , now : Maybe Timestamp
     , password : Maybe String
     , refreshToken : Maybe String
@@ -139,7 +140,7 @@ fromApiFormat (APIContext c) =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object9
+    Json.object10
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
@@ -155,6 +156,13 @@ coder =
             { fieldName = "baseUrl"
             , toField = .baseUrl
             , description = Text.fields.context.baseUrl
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "deviceId"
+            , toField = .deviceId
+            , description = Debug.todo "Needs docs"
             , coder = Json.string
             }
         )
@@ -275,6 +283,7 @@ init : String -> Context
 init sn =
     { accessTokens = Hashdict.empty .value
     , baseUrl = Nothing
+    , deviceId = Nothing
     , now = Nothing
     , refreshToken = Nothing
     , password = Nothing
