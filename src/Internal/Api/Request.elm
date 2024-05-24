@@ -98,6 +98,8 @@ type ContextAttr
 -}
 type Error
     = InternetException Http.Error
+    | MissingUsername
+    | MissingPassword
     | NoSupportedVersion
     | ServerReturnsBadJSON String
     | ServerReturnsError String Json.Value

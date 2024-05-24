@@ -1,5 +1,5 @@
 module Internal.Values.Context exposing
-    ( Context, AccessToken, init, coder, encode, decoder
+    ( Context, AccessToken, init, coder, encode, decoder, mostPopularToken
     , APIContext, apiFormat, fromApiFormat
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
@@ -15,7 +15,7 @@ the Matrix API.
 
 ## Context
 
-@docs Context, AccessToken, init, coder, encode, decoder
+@docs Context, AccessToken, init, coder, encode, decoder, mostPopularToken
 
 
 ## APIContext

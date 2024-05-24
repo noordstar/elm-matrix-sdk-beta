@@ -53,6 +53,7 @@ import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict
 import Internal.Tools.Json as Json
+import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Context as Context exposing (AccessToken, Context, Versions)
 import Internal.Values.Settings as Settings
 
@@ -80,6 +81,7 @@ type EnvelopeUpdate a
     | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetDeviceId String
+    | SetNow Timestamp
     | SetRefreshToken String
     | SetVersions Versions
 
@@ -317,6 +319,9 @@ update updateContent eu ({ context } as data) =
 
         SetDeviceId d ->
             { data | context = { context | deviceId = Just d } }
+
+        SetNow n ->
+            { data | context = { context | now = Just n } }
 
         SetRefreshToken r ->
             { data | context = { context | refreshToken = Just r } }

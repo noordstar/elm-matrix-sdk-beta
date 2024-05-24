@@ -21,6 +21,8 @@ up-to-date.
 
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
+import Internal.Api.LoginWithUsernameAndPassword.Api
+import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
@@ -51,6 +53,38 @@ type alias UFTask a b =
     C.TaskChain Request.Error (EnvelopeUpdate VaultUpdate) a b
 
 
+{-| Get an access token to talk to the Matrix API
+-}
+getAccessToken : UFTask { a | now : () } { a | accessToken : (), now : () }
+getAccessToken c =
+    case Context.fromApiFormat c of
+        context ->
+            case ( Context.mostPopularToken context, context.username, context.password ) of
+                ( Just a, _, _ ) ->
+                    C.succeed
+                        { messages = []
+                        , logs = [ log.debug "Using cached access token from Vault" ]
+                        , contextChange = Context.setAccessToken a
+                        }
+                        c
+
+                ( Nothing, Just u, Just p ) ->
+                    Internal.Api.LoginWithUsernameAndPassword.Api.loginWithUsernameAndPassword
+                        { deviceId = Context.fromApiFormat c |> .deviceId
+                        , enableRefreshToken = Just True -- TODO: Turn this into a setting
+                        , initialDeviceDisplayName = Nothing -- TODO: Turn this into a setting
+                        , password = p
+                        , username = u
+                        }
+                        c
+
+                ( Nothing, Nothing, _ ) ->
+                    C.fail Request.MissingUsername c
+
+                ( Nothing, Just _, Nothing ) ->
+                    C.fail Request.MissingPassword c
+
+
 {-| Get the base URL where the Matrix API can be accessed
 -}
 getBaseUrl : UFTask a { a | baseUrl : () }
@@ -68,6 +102,13 @@ getBaseUrl c =
             Internal.Api.BaseUrl.Api.baseUrl
                 { url = Context.fromApiFormat c |> .serverName }
                 c
+
+
+{-| Get the current timestamp
+-}
+getNow : UFTask { a | baseUrl : () } { a | baseUrl : (), now : () }
+getNow =
+    Internal.Api.Now.Api.getNow
 
 
 {-| Get the versions that are potentially supported by the Matrix API
@@ -93,6 +134,17 @@ versions are known.
 makeVB : UFTask a { a | baseUrl : (), versions : () }
 makeVB =
     C.andThen getVersions getBaseUrl
+
+
+{-| Establish a Task Chain context where the base URL and supported list of
+versions are known, and where an access token is available to make an
+authenticated API call.
+-}
+makeVBA : UFTask a { a | accessToken : (), baseUrl : (), now : (), versions : () }
+makeVBA =
+    makeVB
+        |> C.andThen getNow
+        |> C.andThen getAccessToken
 
 
 {-| Transform a completed task into a Cmd.
