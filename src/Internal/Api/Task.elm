@@ -1,5 +1,5 @@
 module Internal.Api.Task exposing
-    ( Task, run
+    ( Task, run, Backpack
     , sendMessageEvent
     )
 
@@ -18,7 +18,7 @@ up-to-date.
 
 ## Use
 
-@docs Task, run
+@docs Task, run, Backpack
 
 
 ## Tasks
