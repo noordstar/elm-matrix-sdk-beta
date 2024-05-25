@@ -1,7 +1,7 @@
 module Internal.Api.Request exposing
     ( ApiCall, ApiPlan, Attribute, callAPI, withAttributes, toChain
     , Request, Error(..)
-    , accessToken, withTransactionId, timeout, onStatusCode
+    , accessToken, timeout, onStatusCode
     , fullBody, bodyBool, bodyInt, bodyString, bodyValue, bodyOpBool, bodyOpInt, bodyOpString, bodyOpValue
     , queryBool, queryInt, queryString, queryOpBool, queryOpInt, queryOpString
     )
@@ -28,7 +28,7 @@ Sometimes, APIs might fail. As a result, you may receive an error.
 
 ### General attributes
 
-@docs accessToken, withTransactionId, timeout, onStatusCode
+@docs accessToken, timeout, onStatusCode
 
 
 ### Body
@@ -89,7 +89,6 @@ type ContextAttr
     | Header Http.Header
     | NoAttr
     | QueryParam UrlBuilder.QueryParameter
-    | ReplaceInUrl String String
     | StatusCodeResponse Int ( Error, List Log )
     | Timeout Float
 
@@ -376,27 +375,7 @@ getUrl : ApiCall a -> String
 getUrl { attributes, baseUrl, path } =
     UrlBuilder.crossOrigin
         baseUrl
-        (path
-            |> List.map
-                (\p ->
-                    List.foldl
-                        (\attr cp ->
-                            case attr of
-                                ReplaceInUrl from to ->
-                                    if from == cp then
-                                        to
-
-                                    else
-                                        cp
-
-                                _ ->
-                                    cp
-                        )
-                        p
-                        attributes
-                )
-            |> List.map Url.percentEncode
-        )
+        (List.map Url.percentEncode path)
         (getQueryParams attributes)
 
 
@@ -615,10 +594,3 @@ withAttributes attrs f context =
                             |> List.append data.attributes
                 }
            )
-
-
-{-| Attribute that requires a transaction id to be present.
--}
-withTransactionId : Attribute { a | transaction : () }
-withTransactionId =
-    Context.getTransaction >> ReplaceInUrl "txnId"
