@@ -6,6 +6,7 @@ module Internal.Values.Context exposing
     , setNow, getNow
     , setTransaction, getTransaction
     , Versions, setVersions, getVersions
+    , reset
     )
 
 {-| The Context is the set of variables that the user (mostly) cannot control.
@@ -52,6 +53,11 @@ information that can be inserted.
 ### Versions
 
 @docs Versions, setVersions, getVersions
+
+
+### Reset
+
+@docs reset
 
 -}
 
@@ -315,6 +321,13 @@ mostPopularToken c =
             )
         |> List.head
         |> Maybe.map .value
+
+
+{-| Reset the phantom type of the Context, effectively forgetting all values.
+-}
+reset : APIContext a -> APIContext {}
+reset (APIContext c) =
+    APIContext c
 
 
 {-| Get an inserted access token.

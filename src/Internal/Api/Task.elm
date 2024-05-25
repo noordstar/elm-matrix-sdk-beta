@@ -1,4 +1,7 @@
-module Internal.Api.Task exposing (Task, run)
+module Internal.Api.Task exposing
+    ( Task, run
+    , sendMessageEvent
+    )
 
 {-|
 
@@ -17,6 +20,11 @@ up-to-date.
 
 @docs Task, run
 
+
+## Tasks
+
+@docs sendMessageEvent
+
 -}
 
 import Internal.Api.BaseUrl.Api
@@ -24,8 +32,10 @@ import Internal.Api.Chain as C
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
+import Internal.Api.SendMessageEvent.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
+import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (APIContext)
 import Internal.Values.Envelope exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
@@ -128,6 +138,25 @@ getVersions c =
             Internal.Api.Versions.Api.versions c
 
 
+finishTask : UFTask {} b -> Task
+finishTask uftask =
+    uftask
+        |> C.andThen
+            (C.succeed
+                { messages = []
+                , logs = []
+                , contextChange = Context.reset
+                }
+            )
+        |> C.catchWith
+            (\_ ->
+                { messages = [] -- TODO: Maybe categorize errors?
+                , logs = [ log.warn "Encountered unhandled error" ]
+                , contextChange = Context.reset
+                }
+            )
+
+
 {-| Establish a Task Chain context where the base URL and supported list of
 versions are known.
 -}
@@ -145,6 +174,15 @@ makeVBA =
     makeVB
         |> C.andThen getNow
         |> C.andThen getAccessToken
+
+
+{-| Send a message event to a room.
+-}
+sendMessageEvent : { content : Json.Value, eventType : String, roomId : String, transactionId : String } -> Task
+sendMessageEvent input =
+    makeVBA
+        |> C.andThen (Internal.Api.SendMessageEvent.Api.sendMessageEvent input)
+        |> finishTask
 
 
 {-| Transform a completed task into a Cmd.

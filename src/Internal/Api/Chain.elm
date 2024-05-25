@@ -1,7 +1,7 @@
 module Internal.Api.Chain exposing
     ( TaskChain, CompleteChain
     , IdemChain, toTask
-    , fail, succeed, andThen
+    , fail, succeed, andThen, catchWith
     )
 
 {-|
@@ -27,7 +27,7 @@ avoid leaking values passing through the API in unexpected ways.
 
 ## Operations
 
-@docs fail, succeed, andThen
+@docs fail, succeed, andThen, catchWith
 
 -}
 
@@ -127,7 +127,7 @@ andThen f2 f1 =
 
 {-| When an error has occurred, "fix" it with an artificial task chain result.
 -}
-catchWith : (err -> TaskChainPiece u a b) -> TaskChain err u a b -> TaskChain err u a b
+catchWith : (err -> TaskChainPiece u a b) -> TaskChain err u a b -> TaskChain err2 u a b
 catchWith onErr f =
     onError (\e -> succeed <| onErr e) f
 
@@ -173,7 +173,7 @@ onError onErr f =
             |> Task.onError
                 (\old ->
                     { contextChange = identity
-                    , logs = old.logs
+                    , logs = old.logs -- TODO: Log caught errors
                     , messages = old.messages
                     }
                         |> succeed
