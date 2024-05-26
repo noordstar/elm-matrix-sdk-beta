@@ -20,18 +20,19 @@ import Time
 
 
 getNow : A.TaskChain a { a | now : () }
-getNow _ =
-    Task.map
-        (\now ->
-            { messages = [ E.SetNow now ]
-            , logs =
-                [ "Identified current time at Unix time "
-                , now |> Time.posixToMillis |> String.fromInt
-                ]
-                    |> String.concat
-                    |> log.debug
-                    |> List.singleton
-            , contextChange = Context.setNow now
-            }
-        )
-        Time.now
+getNow =
+    \_ ->
+        Task.map
+            (\now ->
+                { messages = [ E.SetNow now ]
+                , logs =
+                    [ "Identified current time at Unix time "
+                    , now |> Time.posixToMillis |> String.fromInt
+                    ]
+                        |> String.concat
+                        |> log.debug
+                        |> List.singleton
+                , contextChange = Context.setNow now
+                }
+            )
+            Time.now
