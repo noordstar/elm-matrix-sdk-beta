@@ -1,5 +1,5 @@
 module Internal.Values.Vault exposing
-    ( Vault
+    ( Vault, init
     , VaultUpdate(..), update
     , fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
@@ -12,7 +12,7 @@ can receive from the Matrix API.
 
 ## Vault type
 
-@docs Vault
+@docs Vault, init
 
 To update the Vault, one uses VaultUpdate types.
 
@@ -104,6 +104,16 @@ fromRoomId roomId vault =
 getAccountData : String -> Vault -> Maybe Json.Value
 getAccountData key vault =
     Dict.get key vault.accountData
+
+
+{-| Initiate a new Vault type.
+-}
+init : User -> Vault
+init user =
+    { accountData = Dict.empty
+    , rooms = Hashdict.empty .roomId
+    , user = user
+    }
 
 
 {-| Update a room, if it exists. If the room isn´t known, this operation is

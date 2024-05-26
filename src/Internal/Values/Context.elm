@@ -1,5 +1,6 @@
 module Internal.Values.Context exposing
-    ( Context, AccessToken, init, coder, encode, decoder, mostPopularToken
+    ( Context, AccessToken, init, coder, encode, decoder
+    , mostPopularToken
     , APIContext, apiFormat, fromApiFormat
     , setAccessToken, getAccessToken
     , setBaseUrl, getBaseUrl
@@ -16,7 +17,11 @@ the Matrix API.
 
 ## Context
 
-@docs Context, AccessToken, init, coder, encode, decoder, mostPopularToken
+@docs Context, AccessToken, init, coder, encode, decoder
+
+Some functions are present to influence the general Context type itself.
+
+@docs mostPopularToken
 
 
 ## APIContext
@@ -94,6 +99,7 @@ type alias Context =
     , password : Maybe String
     , refreshToken : Maybe String
     , serverName : String
+    , suggestedAccessToken : Maybe String
     , transaction : Maybe String
     , username : Maybe String
     , versions : Maybe Versions
@@ -146,7 +152,7 @@ fromApiFormat (APIContext c) =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object10
+    Json.object11
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
@@ -197,6 +203,13 @@ coder =
             { fieldName = "serverName"
             , toField = .serverName
             , description = Text.fields.context.serverName
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "suggestedAccessToken"
+            , toField = always Nothing -- Do not save
+            , description = Debug.todo "Needs docs"
             , coder = Json.string
             }
         )
@@ -294,6 +307,7 @@ init sn =
     , refreshToken = Nothing
     , password = Nothing
     , serverName = sn
+    , suggestedAccessToken = Nothing
     , transaction = Nothing
     , username = Nothing
     , versions = Nothing

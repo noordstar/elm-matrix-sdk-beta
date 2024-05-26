@@ -1,6 +1,7 @@
 module Matrix exposing
     ( Vault
     , VaultUpdate, update
+    , sendMessageEvent, fromUserId
     )
 
 {-|
@@ -18,18 +19,26 @@ support a monolithic public registry. (:
 
 ## Vault
 
-@docs Vault
+@docs Vault, fromUserId
 
 
 ## Keeping the Vault up-to-date
 
 @docs VaultUpdate, update
 
+
+## Debugging
+
+@docs sendMessageEvent
+
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Vault as Internal
+import Json.Encode as E
 import Types exposing (Vault(..), VaultUpdate(..))
+import Internal.Values.User as User
 
 
 {-| The Vault type stores all relevant information about the Matrix API.
@@ -47,6 +56,49 @@ type alias Vault =
 type alias VaultUpdate =
     Types.VaultUpdate
 
+addAccessToken : String -> Vault -> Vault
+addAccessToken token (Vault vault) =
+    
+
+{-| Use a fully-fledged Matrix ID to connect.
+
+    case Matrix.fromUserId "@alice:example.org" of
+        Just vault ->
+            "We got a vault!"
+        
+        Nothing ->
+            "Invalid username"
+-}
+fromUserId : String -> Maybe Vault
+fromUserId =
+    User.fromString
+        >> Maybe.map
+            (\u ->
+                Envelope.init
+                    { serverName = User.domain u
+                    , content = Internal.init u
+                    }
+            )
+        >> Maybe.map Vault
+
+{-| Send a message event to a room.
+
+This function can be used in a scenario where the user does not want to sync
+the client, or is unable to. This function doesn't check whether the given room
+exists and the user is able to send a message to, and instead just sends the
+request to the Matrix API.
+
+-}
+sendMessageEvent : Vault -> { content : E.Value, eventType : String, roomId : String, toMsg : VaultUpdate -> msg, transactionId : String } -> Cmd msg
+sendMessageEvent (Vault vault) data =
+    Api.sendMessageEvent vault
+        { content = data.content
+        , eventType = data.eventType
+        , roomId = data.roomId
+        , toMsg = Types.VaultUpdate >> data.toMsg
+        , transactionId = data.transactionId
+        }
+
 
 {-| Using new VaultUpdate information, update the Vault accordingly.
 
@@ -56,6 +108,6 @@ sent a new message? Did someone send us an invite for a new room?
 -}
 update : VaultUpdate -> Vault -> Vault
 update (VaultUpdate vu) (Vault vault) =
-    vault
-        |> Envelope.update Internal.update vu
+    vu.messages
+        |> List.foldl (Envelope.update Internal.update) vault
         |> Vault
