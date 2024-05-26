@@ -1,7 +1,7 @@
 module Internal.Api.Chain exposing
     ( TaskChain, CompleteChain
     , IdemChain, toTask
-    , fail, succeed, andThen, catchWith
+    , fail, succeed, andThen, catchWith, maybe
     )
 
 {-|
@@ -27,7 +27,7 @@ avoid leaking values passing through the API in unexpected ways.
 
 ## Operations
 
-@docs fail, succeed, andThen, catchWith
+@docs fail, succeed, andThen, catchWith, maybe
 
 -}
 

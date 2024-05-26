@@ -1,6 +1,6 @@
 module Test.Values.Vault exposing (..)
 
-import FastDict as Dict exposing (Dict)
+import FastDict as Dict
 import Fuzz exposing (Fuzzer)
 import Internal.Tools.Json as Json
 import Internal.Values.Vault exposing (Vault)

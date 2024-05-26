@@ -56,7 +56,7 @@ import Internal.Tools.Json as Json
 import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
-import Internal.Values.User as User exposing (User)
+import Internal.Values.User exposing (User)
 import Json.Encode as E
 
 
@@ -255,7 +255,7 @@ update ru room =
         AddSync batch ->
             addSync batch room
 
-        Invite user ->
+        Invite _ ->
             -- TODO: Invite user
             room
 
