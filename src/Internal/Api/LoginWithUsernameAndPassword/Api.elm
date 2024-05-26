@@ -22,6 +22,8 @@ import Internal.Values.Vault as V
 import Json.Encode as E
 
 
+{-| Log in using a username and password.
+-}
 loginWithUsernameAndPassword : LoginWithUsernameAndPasswordInput -> A.TaskChain (Phantom a) (Phantom { a | accessToken : () })
 loginWithUsernameAndPassword =
     A.startWithVersion "r0.0.0" loginWithUsernameAndPasswordV1
@@ -46,8 +48,10 @@ loginWithUsernameAndPassword =
         |> A.versionChain
 
 
+{-| Context needed for logging in with a username and password
+-}
 type alias Phantom a =
-    { a | baseUrl : (), versions : () }
+    { a | baseUrl : (), now : (), versions : () }
 
 
 type alias LoginWithUsernameAndPasswordInput =

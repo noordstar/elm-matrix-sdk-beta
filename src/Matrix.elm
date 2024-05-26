@@ -56,6 +56,6 @@ sent a new message? Did someone send us an invite for a new room?
 -}
 update : VaultUpdate -> Vault -> Vault
 update (VaultUpdate vu) (Vault vault) =
-    vault
-        |> Envelope.update Internal.update vu
+    vu.messages
+        |> List.foldl (Envelope.update Internal.update) vault
         |> Vault

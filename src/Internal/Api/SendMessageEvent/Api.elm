@@ -1,4 +1,4 @@
-module Internal.Api.SendMessageEvent.Api exposing (..)
+module Internal.Api.SendMessageEvent.Api exposing (Phantom, sendMessageEvent)
 
 {-|
 
@@ -7,7 +7,7 @@ module Internal.Api.SendMessageEvent.Api exposing (..)
 
 This module helps send message events to rooms on the Matrix API.
 
-@docs Phantom
+@docs Phantom, sendMessageEvent
 
 -}
 
@@ -19,6 +19,8 @@ import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 
 
+{-| Send a message event to the Matrix room.
+-}
 sendMessageEvent : SendMessageEventInput -> A.TaskChain (Phantom a) (Phantom a)
 sendMessageEvent =
     A.startWithVersion "r0.0.0" sendMessageEventV1
@@ -44,8 +46,10 @@ sendMessageEvent =
         |> A.versionChain
 
 
+{-| Context needed for sending a message event
+-}
 type alias Phantom a =
-    a
+    { a | accessToken : (), baseUrl : (), versions : () }
 
 
 type alias PhantomV1 a =

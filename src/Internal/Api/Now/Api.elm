@@ -19,6 +19,8 @@ import Task
 import Time
 
 
+{-| Get the current time and place it in the context.
+-}
 getNow : A.TaskChain a { a | now : () }
 getNow =
     \_ ->

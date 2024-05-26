@@ -65,7 +65,7 @@ type alias UFTask a b =
 
 {-| Get an access token to talk to the Matrix API
 -}
-getAccessToken : UFTask { a | now : () } { a | accessToken : (), now : () }
+getAccessToken : UFTask { a | baseUrl : (), now : (), versions : () } { a | accessToken : (), baseUrl : (), now : (), versions : () }
 getAccessToken c =
     case Context.fromApiFormat c of
         context ->
