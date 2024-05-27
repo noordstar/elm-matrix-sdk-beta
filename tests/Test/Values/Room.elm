@@ -1,9 +1,7 @@
 module Test.Values.Room exposing (..)
 
-import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Values.Room as Room exposing (Room)
-import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
