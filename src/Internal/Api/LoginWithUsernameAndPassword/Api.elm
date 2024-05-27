@@ -22,6 +22,8 @@ import Internal.Values.Vault as V
 import Json.Encode as E
 
 
+{-| Log in using a username and password.
+-}
 loginWithUsernameAndPassword : LoginWithUsernameAndPasswordInput -> A.TaskChain (Phantom a) (Phantom { a | accessToken : () })
 loginWithUsernameAndPassword =
     A.startWithVersion "r0.0.0" loginWithUsernameAndPasswordV1
@@ -46,8 +48,10 @@ loginWithUsernameAndPassword =
         |> A.versionChain
 
 
+{-| Context needed for logging in with a username and password
+-}
 type alias Phantom a =
-    { a | baseUrl : (), versions : () }
+    { a | baseUrl : (), now : (), versions : () }
 
 
 type alias LoginWithUsernameAndPasswordInput =
@@ -159,333 +163,340 @@ type alias PhantomV1 a =
 
 
 loginWithUsernameAndPasswordV1 : LoginWithUsernameAndPasswordInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV1 { username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyString "password" password
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            ]
-        , coder = coderV1
-        , method = "POST"
-        , path = [ "_matrix", "client", "r0", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = Nothing
-                        , lastUsed = Context.getNow context
-                        , refresh = out.refreshToken
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV1 { username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyString "password" password
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                ]
+            , coder = coderV1
+            , method = "POST"
+            , path = [ "_matrix", "client", "r0", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = Nothing
+                            , lastUsed = Context.getNow context
+                            , refresh = out.refreshToken
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV2 : LoginWithUsernameAndPasswordInputV2 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "device_id" deviceId
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "string" -- Yup. That's what it says.
-            ]
-        , coder = coderV2
-        , method = "POST"
-        , path = [ "_matrix", "client", "r0", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = Nothing
-                        , lastUsed = Context.getNow context
-                        , refresh = Nothing
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    , out.deviceId
-                        |> Maybe.map E.SetDeviceId
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "device_id" deviceId
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "string" -- Yup. That's what it says.
+                ]
+            , coder = coderV2
+            , method = "POST"
+            , path = [ "_matrix", "client", "r0", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = Nothing
+                            , lastUsed = Context.getNow context
+                            , refresh = Nothing
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        , out.deviceId
+                            |> Maybe.map E.SetDeviceId
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV3 : LoginWithUsernameAndPasswordInputV2 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "address" Nothing
-            , R.bodyOpString "device_id" deviceId
-            , R.bodyValue "identifier"
-                (E.object
-                    [ ( "type", E.string "m.id.user" )
-                    , ( "user", E.string username )
-                    ]
-                )
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
-            ]
-        , coder = coderV3
-        , method = "POST"
-        , path = [ "_matrix", "client", "r0", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = Nothing
-                        , lastUsed = Context.getNow context
-                        , refresh = Nothing
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    , out.deviceId
-                        |> Maybe.map E.SetDeviceId
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "address" Nothing
+                , R.bodyOpString "device_id" deviceId
+                , R.bodyValue "identifier"
+                    (E.object
+                        [ ( "type", E.string "m.id.user" )
+                        , ( "user", E.string username )
+                        ]
+                    )
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
+                ]
+            , coder = coderV3
+            , method = "POST"
+            , path = [ "_matrix", "client", "r0", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = Nothing
+                            , lastUsed = Context.getNow context
+                            , refresh = Nothing
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        , out.deviceId
+                            |> Maybe.map E.SetDeviceId
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV4 : LoginWithUsernameAndPasswordInputV2 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "address" Nothing
-            , R.bodyOpString "device_id" deviceId
-            , R.bodyValue "identifier"
-                (E.object
-                    [ ( "type", E.string "m.id.user" )
-                    , ( "user", E.string username )
-                    ]
-                )
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
-            ]
-        , coder = coderV4
-        , method = "POST"
-        , path = [ "_matrix", "client", "r0", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = Nothing
-                        , lastUsed = Context.getNow context
-                        , refresh = Nothing
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    , out.wellKnown
-                        |> Maybe.map (.homeserver >> .baseUrl)
-                        |> Maybe.map E.SetBaseUrl
-                        |> E.Optional
-                    , out.deviceId
-                        |> Maybe.map E.SetDeviceId
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "address" Nothing
+                , R.bodyOpString "device_id" deviceId
+                , R.bodyValue "identifier"
+                    (E.object
+                        [ ( "type", E.string "m.id.user" )
+                        , ( "user", E.string username )
+                        ]
+                    )
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
+                ]
+            , coder = coderV4
+            , method = "POST"
+            , path = [ "_matrix", "client", "r0", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = Nothing
+                            , lastUsed = Context.getNow context
+                            , refresh = Nothing
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        , out.wellKnown
+                            |> Maybe.map (.homeserver >> .baseUrl)
+                            |> Maybe.map E.SetBaseUrl
+                            |> E.Optional
+                        , out.deviceId
+                            |> Maybe.map E.SetDeviceId
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV5 : LoginWithUsernameAndPasswordInputV2 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "address" Nothing
-            , R.bodyOpString "device_id" deviceId
-            , R.bodyValue "identifier"
-                (E.object
-                    [ ( "type", E.string "m.id.user" )
-                    , ( "user", E.string username )
-                    ]
-                )
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
-            ]
-        , coder = coderV4
-        , method = "POST"
-        , path = [ "_matrix", "client", "v3", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = Nothing
-                        , lastUsed = Context.getNow context
-                        , refresh = Nothing
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    , out.wellKnown
-                        |> Maybe.map (.homeserver >> .baseUrl)
-                        |> Maybe.map E.SetBaseUrl
-                        |> E.Optional
-                    , out.deviceId
-                        |> Maybe.map E.SetDeviceId
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "address" Nothing
+                , R.bodyOpString "device_id" deviceId
+                , R.bodyValue "identifier"
+                    (E.object
+                        [ ( "type", E.string "m.id.user" )
+                        , ( "user", E.string username )
+                        ]
+                    )
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
+                ]
+            , coder = coderV4
+            , method = "POST"
+            , path = [ "_matrix", "client", "v3", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = Nothing
+                            , lastUsed = Context.getNow context
+                            , refresh = Nothing
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        , out.wellKnown
+                            |> Maybe.map (.homeserver >> .baseUrl)
+                            |> Maybe.map E.SetBaseUrl
+                            |> E.Optional
+                        , out.deviceId
+                            |> Maybe.map E.SetDeviceId
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV6 : LoginWithUsernameAndPasswordInputV3 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV6 { deviceId, enableRefreshToken, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "address" Nothing
-            , R.bodyOpString "device_id" deviceId
-            , R.bodyValue "identifier"
-                (E.object
-                    [ ( "type", E.string "m.id.user" )
-                    , ( "user", E.string username )
-                    ]
-                )
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyOpBool "refresh_token" enableRefreshToken
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
-            ]
-        , coder = coderV5
-        , method = "POST"
-        , path = [ "_matrix", "client", "v3", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = out.expiresInMs
-                        , lastUsed = Context.getNow context
-                        , refresh = out.refreshToken
-                        , value = out.accessToken
-                        }
-                    , out.user
-                        |> Maybe.map (V.SetUser >> E.ContentUpdate)
-                        |> E.Optional
-                    , out.wellKnown
-                        |> Maybe.map (.homeserver >> .baseUrl)
-                        |> Maybe.map E.SetBaseUrl
-                        |> E.Optional
-                    , out.deviceId
-                        |> Maybe.map E.SetDeviceId
-                        |> E.Optional
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV6 { deviceId, enableRefreshToken, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "address" Nothing
+                , R.bodyOpString "device_id" deviceId
+                , R.bodyValue "identifier"
+                    (E.object
+                        [ ( "type", E.string "m.id.user" )
+                        , ( "user", E.string username )
+                        ]
+                    )
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyOpBool "refresh_token" enableRefreshToken
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
+                ]
+            , coder = coderV5
+            , method = "POST"
+            , path = [ "_matrix", "client", "v3", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = out.expiresInMs
+                            , lastUsed = Context.getNow context
+                            , refresh = out.refreshToken
+                            , value = out.accessToken
+                            }
+                        , out.user
+                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> E.Optional
+                        , out.wellKnown
+                            |> Maybe.map (.homeserver >> .baseUrl)
+                            |> Maybe.map E.SetBaseUrl
+                            |> E.Optional
+                        , out.deviceId
+                            |> Maybe.map E.SetDeviceId
+                            |> E.Optional
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 loginWithUsernameAndPasswordV7 : LoginWithUsernameAndPasswordInputV3 i -> A.TaskChain (PhantomV1 a) (PhantomV1 { a | accessToken : () })
-loginWithUsernameAndPasswordV7 { deviceId, enableRefreshToken, initialDeviceDisplayName, username, password } context =
-    A.request
-        { attributes =
-            [ R.bodyOpString "address" Nothing
-            , R.bodyOpString "device_id" deviceId
-            , R.bodyValue "identifier"
-                (E.object
-                    [ ( "type", E.string "m.id.user" )
-                    , ( "user", E.string username )
-                    ]
-                )
-            , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
-            , R.bodyString "password" password
-            , R.bodyOpBool "refresh_token" enableRefreshToken
-            , R.bodyString "type" "m.login.password"
-            , R.bodyString "user" username
-            , R.onStatusCode 400 "M_UNKNOWN"
-            , R.onStatusCode 403 "M_FORBIDDEN"
-            , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
-            ]
-        , coder = coderV6
-        , method = "POST"
-        , path = [ "_matrix", "client", "v3", "login" ]
-        , contextChange =
-            \out -> Context.setAccessToken out.accessToken
-        , toUpdate =
-            \out ->
-                ( E.More
-                    [ E.SetAccessToken
-                        { created = Context.getNow context
-                        , expiryMs = out.expiresInMs
-                        , lastUsed = Context.getNow context
-                        , refresh = out.refreshToken
-                        , value = out.accessToken
-                        }
-                    , E.ContentUpdate (V.SetUser out.user)
-                    , out.wellKnown
-                        |> Maybe.map (.homeserver >> .baseUrl)
-                        |> Maybe.map E.SetBaseUrl
-                        |> E.Optional
-                    , E.SetDeviceId out.deviceId
-                    ]
-                , []
-                )
-        }
-        context
+loginWithUsernameAndPasswordV7 { deviceId, enableRefreshToken, initialDeviceDisplayName, username, password } =
+    \context ->
+        A.request
+            { attributes =
+                [ R.bodyOpString "address" Nothing
+                , R.bodyOpString "device_id" deviceId
+                , R.bodyValue "identifier"
+                    (E.object
+                        [ ( "type", E.string "m.id.user" )
+                        , ( "user", E.string username )
+                        ]
+                    )
+                , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+                , R.bodyString "password" password
+                , R.bodyOpBool "refresh_token" enableRefreshToken
+                , R.bodyString "type" "m.login.password"
+                , R.bodyString "user" username
+                , R.onStatusCode 400 "M_UNKNOWN"
+                , R.onStatusCode 403 "M_FORBIDDEN"
+                , R.onStatusCode 429 "M_LIMIT_EXCEEDED"
+                ]
+            , coder = coderV6
+            , method = "POST"
+            , path = [ "_matrix", "client", "v3", "login" ]
+            , contextChange =
+                \out -> Context.setAccessToken out.accessToken
+            , toUpdate =
+                \out ->
+                    ( E.More
+                        [ E.SetAccessToken
+                            { created = Context.getNow context
+                            , expiryMs = out.expiresInMs
+                            , lastUsed = Context.getNow context
+                            , refresh = out.refreshToken
+                            , value = out.accessToken
+                            }
+                        , E.ContentUpdate (V.SetUser out.user)
+                        , out.wellKnown
+                            |> Maybe.map (.homeserver >> .baseUrl)
+                            |> Maybe.map E.SetBaseUrl
+                            |> E.Optional
+                        , E.SetDeviceId out.deviceId
+                        ]
+                    , []
+                    )
+            }
+            context
 
 
 coderV1 : Json.Coder LoginWithUsernameAndPasswordOutputV1

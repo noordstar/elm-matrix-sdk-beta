@@ -33,8 +33,6 @@ Rooms are environments where people can have a conversation with each other.
 -}
 
 import FastDict as Dict exposing (Dict)
-import Internal.Api.Request as Request
-import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json

@@ -1,4 +1,4 @@
-module Internal.Api.BaseUrl.Api exposing (..)
+module Internal.Api.BaseUrl.Api exposing (baseUrl)
 
 {-|
 
@@ -6,6 +6,8 @@ module Internal.Api.BaseUrl.Api exposing (..)
 # Base URL
 
 This module looks for the right homeserver address.
+
+@docs baseUrl
 
 -}
 
@@ -19,6 +21,8 @@ import Internal.Values.Envelope as E
 import Internal.Values.Vault as V
 
 
+{-| Get the homeserver base URL of a given server name.
+-}
 baseUrl : BaseUrlInput -> C.TaskChain R.Error (E.EnvelopeUpdate V.VaultUpdate) ph { ph | baseUrl : () }
 baseUrl data =
     R.toChain

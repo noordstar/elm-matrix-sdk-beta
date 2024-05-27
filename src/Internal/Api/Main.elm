@@ -28,6 +28,8 @@ import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
 
 
+{-| Update message type that is being returned.
+-}
 type alias Msg =
     Backpack
 

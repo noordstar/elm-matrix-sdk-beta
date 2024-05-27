@@ -50,8 +50,6 @@ for interacting with the Matrix API.
 import Internal.Config.Text as Text
 import Internal.Grammar.UserId as U
 import Internal.Tools.Json as Json
-import Json.Decode as D
-import Json.Encode as E
 import Set exposing (Set)
 
 
