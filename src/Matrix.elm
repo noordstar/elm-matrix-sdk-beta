@@ -1,7 +1,7 @@
 module Matrix exposing
     ( Vault
     , VaultUpdate, update
-    , sendMessageEvent, fromUserId
+    , sendMessageEvent, fromUserId, addAccessToken
     )
 
 {-|
@@ -29,7 +29,7 @@ support a monolithic public registry. (:
 
 ## Debugging
 
-@docs sendMessageEvent
+@docs addAccessToken, sendMessageEvent
 
 -}
 
@@ -58,7 +58,8 @@ type alias VaultUpdate =
 
 addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
-    
+    Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
+        |> Vault
 
 {-| Use a fully-fledged Matrix ID to connect.
 
