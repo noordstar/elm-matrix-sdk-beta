@@ -15,6 +15,7 @@ retrieve this event e.g. by being a member in the room for this event.
 import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp
 import Internal.Values.Envelope as E
@@ -85,7 +86,7 @@ getEventV1 { eventId, roomId } =
             \event ->
                 ( E.ContentUpdate <| V.MapRoom roomId (Room.AddEvent event)
                 , event.eventId
-                    |> (++) "Received event id "
+                    |> Text.logs.getEventId
                     |> log.debug
                     |> List.singleton
                 )
@@ -109,7 +110,7 @@ getEventV2 { eventId, roomId } =
             \event ->
                 ( E.ContentUpdate <| V.MapRoom roomId (Room.AddEvent event)
                 , event.eventId
-                    |> (++) "Received event id "
+                    |> Text.logs.getEventId
                     |> log.debug
                     |> List.singleton
                 )

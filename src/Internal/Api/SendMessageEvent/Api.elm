@@ -15,6 +15,7 @@ import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Config.Leaks as L
 import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 
@@ -93,9 +94,7 @@ sendMessageEventV1 { content, eventType, roomId, transactionId } =
             \out ->
                 ( E.More []
                 , out.eventId
-                    |> Maybe.map ((++) ", received event id ")
-                    |> Maybe.withDefault ""
-                    |> (++) "Sent event"
+                    |> Text.logs.sendEvent
                     |> log.debug
                     |> List.singleton
                 )
@@ -114,7 +113,8 @@ sendMessageEventV2 { content, eventType, roomId, transactionId } =
             \out ->
                 ( E.More []
                 , out.eventId
-                    |> (++) "Sent event, received event id "
+                    |> Maybe.Just
+                    |> Text.logs.sendEvent
                     |> log.debug
                     |> List.singleton
                 )
@@ -133,7 +133,8 @@ sendMessageEventV3 { content, eventType, roomId, transactionId } =
             \out ->
                 ( E.More []
                 , out.eventId
-                    |> (++) "Sent event, received event id "
+                    |> Maybe.Just
+                    |> Text.logs.sendEvent
                     |> log.debug
                     |> List.singleton
                 )
@@ -178,7 +179,7 @@ coderV2 =
         , description =
             [ "This endpoint is used to send a message event to a room. Message events allow access to historical events and pagination, making them suited for \"once-off\" activity in a room."
             , "The body of the request should be the content object of the event; the fields in this object will vary depending on the type of event."
-            , "https://spec.matrix.org/legacy/r0.0.0/client_server.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid"
+            , "https://spec.matrix.org/legacy/client_server/r0.6.1.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid"
             ]
         , init = always SendMessageEventOutputV2
         }

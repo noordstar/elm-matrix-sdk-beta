@@ -21,6 +21,7 @@ event to the room.
 import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 import Internal.Values.Room as Room
@@ -95,13 +96,7 @@ inviteV1 { roomId, user } =
         , toUpdate =
             always
                 ( E.ContentUpdate <| V.MapRoom roomId (Room.Invite user)
-                , String.concat
-                    -- TODO: Move to Internal.Config.Text
-                    [ "Invited user "
-                    , User.toString user
-                    , " to room "
-                    , roomId
-                    ]
+                , Text.logs.invitedUser (User.toString user) roomId
                     |> log.debug
                     |> List.singleton
                 )
@@ -125,13 +120,7 @@ inviteV2 { reason, roomId, user } =
         , toUpdate =
             always
                 ( E.ContentUpdate <| V.MapRoom roomId (Room.Invite user)
-                , String.concat
-                    -- TODO: Move to Internal.Config.Text
-                    [ "Invited user "
-                    , User.toString user
-                    , " to room "
-                    , roomId
-                    ]
+                , Text.logs.invitedUser (User.toString user) roomId
                     |> log.debug
                     |> List.singleton
                 )

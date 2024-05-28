@@ -14,6 +14,8 @@ This module allows the user to log in using a username and password.
 import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Config.Leaks as L
+import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
@@ -192,7 +194,9 @@ loginWithUsernameAndPasswordV1 { username, password } =
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -234,7 +238,9 @@ loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, username, p
                             |> Maybe.map E.SetDeviceId
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -283,7 +289,9 @@ loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, username, p
                             |> Maybe.map E.SetDeviceId
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -336,7 +344,9 @@ loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, username, p
                             |> Maybe.map E.SetDeviceId
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -389,7 +399,9 @@ loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, username, p
                             |> Maybe.map E.SetDeviceId
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -443,7 +455,9 @@ loginWithUsernameAndPasswordV6 { deviceId, enableRefreshToken, initialDeviceDisp
                             |> Maybe.map E.SetDeviceId
                             |> E.Optional
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context
@@ -493,7 +507,9 @@ loginWithUsernameAndPasswordV7 { deviceId, enableRefreshToken, initialDeviceDisp
                             |> E.Optional
                         , E.SetDeviceId out.deviceId
                         ]
-                    , []
+                    , Text.logs.loggedInAs username
+                        |> log.debug
+                        |> List.singleton
                     )
             }
             context

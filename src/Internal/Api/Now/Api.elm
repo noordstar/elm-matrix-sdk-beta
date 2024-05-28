@@ -13,6 +13,7 @@ Get the current time.
 
 import Internal.Api.Api as A
 import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
 import Task
@@ -28,10 +29,9 @@ getNow =
             (\now ->
                 { messages = [ E.SetNow now ]
                 , logs =
-                    [ "Identified current time at Unix time "
-                    , now |> Time.posixToMillis |> String.fromInt
-                    ]
-                        |> String.concat
+                    now
+                        |> Time.posixToMillis
+                        |> Text.logs.getNow
                         |> log.debug
                         |> List.singleton
                 , contextChange = Context.setNow now

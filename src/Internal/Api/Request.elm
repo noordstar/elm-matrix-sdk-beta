@@ -309,22 +309,22 @@ getBody attributes =
                     Nothing ->
                         case
                             List.filterMap
-                (\attr ->
-                    case attr of
-                        BodyParam key value ->
-                            Just ( key, value )
+                                (\attr ->
+                                    case attr of
+                                        BodyParam key value ->
+                                            Just ( key, value )
 
-                        _ ->
-                            Nothing
-                )
-                attributes
+                                        _ ->
+                                            Nothing
+                                )
+                                attributes
                         of
                             [] ->
                                 Nothing
 
                             head :: tail ->
                                 Just <| E.object (head :: tail)
-            )
+           )
 
 
 getHeaders : List ContextAttr -> List Http.Header

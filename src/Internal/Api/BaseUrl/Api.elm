@@ -15,6 +15,7 @@ import Internal.Api.Chain as C
 import Internal.Api.Request as R
 import Internal.Config.Leaks as L
 import Internal.Config.Log exposing (log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
@@ -29,13 +30,7 @@ baseUrl data =
         { logHttp =
             \r ->
                 ( E.HttpRequest r
-                , String.concat
-                    -- TODO: Move this to Internal.Config.Text module
-                    [ "Matrix HTTP: "
-                    , r.method
-                    , " "
-                    , r.url
-                    ]
+                , Text.logs.httpRequest r.method r.url
                     |> log.info
                     |> List.singleton
                 )
@@ -52,12 +47,7 @@ baseUrl data =
         , toUpdate =
             \info ->
                 ( E.SetBaseUrl info.homeserver.baseUrl
-                , String.concat
-                    [ "Found baseURL of "
-                    , data.url
-                    , " at address "
-                    , info.homeserver.baseUrl
-                    ]
+                , Text.logs.baseUrlFound data.url info.homeserver.baseUrl
                     |> log.debug
                     |> List.singleton
                 )

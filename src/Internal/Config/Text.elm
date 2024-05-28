@@ -545,18 +545,51 @@ happened. Most of these unexpected results, are taken account of by the Elm SDK,
 but logged so that the programmer can do something about it.
 -}
 logs :
-    { keyIsNotAnInt : String -> String
+    { baseUrlFound : String -> String -> String
+    , getEventId : String -> String
+    , getNow : Int -> String
+    , httpRequest : String -> String -> String
+    , invitedUser : String -> String -> String
+    , keyIsNotAnInt : String -> String
+    , loggedInAs : String -> String
+    , sendEvent : Maybe String -> String
     , serverReturnedInvalidJSON : String -> String
     , serverReturnedUnknownJSON : String -> String
     }
 logs =
-    { keyIsNotAnInt =
+    { baseUrlFound =
+        \url baseUrl ->
+            String.concat [ "Found baseURL of ", url, " at address ", baseUrl ]
+    , getEventId = (++) "Received event with id = "
+    , getNow =
+        \now ->
+            String.concat
+                [ "Identified current time at Unix time "
+                , String.fromInt now
+                ]
+    , httpRequest =
+        \method url -> String.concat [ "Matrix HTTP: ", method, " ", url ]
+    , invitedUser =
+        \userId roomId ->
+            String.concat [ "Invited user ", userId, " to room ", roomId ]
+    , keyIsNotAnInt =
         \key ->
             String.concat
                 [ "Encountered a key `"
                 , key
                 , "` that cannot be converted to an Int"
                 ]
+    , loggedInAs =
+        \username ->
+            String.concat [ "Successfully logged in as user ", username ]
+    , sendEvent =
+        \eventId ->
+            case eventId of
+                Just e ->
+                    "Sent event, received event id " ++ e
+
+                Nothing ->
+                    "Sent event, event id not known - make sure to check transaction id"
     , serverReturnedInvalidJSON = (++) "The server returned invalid JSON: "
     , serverReturnedUnknownJSON = (++) "The server returned JSON that doesn't seem to live up to spec rules: "
     }
