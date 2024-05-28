@@ -19,15 +19,18 @@ fuzzer =
         maybeString =
             Fuzz.maybe Fuzz.string
     in
-    Fuzz.map8 (\a b c d e f ( g, h ) ( i, j ) -> Context a b c d e f g h i j)
+    Fuzz.map8 (\a b c d e ( f, g ) ( h, i ) ( j, k ) -> Context a b c d e f g h i j k)
         (Fuzz.constant <| Hashdict.empty .value)
         maybeString
         maybeString
         (Fuzz.maybe TestTimestamp.fuzzer)
         maybeString
-        maybeString
         (Fuzz.pair
+            maybeString
             Fuzz.string
+        )
+        (Fuzz.pair
+            maybeString
             maybeString
         )
         (Fuzz.pair
