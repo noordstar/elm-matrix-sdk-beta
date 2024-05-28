@@ -1,7 +1,7 @@
 module Matrix exposing
-    ( Vault
+    ( Vault, fromUserId
     , VaultUpdate, update
-    , sendMessageEvent, fromUserId, addAccessToken
+    , addAccessToken, sendMessageEvent
     )
 
 {-|
@@ -35,10 +35,10 @@ support a monolithic public registry. (:
 
 import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
+import Internal.Values.User as User
 import Internal.Values.Vault as Internal
 import Json.Encode as E
 import Types exposing (Vault(..), VaultUpdate(..))
-import Internal.Values.User as User
 
 
 {-| The Vault type stores all relevant information about the Matrix API.
@@ -56,19 +56,22 @@ type alias Vault =
 type alias VaultUpdate =
     Types.VaultUpdate
 
+
 addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
     Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
         |> Vault
+
 
 {-| Use a fully-fledged Matrix ID to connect.
 
     case Matrix.fromUserId "@alice:example.org" of
         Just vault ->
             "We got a vault!"
-        
+
         Nothing ->
             "Invalid username"
+
 -}
 fromUserId : String -> Maybe Vault
 fromUserId =
@@ -76,11 +79,12 @@ fromUserId =
         >> Maybe.map
             (\u ->
                 Envelope.init
-                    { serverName = User.domain u
+                    { serverName = "https://" ++ User.domain u
                     , content = Internal.init u
                     }
             )
         >> Maybe.map Vault
+
 
 {-| Send a message event to a room.
 

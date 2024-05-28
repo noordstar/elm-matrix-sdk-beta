@@ -318,23 +318,28 @@ init sn =
 -}
 mostPopularToken : Context -> Maybe String
 mostPopularToken c =
-    c.accessTokens
-        |> Hashdict.values
-        |> List.sortBy
-            (\token ->
-                case token.expiryMs of
-                    Nothing ->
-                        ( 0, Timestamp.toMs token.created )
+    case c.suggestedAccessToken of
+        Just _ ->
+            c.suggestedAccessToken
 
-                    Just e ->
-                        ( 1
-                        , token.created
-                            |> Timestamp.add e
-                            |> Timestamp.toMs
-                        )
-            )
-        |> List.head
-        |> Maybe.map .value
+        Nothing ->
+            c.accessTokens
+                |> Hashdict.values
+                |> List.sortBy
+                    (\token ->
+                        case token.expiryMs of
+                            Nothing ->
+                                ( 0, Timestamp.toMs token.created )
+
+                            Just e ->
+                                ( 1
+                                , token.created
+                                    |> Timestamp.add e
+                                    |> Timestamp.toMs
+                                )
+                    )
+                |> List.head
+                |> Maybe.map .value
 
 
 {-| Reset the phantom type of the Context, effectively forgetting all values.

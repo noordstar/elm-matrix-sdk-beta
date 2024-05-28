@@ -84,7 +84,7 @@ type alias SendMessageEventOutputV2 =
 sendMessageEventV1 : SendMessageEventInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 sendMessageEventV1 { content, eventType, roomId, transactionId } =
     A.request
-        { attributes = [ R.fullBody content ]
+        { attributes = [ R.accessToken, R.fullBody content ]
         , coder = coderV1
         , contextChange = always identity
         , method = "PUT"
@@ -105,7 +105,7 @@ sendMessageEventV1 { content, eventType, roomId, transactionId } =
 sendMessageEventV2 : SendMessageEventInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 sendMessageEventV2 { content, eventType, roomId, transactionId } =
     A.request
-        { attributes = [ R.fullBody content ]
+        { attributes = [ R.accessToken, R.fullBody content ]
         , coder = coderV2
         , contextChange = always identity
         , method = "PUT"
@@ -124,7 +124,7 @@ sendMessageEventV2 { content, eventType, roomId, transactionId } =
 sendMessageEventV3 : SendMessageEventInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 sendMessageEventV3 { content, eventType, roomId, transactionId } =
     A.request
-        { attributes = [ R.fullBody content ]
+        { attributes = [ R.accessToken, R.fullBody content ]
         , coder = coderV2
         , contextChange = always identity
         , method = "PUT"
@@ -165,7 +165,7 @@ coderV1 =
         (Json.field.optional.value
             { fieldName = "event_id"
             , toField = .eventId
-            , description = Debug.todo "Needs docs"
+            , description = [ "A unique identifier for the event." ]
             , coder = Json.string
             }
         )
@@ -196,7 +196,7 @@ coderV2 =
         (Json.field.required
             { fieldName = "event_id"
             , toField = .eventId
-            , description = Debug.todo "Needs docs"
+            , description = [ "A unique identifier for the event." ]
             , coder = Json.string
             }
         )

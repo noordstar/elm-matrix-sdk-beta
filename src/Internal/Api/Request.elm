@@ -287,7 +287,7 @@ fullBody value _ =
     FullBody value
 
 
-getBody : List ContextAttr -> Json.Value
+getBody : List ContextAttr -> Maybe Json.Value
 getBody attributes =
     attributes
         |> List.filterMap
@@ -301,8 +301,14 @@ getBody attributes =
             )
         |> List.reverse
         |> List.head
-        |> Maybe.withDefault
-            (List.filterMap
+        |> (\fb ->
+                case fb of
+                    Just _ ->
+                        fb
+
+                    Nothing ->
+                        case
+                            List.filterMap
                 (\attr ->
                     case attr of
                         BodyParam key value ->
@@ -312,7 +318,12 @@ getBody attributes =
                             Nothing
                 )
                 attributes
-                |> E.object
+                        of
+                            [] ->
+                                Nothing
+
+                            head :: tail ->
+                                Just <| E.object (head :: tail)
             )
 
 
@@ -479,21 +490,21 @@ rawApiCallResolver decoder statusCodeErrors =
                     Http.BadUrl s
                         |> InternetException
                         |> Tuple.pair
-                        |> (|>) []
+                        |> (|>) [ log.error ("Encountered bad URL " ++ s) ]
                         |> Err
 
                 Http.Timeout_ ->
                     Http.Timeout
                         |> InternetException
                         |> Tuple.pair
-                        |> (|>) []
+                        |> (|>) [ log.error "Encountered timeout - maybe the server is down?" ]
                         |> Err
 
                 Http.NetworkError_ ->
                     Http.NetworkError
                         |> InternetException
                         |> Tuple.pair
-                        |> (|>) []
+                        |> (|>) [ log.error "Encountered a network error - the user might be offline" ]
                         |> Err
 
                 Http.BadStatus_ metadata body ->
@@ -534,7 +545,10 @@ toChain data apiContext =
                         { method = call.method
                         , headers = getHeaders call.attributes
                         , url = getUrl call
-                        , body = Http.jsonBody (getBody call.attributes)
+                        , body =
+                            getBody call.attributes
+                                |> Maybe.map Http.jsonBody
+                                |> Maybe.withDefault Http.emptyBody
                         , resolver = rawApiCallResolver (Json.decode data.coder) (getStatusCodes call.attributes)
                         , timeout = getTimeout call.attributes
                         }
@@ -544,7 +558,10 @@ toChain data apiContext =
                         { method = call.method
                         , headers = getHeaders call.attributes
                         , url = getUrl call
-                        , body = Http.jsonBody (getBody call.attributes)
+                        , body =
+                            getBody call.attributes
+                                |> Maybe.map Http.jsonBody
+                                |> Maybe.withDefault Http.emptyBody
                         , resolver =
                             rawApiCallResolver
                                 (Json.decode data.coder
