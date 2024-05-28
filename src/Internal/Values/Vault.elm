@@ -84,7 +84,7 @@ coder =
         (Json.field.required
             { fieldName = "user"
             , toField = .user
-            , description = Debug.todo "Needs description"
+            , description = Text.fields.vault.user
             , coder = User.coder
             }
         )

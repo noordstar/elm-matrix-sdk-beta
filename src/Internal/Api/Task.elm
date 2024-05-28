@@ -149,11 +149,43 @@ finishTask uftask =
                 }
             )
         |> C.catchWith
-            (\_ ->
-                { messages = [] -- TODO: Maybe categorize errors?
-                , logs = [ log.warn "Encountered unhandled error" ]
-                , contextChange = Context.reset
-                }
+            (\e ->
+                case e of
+                    Request.MissingPassword ->
+                        { messages = []
+                        , logs = [ log.error "Cannot log in - password is missing" ]
+                        , contextChange = Context.reset
+                        }
+
+                    Request.MissingUsername ->
+                        { messages = []
+                        , logs = [ log.error "Cannot log in - username is missing" ]
+                        , contextChange = Context.reset
+                        }
+
+                    Request.NoSupportedVersion ->
+                        { messages = []
+                        , logs = [ log.error "No supported version is available to complete the API interaction." ]
+                        , contextChange = Context.reset
+                        }
+
+                    Request.ServerReturnsBadJSON t ->
+                        { messages = []
+                        , logs = [ log.error ("The server returned invalid JSON: " ++ t) ]
+                        , contextChange = Context.reset
+                        }
+
+                    Request.ServerReturnsError name _ ->
+                        { messages = []
+                        , logs = [ log.error ("The server returns an error: " ++ name) ]
+                        , contextChange = Context.reset
+                        }
+
+                    _ ->
+                        { messages = [] -- TODO: Maybe categorize errors?
+                        , logs = [ log.warn "Encountered unhandled error" ]
+                        , contextChange = Context.reset
+                        }
             )
 
 

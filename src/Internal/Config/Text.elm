@@ -112,7 +112,8 @@ decodedDictSize from to =
 {-| Documentation used for all functions and data types in JSON coders
 -}
 docs :
-    { context : TypeDocs
+    { accessToken : TypeDocs
+    , context : TypeDocs
     , envelope : TypeDocs
     , event : TypeDocs
     , hashdict : TypeDocs
@@ -127,9 +128,16 @@ docs :
     , timelineFilter : TypeDocs
     , unsigned : TypeDocs
     , vault : TypeDocs
+    , versions : TypeDocs
     }
 docs =
-    { context =
+    { accessToken =
+        { name = "Access Token"
+        , description =
+            [ "The Access Token type stores information about an access token - its value, when it expires, and how one may get a new access token when the current value expires."
+            ]
+        }
+    , context =
         { name = "Context"
         , description =
             [ "The Context is the set of variables that the user (mostly) cannot control."
@@ -223,6 +231,12 @@ docs =
             [ "Main type storing all relevant information from the Matrix API."
             ]
         }
+    , versions =
+        { name = "Versions"
+        , description =
+            [ "Versions type describing the supported spec versions and MSC properties."
+            ]
+        }
     }
 
 
@@ -244,14 +258,24 @@ failures =
 what they do and what they are for.
 -}
 fields :
-    { context :
+    { accessToken :
+        { created : Desc
+        , expiryMs : Desc
+        , lastUsed : Desc
+        , refresh : Desc
+        , value : Desc
+        }
+    , context :
         { accessToken : Desc
         , baseUrl : Desc
+        , deviceId : Desc
         , experimental : Desc
+        , now : Desc
         , password : Desc
         , refreshToken : Desc
         , username : Desc
         , serverName : Desc
+        , suggestedAccessToken : Desc
         , transaction : Desc
         , versions : Desc
         }
@@ -321,24 +345,50 @@ fields :
     , vault :
         { accountData : Desc
         , rooms : Desc
+        , user : Desc
+        }
+    , versions :
+        { unstableFeatures : Desc
+        , versions : Desc
         }
     }
 fields =
-    { context =
+    { accessToken =
+        { created =
+            [ "Timestamp of when the access token was received." ]
+        , expiryMs =
+            [ "Given time in milliseconds of when the access token might expire." ]
+        , lastUsed =
+            [ "Timestamp of when the access token was last used." ]
+        , refresh =
+            [ "Refresh token used to gain a new access token." ]
+        , value =
+            [ "Secret access token value." ]
+        }
+    , context =
         { accessToken =
             [ "The access token used for authentication with the Matrix server."
             ]
         , baseUrl =
             [ "The base URL of the Matrix server."
             ]
+        , deviceId =
+            [ "The reported device ID according to the API."
+            ]
         , experimental =
             [ "Experimental features supported by the homeserver."
+            ]
+        , now =
+            [ "The most recently found timestamp."
             ]
         , password =
             [ "The user's password for authentication purposes."
             ]
         , refreshToken =
             [ "The token used to obtain a new access token upon expiration of the current access token."
+            ]
+        , suggestedAccessToken =
+            [ "An access token provided with no context by the user."
             ]
         , username =
             [ "The username of the Matrix account."
@@ -510,6 +560,16 @@ fields =
         , rooms =
             [ "Directory of joined rooms that the user is a member of."
             ]
+        , user =
+            [ "User that the Vault is logging in as."
+            ]
+        }
+    , versions =
+        { unstableFeatures =
+            [ "Unstable features such as experimental MSCs that are supported by a homeserver."
+            ]
+        , versions =
+            [ "Spec versions supported by a homeserver." ]
         }
     }
 

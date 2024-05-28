@@ -174,14 +174,14 @@ coder =
         (Json.field.optional.value
             { fieldName = "deviceId"
             , toField = .deviceId
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.context.deviceId
             , coder = Json.string
             }
         )
         (Json.field.optional.value
             { fieldName = "now"
             , toField = .now
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.context.now
             , coder = Timestamp.coder
             }
         )
@@ -209,7 +209,7 @@ coder =
         (Json.field.optional.value
             { fieldName = "suggestedAccessToken"
             , toField = always Nothing -- Do not save
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.context.suggestedAccessToken
             , coder = Json.string
             }
         )
@@ -241,42 +241,42 @@ coder =
 coderAccessToken : Json.Coder AccessToken
 coderAccessToken =
     Json.object5
-        { name = Debug.todo "Needs docs"
-        , description = Debug.todo "Needs docs"
+        { name = Text.docs.accessToken.name
+        , description = Text.docs.accessToken.description
         , init = AccessToken
         }
         (Json.field.required
             { fieldName = "created"
             , toField = .created
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.accessToken.created
             , coder = Timestamp.coder
             }
         )
         (Json.field.optional.value
             { fieldName = "expiryMs"
             , toField = .expiryMs
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.accessToken.expiryMs
             , coder = Json.int
             }
         )
         (Json.field.required
             { fieldName = "lastUsed"
             , toField = .lastUsed
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.accessToken.lastUsed
             , coder = Timestamp.coder
             }
         )
         (Json.field.optional.value
             { fieldName = "refresh"
             , toField = .refresh
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.accessToken.refresh
             , coder = Json.string
             }
         )
         (Json.field.required
             { fieldName = "value"
             , toField = .value
-            , description = Debug.todo "Needs docs"
+            , description = Text.fields.accessToken.value
             , coder = Json.string
             }
         )
@@ -422,21 +422,21 @@ setVersions value (APIContext c) =
 versionsCoder : Json.Coder Versions
 versionsCoder =
     Json.object2
-        { name = Debug.todo "Add name" -- Text.docs.versions.name
-        , description = Debug.todo "Add description" -- Text.docs.versions.description
+        { name = Text.docs.versions.name
+        , description = Text.docs.versions.description
         , init = Versions
         }
         (Json.field.required
             { fieldName = "versions"
             , toField = .versions
-            , description = Debug.todo "Add description"
+            , description = Text.fields.versions.versions
             , coder = Json.list Json.string
             }
         )
         (Json.field.optional.withDefault
             { fieldName = "unstableFeatures"
             , toField = .unstableFeatures
-            , description = Debug.todo "Add description"
+            , description = Text.fields.versions.unstableFeatures
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
             , defaultToString = Json.encode (Json.set Json.string) >> E.encode 0
