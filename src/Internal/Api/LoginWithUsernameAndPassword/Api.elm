@@ -232,6 +232,7 @@ loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, username, p
                             , refresh = Nothing
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
@@ -283,6 +284,7 @@ loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, username, p
                             , refresh = Nothing
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
@@ -334,6 +336,7 @@ loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, username, p
                             , refresh = Nothing
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
@@ -389,6 +392,7 @@ loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, username, p
                             , refresh = Nothing
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
@@ -445,6 +449,7 @@ loginWithUsernameAndPasswordV6 { deviceId, enableRefreshToken, initialDeviceDisp
                             , refresh = out.refreshToken
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
@@ -501,6 +506,7 @@ loginWithUsernameAndPasswordV7 { deviceId, enableRefreshToken, initialDeviceDisp
                             , refresh = out.refreshToken
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , E.ContentUpdate (V.SetUser out.user)
                         , out.wellKnown
                             |> Maybe.map (.homeserver >> .baseUrl)

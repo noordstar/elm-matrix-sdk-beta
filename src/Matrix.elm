@@ -57,6 +57,9 @@ type alias VaultUpdate =
     Types.VaultUpdate
 
 
+{-| Adds a custom access token to the Vault. This can be done if no password is
+provided or known.
+-}
 addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
     Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
@@ -74,16 +77,18 @@ addAccessToken token (Vault vault) =
 
 -}
 fromUserId : String -> Maybe Vault
-fromUserId =
-    User.fromString
-        >> Maybe.map
+fromUserId uid =
+    uid
+        |> User.fromString
+        |> Maybe.map
             (\u ->
                 Envelope.init
                     { serverName = "https://" ++ User.domain u
-                    , content = Internal.init u
+                    , content = Internal.init (Just u)
                     }
+                    |> Envelope.mapContext (\c -> { c | username = Just uid })
             )
-        >> Maybe.map Vault
+        |> Maybe.map Vault
 
 
 {-| Send a message event to a room.
