@@ -35,6 +35,7 @@ behave under the user's preferred settings.
 type alias Settings =
     { currentVersion : String
     , deviceName : String
+    , removePasswordOnLogin : Bool
     , syncTime : Int
     }
 
@@ -43,7 +44,7 @@ type alias Settings =
 -}
 coder : Json.Coder Settings
 coder =
-    Json.object3
+    Json.object4
         { name = Text.docs.settings.name
         , description = Text.docs.settings.description
         , init = Settings
@@ -64,6 +65,21 @@ coder =
             , coder = Json.string
             , default = Tuple.pair Default.deviceName []
             , defaultToString = identity
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "removePasswordOnLogin"
+            , toField = .removePasswordOnLogin
+            , description = Text.fields.settings.removePasswordOnLogin
+            , coder = Json.bool
+            , default = Tuple.pair Default.removePasswordOnLogin []
+            , defaultToString =
+                \b ->
+                    if b then
+                        "true"
+
+                    else
+                        "false"
             }
         )
         (Json.field.optional.withDefault
@@ -97,5 +113,6 @@ init : Settings
 init =
     { currentVersion = Default.currentVersion
     , deviceName = Default.deviceName
+    , removePasswordOnLogin = Default.removePasswordOnLogin
     , syncTime = Default.syncTime
     }

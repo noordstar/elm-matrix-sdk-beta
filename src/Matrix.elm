@@ -1,5 +1,5 @@
 module Matrix exposing
-    ( Vault, fromUserId
+    ( Vault, fromUserId, fromUsername
     , VaultUpdate, update
     , addAccessToken, sendMessageEvent
     )
@@ -19,7 +19,7 @@ support a monolithic public registry. (:
 
 ## Vault
 
-@docs Vault, fromUserId
+@docs Vault, fromUserId, fromUsername
 
 
 ## Keeping the Vault up-to-date
@@ -57,6 +57,9 @@ type alias VaultUpdate =
     Types.VaultUpdate
 
 
+{-| Adds a custom access token to the Vault. This can be done if no password is
+provided or known.
+-}
 addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
     Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
@@ -74,16 +77,39 @@ addAccessToken token (Vault vault) =
 
 -}
 fromUserId : String -> Maybe Vault
-fromUserId =
-    User.fromString
-        >> Maybe.map
+fromUserId uid =
+    uid
+        |> User.fromString
+        |> Maybe.map
             (\u ->
                 Envelope.init
                     { serverName = "https://" ++ User.domain u
-                    , content = Internal.init u
+                    , content = Internal.init (Just u)
                     }
+                    |> Envelope.mapContext (\c -> { c | username = Just uid })
             )
-        >> Maybe.map Vault
+        |> Maybe.map Vault
+
+
+{-| Using a username and an address, create a Vault.
+
+The username can either be the localpart or the full Matrix ID. For example,
+you can either insert `alice` or `@alice:example.org`.
+
+-}
+fromUsername : { username : String, host : String, port_ : Maybe Int } -> Vault
+fromUsername { username, host, port_ } =
+    { serverName =
+        port_
+            |> Maybe.map String.fromInt
+            |> Maybe.map ((++) ":")
+            |> Maybe.withDefault ""
+            |> (++) host
+    , content = Internal.init (User.fromString username)
+    }
+        |> Envelope.init
+        |> Envelope.mapContext (\c -> { c | username = Just username })
+        |> Vault
 
 
 {-| Send a message event to a room.
@@ -94,15 +120,25 @@ exists and the user is able to send a message to, and instead just sends the
 request to the Matrix API.
 
 -}
-sendMessageEvent : Vault -> { content : E.Value, eventType : String, roomId : String, toMsg : VaultUpdate -> msg, transactionId : String } -> Cmd msg
-sendMessageEvent (Vault vault) data =
-    Api.sendMessageEvent vault
-        { content = data.content
-        , eventType = data.eventType
-        , roomId = data.roomId
-        , toMsg = Types.VaultUpdate >> data.toMsg
-        , transactionId = data.transactionId
-        }
+sendMessageEvent :
+    { content : E.Value
+    , eventType : String
+    , roomId : String
+    , toMsg : VaultUpdate -> msg
+    , transactionId : String
+    , vault : Vault
+    }
+    -> Cmd msg
+sendMessageEvent data =
+    case data.vault of
+        Vault vault ->
+            Api.sendMessageEvent vault
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = data.roomId
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
 
 
 {-| Using new VaultUpdate information, update the Vault accordingly.

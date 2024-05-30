@@ -4,3 +4,7 @@ elm-stuff
 repl-temp-*
 # VScode settings
 .vscode/
+
+# Elm output
+index.html
+elm.js

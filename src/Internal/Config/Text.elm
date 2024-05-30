@@ -321,6 +321,7 @@ fields :
     , settings :
         { currentVersion : Desc
         , deviceName : Desc
+        , removePasswordOnLogin : Desc
         , syncTime : Desc
         }
     , timeline :
@@ -500,6 +501,9 @@ fields =
             ]
         , deviceName =
             [ "Indicates the device name that is communicated to the Matrix API."
+            ]
+        , removePasswordOnLogin =
+            [ "Remove the password as soon as a valid access token has been received."
             ]
         , syncTime =
             [ "Indicates the frequency in miliseconds with which the Elm SDK should long-poll the /sync endpoint."

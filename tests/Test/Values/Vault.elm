@@ -19,4 +19,4 @@ vault =
             |> Fuzz.map Dict.fromList
         )
         (TestHashdict.fuzzer .roomId TestRoom.fuzzer)
-        TestUser.fuzzer
+        (Fuzz.maybe TestUser.fuzzer)
