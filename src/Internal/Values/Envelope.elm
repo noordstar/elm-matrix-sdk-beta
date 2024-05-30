@@ -78,6 +78,7 @@ type EnvelopeUpdate a
     | More (List (EnvelopeUpdate a))
     | Optional (Maybe (EnvelopeUpdate a))
     | RemoveAccessToken String
+    | RemovePasswordIfNecessary
     | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetDeviceId String
@@ -310,6 +311,13 @@ update updateContent eu ({ context } as data) =
 
         RemoveAccessToken token ->
             { data | context = { context | accessTokens = Hashdict.removeKey token context.accessTokens } }
+
+        RemovePasswordIfNecessary ->
+            if data.settings.removePasswordOnLogin then
+                { data | context = { context | password = Nothing } }
+
+            else
+                data
 
         SetAccessToken a ->
             { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }

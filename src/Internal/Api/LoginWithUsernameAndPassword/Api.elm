@@ -190,6 +190,7 @@ loginWithUsernameAndPasswordV1 { username, password } =
                             , refresh = out.refreshToken
                             , value = out.accessToken
                             }
+                        , E.RemovePasswordIfNecessary
                         , out.user
                             |> Maybe.map (V.SetUser >> E.ContentUpdate)
                             |> E.Optional
