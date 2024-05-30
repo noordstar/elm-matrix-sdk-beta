@@ -1,6 +1,7 @@
 module Internal.Config.Default exposing
     ( currentVersion, deviceName
     , syncTime
+    , removePasswordOnLogin
     )
 
 {-| This module hosts all default settings and configurations that the Vault
@@ -16,6 +17,11 @@ will assume until overriden by the user.
 
 @docs syncTime
 
+
+## Security
+
+@docs removePasswordOnLogin
+
 -}
 
 
@@ -23,7 +29,7 @@ will assume until overriden by the user.
 -}
 currentVersion : String
 currentVersion =
-    "beta 3.2.0"
+    "beta 3.3.0"
 
 
 {-| The default device name that is being communicated with the Matrix API.
@@ -52,3 +58,13 @@ The value is in miliseconds, so it is set at 30,000.
 syncTime : Int
 syncTime =
     30 * 1000
+
+
+{-| Once the Matrix API has logged in successfully, it does not need to remember
+the user's password. However, to keep the Vault logged in automatically, one may
+choose to remember the password in order to get a new access token when an old
+access token has expired.
+-}
+removePasswordOnLogin : Bool
+removePasswordOnLogin =
+    True

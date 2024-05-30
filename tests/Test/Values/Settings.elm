@@ -11,7 +11,7 @@ import Test exposing (..)
 
 fuzzer : Fuzzer Settings
 fuzzer =
-    Fuzz.map3 Settings
+    Fuzz.map4 Settings
         (Fuzz.oneOf
             [ Fuzz.constant Default.currentVersion
             , Fuzz.string
@@ -20,6 +20,11 @@ fuzzer =
         (Fuzz.oneOf
             [ Fuzz.constant Default.deviceName
             , Fuzz.string
+            ]
+        )
+        (Fuzz.oneOf
+            [ Fuzz.constant Default.removePasswordOnLogin
+            , Fuzz.bool
             ]
         )
         (Fuzz.oneOf
@@ -43,6 +48,12 @@ suite =
                 (Settings.init
                     |> .deviceName
                     |> Expect.equal Default.deviceName
+                    |> always
+                )
+            , test "Remove password on login"
+                (Settings.init
+                    |> .removePasswordOnLogin
+                    |> Expect.equal Default.removePasswordOnLogin
                     |> always
                 )
             , test "Sync time"

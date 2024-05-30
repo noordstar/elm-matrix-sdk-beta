@@ -1,5 +1,5 @@
 module Internal.Values.Vault exposing
-    ( Vault
+    ( Vault, init
     , VaultUpdate(..), update
     , fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
@@ -12,7 +12,7 @@ can receive from the Matrix API.
 
 ## Vault type
 
-@docs Vault
+@docs Vault, init
 
 To update the Vault, one uses VaultUpdate types.
 
@@ -37,6 +37,7 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Room as Room exposing (Room)
+import Internal.Values.User as User exposing (User)
 
 
 {-| This is the Vault type.
@@ -44,6 +45,7 @@ import Internal.Values.Room as Room exposing (Room)
 type alias Vault =
     { accountData : Dict String Json.Value
     , rooms : Hashdict Room
+    , user : Maybe User
     }
 
 
@@ -55,11 +57,12 @@ type VaultUpdate
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
     | SetAccountData String Json.Value
+    | SetUser User
 
 
 coder : Json.Coder Vault
 coder =
-    Json.object2
+    Json.object3
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -78,6 +81,13 @@ coder =
             , coder = Hashdict.coder .roomId Room.coder
             }
         )
+        (Json.field.optional.value
+            { fieldName = "user"
+            , toField = .user
+            , description = Text.fields.vault.user
+            , coder = User.coder
+            }
+        )
 
 
 {-| Get a given room by its room id.
@@ -92,6 +102,16 @@ fromRoomId roomId vault =
 getAccountData : String -> Vault -> Maybe Json.Value
 getAccountData key vault =
     Dict.get key vault.accountData
+
+
+{-| Initiate a new Vault type.
+-}
+init : Maybe User -> Vault
+init mUser =
+    { accountData = Dict.empty
+    , rooms = Hashdict.empty .roomId
+    , user = mUser
+    }
 
 
 {-| Update a room, if it exists. If the room isn´t known, this operation is
@@ -134,3 +154,6 @@ update vu vault =
 
         SetAccountData key value ->
             setAccountData key value vault
+
+        SetUser user ->
+            { vault | user = Just user }

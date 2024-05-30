@@ -1,6 +1,6 @@
 module Internal.Values.Room exposing
     ( Room, init
-    , RoomUpdate, update
+    , RoomUpdate(..), update
     , Batch, addBatch, addSync, addEvents, mostRecentEvents
     , getAccountData, setAccountData
     , coder, encode, decode
@@ -56,6 +56,7 @@ import Internal.Tools.Json as Json
 import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
+import Internal.Values.User exposing (User)
 import Json.Encode as E
 
 
@@ -81,7 +82,9 @@ type alias Room =
 from the Matrix API.
 -}
 type RoomUpdate
-    = AddSync Batch
+    = AddEvent Event
+    | AddSync Batch
+    | Invite User
     | More (List RoomUpdate)
     | SetAccountData String Json.Value
 
@@ -245,8 +248,16 @@ setAccountData key value room =
 update : RoomUpdate -> Room -> Room
 update ru room =
     case ru of
+        AddEvent _ ->
+            -- TODO: Add event
+            room
+
         AddSync batch ->
             addSync batch room
+
+        Invite _ ->
+            -- TODO: Invite user
+            room
 
         More items ->
             List.foldl update room items

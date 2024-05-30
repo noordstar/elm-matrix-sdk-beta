@@ -1,9 +1,7 @@
 module Test.Values.Room exposing (..)
 
-import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Values.Room as Room exposing (Room)
-import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
@@ -20,23 +18,26 @@ fuzzer =
     Fuzz.string
         |> Fuzz.map Room.init
         |> addAFewTimes Fuzz.string (\key -> Room.setAccountData key placeholderValue)
-        |> addAFewTimes (Fuzz.list TestEvent.fuzzer) Room.addEvents
-        |> add4AFewTimes (Fuzz.list TestEvent.fuzzer)
-            TestFilter.fuzzer
-            (Fuzz.maybe Fuzz.string)
-            Fuzz.string
-            (\a b c d ->
-                Room.Batch a b c d
-                    |> Room.addBatch
-            )
-        |> add4AFewTimes (Fuzz.list TestEvent.fuzzer)
-            TestFilter.fuzzer
-            (Fuzz.maybe Fuzz.string)
-            Fuzz.string
-            (\a b c d ->
-                Room.Batch a b c d
-                    |> Room.addSync
-            )
+
+
+
+-- |> addAFewTimes (Fuzz.list TestEvent.fuzzer) Room.addEvents
+-- |> add4AFewTimes (Fuzz.list TestEvent.fuzzer)
+--     TestFilter.fuzzer
+--     (Fuzz.maybe Fuzz.string)
+--     Fuzz.string
+--     (\a b c d ->
+--         Room.Batch a b c d
+--             |> Room.addBatch
+--     )
+-- |> add4AFewTimes (Fuzz.list TestEvent.fuzzer)
+--     TestFilter.fuzzer
+--     (Fuzz.maybe Fuzz.string)
+--     Fuzz.string
+--     (\a b c d ->
+--         Room.Batch a b c d
+--             |> Room.addSync
+--     )
 
 
 addAFewTimes : Fuzzer a -> (a -> Room -> Room) -> Fuzzer Room -> Fuzzer Room

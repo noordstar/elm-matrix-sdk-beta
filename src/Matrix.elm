@@ -1,6 +1,7 @@
 module Matrix exposing
-    ( Vault
+    ( Vault, fromUserId, fromUsername
     , VaultUpdate, update
+    , addAccessToken, sendMessageEvent
     )
 
 {-|
@@ -18,17 +19,25 @@ support a monolithic public registry. (:
 
 ## Vault
 
-@docs Vault
+@docs Vault, fromUserId, fromUsername
 
 
 ## Keeping the Vault up-to-date
 
 @docs VaultUpdate, update
 
+
+## Debugging
+
+@docs addAccessToken, sendMessageEvent
+
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
+import Internal.Values.User as User
 import Internal.Values.Vault as Internal
+import Json.Encode as E
 import Types exposing (Vault(..), VaultUpdate(..))
 
 
@@ -48,6 +57,90 @@ type alias VaultUpdate =
     Types.VaultUpdate
 
 
+{-| Adds a custom access token to the Vault. This can be done if no password is
+provided or known.
+-}
+addAccessToken : String -> Vault -> Vault
+addAccessToken token (Vault vault) =
+    Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
+        |> Vault
+
+
+{-| Use a fully-fledged Matrix ID to connect.
+
+    case Matrix.fromUserId "@alice:example.org" of
+        Just vault ->
+            "We got a vault!"
+
+        Nothing ->
+            "Invalid username"
+
+-}
+fromUserId : String -> Maybe Vault
+fromUserId uid =
+    uid
+        |> User.fromString
+        |> Maybe.map
+            (\u ->
+                Envelope.init
+                    { serverName = "https://" ++ User.domain u
+                    , content = Internal.init (Just u)
+                    }
+                    |> Envelope.mapContext (\c -> { c | username = Just uid })
+            )
+        |> Maybe.map Vault
+
+
+{-| Using a username and an address, create a Vault.
+
+The username can either be the localpart or the full Matrix ID. For example,
+you can either insert `alice` or `@alice:example.org`.
+
+-}
+fromUsername : { username : String, host : String, port_ : Maybe Int } -> Vault
+fromUsername { username, host, port_ } =
+    { serverName =
+        port_
+            |> Maybe.map String.fromInt
+            |> Maybe.map ((++) ":")
+            |> Maybe.withDefault ""
+            |> (++) host
+    , content = Internal.init (User.fromString username)
+    }
+        |> Envelope.init
+        |> Envelope.mapContext (\c -> { c | username = Just username })
+        |> Vault
+
+
+{-| Send a message event to a room.
+
+This function can be used in a scenario where the user does not want to sync
+the client, or is unable to. This function doesn't check whether the given room
+exists and the user is able to send a message to, and instead just sends the
+request to the Matrix API.
+
+-}
+sendMessageEvent :
+    { content : E.Value
+    , eventType : String
+    , roomId : String
+    , toMsg : VaultUpdate -> msg
+    , transactionId : String
+    , vault : Vault
+    }
+    -> Cmd msg
+sendMessageEvent data =
+    case data.vault of
+        Vault vault ->
+            Api.sendMessageEvent vault
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = data.roomId
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
+
+
 {-| Using new VaultUpdate information, update the Vault accordingly.
 
 This allows us to change our perception of the Matrix environment: has anyone
@@ -56,6 +149,6 @@ sent a new message? Did someone send us an invite for a new room?
 -}
 update : VaultUpdate -> Vault -> Vault
 update (VaultUpdate vu) (Vault vault) =
-    vault
-        |> Envelope.update Internal.update vu
+    vu.messages
+        |> List.foldl (Envelope.update Internal.update) vault
         |> Vault

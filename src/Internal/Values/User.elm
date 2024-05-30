@@ -36,7 +36,7 @@ Since the username is safely parsed, one can get these parts of the username.
 
 -}
 
-import Internal.Config.Log as Log exposing (log)
+import Internal.Config.Log exposing (log)
 import Internal.Grammar.ServerName as ServerName
 import Internal.Grammar.UserId as UserId
 import Internal.Tools.Json as Json

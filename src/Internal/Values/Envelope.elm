@@ -48,9 +48,13 @@ settings that can be adjusted manually.
 
 -}
 
+import Internal.Api.Request as Request
+import Internal.Config.Log exposing (Log)
 import Internal.Config.Text as Text
+import Internal.Tools.Hashdict as Hashdict
 import Internal.Tools.Json as Json
-import Internal.Values.Context as Context exposing (Context)
+import Internal.Tools.Timestamp exposing (Timestamp)
+import Internal.Values.Context as Context exposing (AccessToken, Context, Versions)
 import Internal.Values.Settings as Settings
 
 
@@ -70,10 +74,17 @@ type alias Envelope a =
 -}
 type EnvelopeUpdate a
     = ContentUpdate a
+    | HttpRequest (Request.Request ( Request.Error, List Log ) ( EnvelopeUpdate a, List Log ))
     | More (List (EnvelopeUpdate a))
-    | SetAccessToken String
+    | Optional (Maybe (EnvelopeUpdate a))
+    | RemoveAccessToken String
+    | RemovePasswordIfNecessary
+    | SetAccessToken AccessToken
+    | SetBaseUrl String
+    | SetDeviceId String
+    | SetNow Timestamp
     | SetRefreshToken String
-    | SetVersions (List String)
+    | SetVersions Versions
 
 
 {-| Settings value from
@@ -175,10 +186,10 @@ getContent =
 {-| Create a new enveloped data type. All settings are set to default values
 from the [Internal.Config.Default](Internal-Config-Default) module.
 -}
-init : a -> Envelope a
-init x =
-    { content = x
-    , context = Context.init
+init : { serverName : String, content : a } -> Envelope a
+init data =
+    { content = data.content
+    , context = Context.init data.serverName
     , settings = Settings.init
     }
 
@@ -286,11 +297,39 @@ update updateContent eu ({ context } as data) =
         ContentUpdate v ->
             { data | content = updateContent v data.content }
 
+        HttpRequest _ ->
+            data
+
         More items ->
             List.foldl (update updateContent) data items
 
+        Optional (Just u) ->
+            update updateContent u data
+
+        Optional Nothing ->
+            data
+
+        RemoveAccessToken token ->
+            { data | context = { context | accessTokens = Hashdict.removeKey token context.accessTokens } }
+
+        RemovePasswordIfNecessary ->
+            if data.settings.removePasswordOnLogin then
+                { data | context = { context | password = Nothing } }
+
+            else
+                data
+
         SetAccessToken a ->
-            { data | context = { context | accessToken = Just a } }
+            { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }
+
+        SetBaseUrl b ->
+            { data | context = { context | baseUrl = Just b } }
+
+        SetDeviceId d ->
+            { data | context = { context | deviceId = Just d } }
+
+        SetNow n ->
+            { data | context = { context | now = Just n } }
 
         SetRefreshToken r ->
             { data | context = { context | refreshToken = Just r } }

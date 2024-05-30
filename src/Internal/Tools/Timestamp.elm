@@ -1,5 +1,6 @@
 module Internal.Tools.Timestamp exposing
     ( Timestamp
+    , add, toMs
     , coder, encode, decoder
     )
 
@@ -10,6 +11,11 @@ elm/time. This module offers ways to work with the timestamp in meaningful ways.
 ## Timestamp
 
 @docs Timestamp
+
+
+## Calculate
+
+@docs add, toMs
 
 
 ## JSON coders
@@ -26,6 +32,15 @@ import Time
 -}
 type alias Timestamp =
     Time.Posix
+
+
+{-| Add a given number of miliseconds to a given Timestamp.
+-}
+add : Int -> Timestamp -> Timestamp
+add m =
+    Time.posixToMillis
+        >> (+) m
+        >> Time.millisToPosix
 
 
 {-| Create a Json coder
@@ -55,3 +70,10 @@ encode =
 decoder : Json.Decoder Timestamp
 decoder =
     Json.decode coder
+
+
+{-| Turn a Timestamp into a number of miliseconds
+-}
+toMs : Timestamp -> Int
+toMs =
+    Time.posixToMillis
