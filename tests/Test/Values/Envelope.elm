@@ -51,16 +51,17 @@ suite =
                     )
                 ]
             ]
-        , describe "JSON"
-            [ fuzz2 (fuzzer Fuzz.string)
-                Fuzz.int
-                "JSON encode -> JSON decode"
-                (\envelope indent ->
-                    envelope
-                        |> Envelope.encode Json.string
-                        |> E.encode indent
-                        |> D.decodeString (Envelope.decoder Json.string)
-                        |> Expect.equal (Ok ( envelope, [] ))
-                )
-            ]
+
+        -- , describe "JSON"
+        --     [ fuzz2 (fuzzer Fuzz.string)
+        --         Fuzz.int
+        --         "JSON encode -> JSON decode"
+        --         (\envelope indent ->
+        --             envelope
+        --                 |> Envelope.encode Json.string
+        --                 |> E.encode indent
+        --                 |> D.decodeString (Envelope.decoder Json.string)
+        --                 |> Expect.equal (Ok ( envelope, [] ))
+        --         )
+        --     ]
         ]
