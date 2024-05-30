@@ -2,6 +2,8 @@ module Matrix.Settings exposing
     ( setAccessToken, removeAccessToken
     , getDeviceName, setDeviceName
     , getSyncTime, setSyncTime
+    , setPassword
+    , removePassword, removePasswordOnLogin
     )
 
 {-| The Matrix Vault has lots of configurable variables that you rarely want to
@@ -50,20 +52,39 @@ The value is in miliseconds, so it is set at 30,000.
 
 @docs getSyncTime, setSyncTime
 
+
+## Password
+
+When a Vault wants to access the Matrix API, it needs an access token. This can
+either be provided directly, or the Vault can get one itself by using a password
+to log in.
+
+@docs setPassword
+
+For security reasons, it is not possible to read whatever password is stored in
+the Vault. An attacker with access to the memory might be able to find it,
+however, so the Vault offers ways to remove the password from memory.
+
+@docs removePassword, removePasswordOnLogin
+
 -}
 
 import Internal.Values.Envelope as Envelope
 import Types exposing (Vault(..))
 
 
-{-| Insert a suggested access token.
+{-| Determine the device name.
 -}
-setAccessToken : String -> Vault -> Vault
-setAccessToken token (Vault vault) =
-    vault
-        |> Envelope.mapContext
-            (\c -> { c | suggestedAccessToken = Just token })
-        |> Vault
+getDeviceName : Vault -> String
+getDeviceName (Vault vault) =
+    Envelope.extractSettings .deviceName vault
+
+
+{-| Determine the sync timeout value.
+-}
+getSyncTime : Vault -> Int
+getSyncTime (Vault vault) =
+    Envelope.extractSettings .syncTime vault
 
 
 {-| Remove an access token that has been inserted using the
@@ -80,11 +101,32 @@ removeAccessToken (Vault vault) =
         |> Vault
 
 
-{-| Determine the device name.
+{-| Remove a password that is stored in the Matrix Vault.
 -}
-getDeviceName : Vault -> String
-getDeviceName (Vault vault) =
-    Envelope.extractSettings .deviceName vault
+removePassword : Vault -> Vault
+removePassword (Vault vault) =
+    vault
+        |> Envelope.mapContext
+            (\c -> { c | password = Nothing })
+        |> Vault
+
+
+{-| Remove password from the Vault as soon as a valid access token has been
+received from the Matrix API.
+-}
+removePasswordOnLogin : Bool -> Vault -> Vault
+removePasswordOnLogin b (Vault vault) =
+    Vault <| Envelope.mapSettings (\s -> { s | removePasswordOnLogin = b }) vault
+
+
+{-| Insert a suggested access token.
+-}
+setAccessToken : String -> Vault -> Vault
+setAccessToken token (Vault vault) =
+    vault
+        |> Envelope.mapContext
+            (\c -> { c | suggestedAccessToken = Just token })
+        |> Vault
 
 
 {-| Override the device name.
@@ -94,11 +136,14 @@ setDeviceName name (Vault vault) =
     Vault <| Envelope.mapSettings (\s -> { s | deviceName = name }) vault
 
 
-{-| Determine the sync timeout value.
+{-| Set a password for the given user.
 -}
-getSyncTime : Vault -> Int
-getSyncTime (Vault vault) =
-    Envelope.extractSettings .syncTime vault
+setPassword : String -> Vault -> Vault
+setPassword password (Vault vault) =
+    vault
+        |> Envelope.mapContext
+            (\c -> { c | password = Just password })
+        |> Vault
 
 
 {-| Override the sync timeout value.
