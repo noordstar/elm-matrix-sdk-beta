@@ -2,7 +2,7 @@ module Test.Values.Timeline exposing (..)
 
 import Expect
 import Fuzz exposing (Fuzzer)
-import Internal.Filter.Timeline as Filter exposing (Filter)
+import Internal.Filter.Timeline as Filter
 import Internal.Tools.Json as Json
 import Internal.Values.Timeline as Timeline exposing (Batch, Timeline)
 import Json.Decode as D

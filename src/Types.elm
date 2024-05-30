@@ -16,6 +16,7 @@ safely access all exposed data types without risking to create circular imports.
 
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Event as Event
 import Internal.Values.Room as Room
@@ -50,4 +51,4 @@ type Vault
 {-| Opaque type for Matrix VaultUpdate
 -}
 type VaultUpdate
-    = VaultUpdate (Envelope.EnvelopeUpdate Vault.VaultUpdate)
+    = VaultUpdate Api.Msg

@@ -1,11 +1,24 @@
 module Matrix.Settings exposing
-    ( getDeviceName, setDeviceName
+    ( setAccessToken, removeAccessToken
+    , getDeviceName, setDeviceName
     , getSyncTime, setSyncTime
     )
 
 {-| The Matrix Vault has lots of configurable variables that you rarely want to
 interact with. Usually, you configure these variables only when creating a new
 Vault, or when a user explicitly changes one of their preferred settings.
+
+
+## Access token
+
+The Vault is able to log in on its own, but sometimes you would rather have the
+Vault use an access token than log in to get one on its own. For this case, you
+can use this option to insert an access token into the Vault.
+
+As long as the access token remains valid, the Vault will use this provided
+access token.
+
+@docs setAccessToken, removeAccessToken
 
 
 ## Device name
@@ -41,6 +54,30 @@ The value is in miliseconds, so it is set at 30,000.
 
 import Internal.Values.Envelope as Envelope
 import Types exposing (Vault(..))
+
+
+{-| Insert a suggested access token.
+-}
+setAccessToken : String -> Vault -> Vault
+setAccessToken token (Vault vault) =
+    vault
+        |> Envelope.mapContext
+            (\c -> { c | suggestedAccessToken = Just token })
+        |> Vault
+
+
+{-| Remove an access token that has been inserted using the
+[setAccessToken](Matrix-Settings#setAccessToken) function.
+
+This should generally not be necessary, but it can be nice security-wise.
+
+-}
+removeAccessToken : Vault -> Vault
+removeAccessToken (Vault vault) =
+    vault
+        |> Envelope.mapContext
+            (\c -> { c | suggestedAccessToken = Nothing })
+        |> Vault
 
 
 {-| Determine the device name.
