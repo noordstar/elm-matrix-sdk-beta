@@ -45,7 +45,7 @@ import Internal.Values.User as User exposing (User)
 type alias Vault =
     { accountData : Dict String Json.Value
     , rooms : Hashdict Room
-    , user : User
+    , user : Maybe User
     }
 
 
@@ -81,7 +81,7 @@ coder =
             , coder = Hashdict.coder .roomId Room.coder
             }
         )
-        (Json.field.required
+        (Json.field.optional.value
             { fieldName = "user"
             , toField = .user
             , description = Text.fields.vault.user
@@ -106,11 +106,11 @@ getAccountData key vault =
 
 {-| Initiate a new Vault type.
 -}
-init : User -> Vault
-init user =
+init : Maybe User -> Vault
+init mUser =
     { accountData = Dict.empty
     , rooms = Hashdict.empty .roomId
-    , user = user
+    , user = mUser
     }
 
 
@@ -156,4 +156,4 @@ update vu vault =
             setAccountData key value vault
 
         SetUser user ->
-            { vault | user = user }
+            { vault | user = Just user }
