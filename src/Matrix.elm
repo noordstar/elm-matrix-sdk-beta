@@ -1,6 +1,6 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
-    , VaultUpdate, update
+    , VaultUpdate, update, logs
     , addAccessToken, sendMessageEvent
     )
 
@@ -24,7 +24,7 @@ support a monolithic public registry. (:
 
 ## Keeping the Vault up-to-date
 
-@docs VaultUpdate, update
+@docs VaultUpdate, update, logs
 
 
 ## Debugging
@@ -110,6 +110,28 @@ fromUsername { username, host, port_ } =
         |> Envelope.init
         |> Envelope.mapContext (\c -> { c | username = Just username })
         |> Vault
+
+
+{-| The VaultUpdate is a complex type that helps update the Vault. However,
+it also contains a human output!
+
+Using this function, you can get a human output that describes everything that
+the VaultUpdate has to tell the Vault.
+
+The `channel` field describes the context of the log, allowing you to filter
+further. For example:
+
+  - `debug` is a comprehensive channel describing everything the Elm runtime has
+    executed.
+  - `warn` contains warnings that aren't breaking, but relevant.
+  - `securityWarn` warns about potential security issues or potential attacks.
+  - `error` has errors that were encountered.
+  - `caughtError` has errors that were dealt with successfully.
+
+-}
+logs : VaultUpdate -> List { channel : String, content : String }
+logs (VaultUpdate vu) =
+    vu.logs
 
 
 {-| Send a message event to a room.
