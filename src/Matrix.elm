@@ -119,6 +119,18 @@ the client, or is unable to. This function doesn't check whether the given room
 exists and the user is able to send a message to, and instead just sends the
 request to the Matrix API.
 
+The fields stand for the following:
+
+  - `content` is the JSON object that is sent to the Matrix room.
+  - `eventType` is the event type that is sent to the Matrix room.
+  - `roomId` is the Matrix room ID.
+  - `toMsg` is the `msg` type that is returned after the message has been sent.
+  - `transactionId` is a unique identifier that helps the Matrix server
+    distringuish messages. If you send the same message with the same transactionId,
+    the server promises to register it only once.
+  - `vault` is the Matrix Vault that contains all the latest and most relevant
+    information.
+
 -}
 sendMessageEvent :
     { content : E.Value
