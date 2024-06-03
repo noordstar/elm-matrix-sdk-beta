@@ -5,7 +5,7 @@ module Internal.Tools.Json exposing
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
     , Field, field, parser
-    , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
 
 {-|
@@ -62,7 +62,7 @@ first.
 
 Once all fields are constructed, the user can create JSON objects.
 
-@docs object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
 
 -}
 
@@ -594,6 +594,23 @@ objectEncoder items object =
     items
         |> List.map (Tuple.mapSecond (\f -> f object))
         |> E.maybeObject
+
+
+object1 :
+    Descriptive { init : a -> object }
+    -> Field a object
+    -> Coder object
+object1 { name, description, init } fa =
+    Coder
+        { encoder = objectEncoder [ toEncodeField fa ]
+        , decoder = D.map (Tuple.mapFirst init) (toDecoderField fa)
+        , docs =
+            DocsObject
+                { name = name
+                , description = description
+                , keys = [ toDocsField fa ]
+                }
+        }
 
 
 {-| Define an object with 2 keys
