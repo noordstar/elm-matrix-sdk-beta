@@ -346,6 +346,7 @@ fields :
         }
     , vault :
         { accountData : Desc
+        , nextBatch : Desc
         , rooms : Desc
         , user : Desc
         }
@@ -564,6 +565,9 @@ fields =
     , vault =
         { accountData =
             [ "The account's global private data."
+            ]
+        , nextBatch =
+            [ "The next batch that can be used to sync with the Matrix API."
             ]
         , rooms =
             [ "Directory of joined rooms that the user is a member of."

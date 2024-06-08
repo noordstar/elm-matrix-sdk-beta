@@ -44,6 +44,7 @@ import Internal.Values.User as User exposing (User)
 -}
 type alias Vault =
     { accountData : Dict String Json.Value
+    , nextBatch : Maybe String
     , rooms : Hashdict Room
     , user : Maybe User
     }
@@ -56,13 +57,15 @@ type VaultUpdate
     = CreateRoomIfNotExists String
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
+    | Optional (Maybe VaultUpdate)
     | SetAccountData String Json.Value
+    | SetNextBatch String
     | SetUser User
 
 
 coder : Json.Coder Vault
 coder =
-    Json.object3
+    Json.object4
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -72,6 +75,13 @@ coder =
             , toField = .accountData
             , description = Text.fields.vault.accountData
             , coder = Json.fastDict Json.value
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "nextBatch"
+            , toField = .nextBatch
+            , description = Text.fields.vault.nextBatch
+            , coder = Json.string
             }
         )
         (Json.field.required
@@ -109,6 +119,7 @@ getAccountData key vault =
 init : Maybe User -> Vault
 init mUser =
     { accountData = Dict.empty
+    , nextBatch = Nothing
     , rooms = Hashdict.empty .roomId
     , user = mUser
     }
@@ -152,8 +163,17 @@ update vu vault =
         More items ->
             List.foldl update vault items
 
+        Optional (Just u) ->
+            update u vault
+
+        Optional Nothing ->
+            vault
+
         SetAccountData key value ->
             setAccountData key value vault
+
+        SetNextBatch nb ->
+            { vault | nextBatch = Just nb }
 
         SetUser user ->
             { vault | user = Just user }
