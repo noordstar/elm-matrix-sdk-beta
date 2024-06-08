@@ -313,6 +313,7 @@ fields :
         }
     , room :
         { accountData : Desc
+        , ephemeral : Desc
         , events : Desc
         , roomId : Desc
         , state : Desc
@@ -486,6 +487,9 @@ fields =
     , room =
         { accountData =
             [ "Room account data tracking the user's private storage about this room." ]
+        , ephemeral =
+            [ "Ephemeral events that were sent recently in this room."
+            ]
         , events =
             [ "Database containing events that were sent in this room." ]
         , roomId =

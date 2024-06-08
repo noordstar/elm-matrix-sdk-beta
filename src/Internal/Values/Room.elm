@@ -53,6 +53,7 @@ import Internal.Config.Text as Text
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
+import Internal.Tools.StrippedEvent as StrippedEvent exposing (StrippedEvent)
 import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
@@ -71,6 +72,7 @@ homeserver.
 -}
 type alias Room =
     { accountData : Dict String Json.Value
+    , ephemeral : List StrippedEvent
     , events : Hashdict Event
     , roomId : String
     , state : StateManager
@@ -86,7 +88,9 @@ type RoomUpdate
     | AddSync Batch
     | Invite User
     | More (List RoomUpdate)
+    | Optional (Maybe RoomUpdate)
     | SetAccountData String Json.Value
+    | SetEphemeral (List { eventType : String, content : Json.Value })
 
 
 {-| Add new events to the Room's event directory + Room's timeline.
@@ -140,7 +144,7 @@ addSync =
 -}
 coder : Json.Coder Room
 coder =
-    Json.object5
+    Json.object6
         { name = Text.docs.room.name
         , description = Text.docs.room.description
         , init = Room
@@ -152,6 +156,15 @@ coder =
             , coder = Json.fastDict Json.value
             , default = ( Dict.empty, [] )
             , defaultToString = Json.encode (Json.fastDict Json.value) >> E.encode 0
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "ephemeral"
+            , toField = .ephemeral
+            , description = Text.fields.room.ephemeral
+            , coder = Json.list StrippedEvent.coder
+            , default = ( [], [] )
+            , defaultToString = Json.encode (Json.list StrippedEvent.coder) >> E.encode 0
             }
         )
         (Json.field.optional.withDefault
@@ -216,6 +229,7 @@ getAccountData key room =
 init : String -> Room
 init roomId =
     { accountData = Dict.empty
+    , ephemeral = []
     , events = Hashdict.empty .eventId
     , roomId = roomId
     , state = StateManager.empty
@@ -262,5 +276,14 @@ update ru room =
         More items ->
             List.foldl update room items
 
+        Optional (Just u) ->
+            update u room
+
+        Optional Nothing ->
+            room
+
         SetAccountData key value ->
             setAccountData key value room
+
+        SetEphemeral eph ->
+            { room | ephemeral = eph }
