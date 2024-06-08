@@ -124,6 +124,7 @@ docs :
     , room : TypeDocs
     , settings : TypeDocs
     , stateManager : TypeDocs
+    , strippedEvent : TypeDocs
     , timeline : TypeDocs
     , timelineFilter : TypeDocs
     , unsigned : TypeDocs
@@ -204,6 +205,12 @@ docs =
         , description =
             [ "The StateManager tracks the room state based on events, their event types and the optional state keys they provide."
             , "Instead of making the user loop through the room's timeline of events, the StateManager offers the user a dictionary-like experience to navigate through the Matrix room state."
+            ]
+        }
+    , strippedEvent =
+        { name = "StrippedEvent"
+        , description =
+            [ "The StrippedEvent is a simplified Matrix event that contains no metadata."
             ]
         }
     , timeline =

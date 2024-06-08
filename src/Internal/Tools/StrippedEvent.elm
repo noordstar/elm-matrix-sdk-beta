@@ -11,6 +11,7 @@ The stripped event is a simple Matrix event that does not contain any metadata.
 
 -}
 
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 
 
@@ -21,8 +22,8 @@ type alias StrippedEvent =
 coder : Json.Coder StrippedEvent
 coder =
     Json.object2
-        { name = Debug.todo "Needs name"
-        , description = Debug.todo "Needs description"
+        { name = Text.docs.strippedEvent.name
+        , description = Text.docs.strippedEvent.description
         , init = StrippedEvent
         }
         (Json.field.required
