@@ -18,8 +18,9 @@ supported for which spec versions.
 - ✅ **One way to do things** instead of having multiple functions that are
 considered deprecated.
 
-Follow us on [Mastodon](https://social.noordstar.me/@elm_matrix_sdk) at
-@elm_matrix_sdk@social.noordstar.me to stay up-to-date on the latest changes.
+Follow us on [Mastodon](https://social.noordstar.me/@elm_matrix_sdk) or join the
+conversation on [Matrix](https://matrix.to/#/#elm-sdk:matrix.org) to stay
+up-to-date on the latest changes.
 
 ## How to install
 
