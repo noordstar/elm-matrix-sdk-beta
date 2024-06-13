@@ -3,7 +3,7 @@ module Internal.Tools.Json exposing
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
-    , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
+    , list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
     , Field, field, parser
     , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
     )
@@ -49,7 +49,7 @@ module to build its encoders and decoders.
 
 ## Data types
 
-@docs list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
+@docs list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
 
 
 ## Objects
@@ -68,6 +68,7 @@ Once all fields are constructed, the user can create JSON objects.
 
 import Dict as SlowDict
 import FastDict
+import Iddict exposing (Iddict)
 import Internal.Config.Log as Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.DecodeExtra as D
@@ -141,6 +142,7 @@ type Docs
     = DocsBool
     | DocsDict Docs
     | DocsFloat
+    | DocsIddict Docs
     | DocsInt
     | DocsIntDict Docs
     | DocsLazy (() -> Docs)
@@ -464,6 +466,25 @@ float =
         { encoder = E.float
         , decoder = D.map empty D.float
         , docs = DocsFloat
+        }
+
+
+{-| Define an Iddict as defined in
+[noordstar/elm-iddict](https://package.elm-lang.org/packages/noordstar/elm-iddict/latest/).
+-}
+iddict : Coder a -> Coder (Iddict a)
+iddict (Coder old) =
+    Coder
+        { encoder = Iddict.encode old.encoder
+        , decoder =
+            D.andThen
+                (\( out, logs ) ->
+                    D.succeed out
+                        |> Iddict.decoder
+                        |> D.map (\o -> ( o, logs ))
+                )
+                old.decoder
+        , docs = DocsIddict old.docs
         }
 
 
