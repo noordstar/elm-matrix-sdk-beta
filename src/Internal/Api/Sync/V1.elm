@@ -596,7 +596,7 @@ presenceCoder =
         , description =
             [ "Events indicating users' presence"
             ]
-        , init = Ephemeral
+        , init = Presence
         }
         (Json.field.required
             { fieldName = "events"
@@ -620,7 +620,7 @@ accountDataCoder =
         , description =
             [ "Account data events sent by the user in a given room using a different client."
             ]
-        , init = Ephemeral
+        , init = AccountData
         }
         (Json.field.required
             { fieldName = "events"
