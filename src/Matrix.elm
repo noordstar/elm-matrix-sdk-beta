@@ -1,6 +1,6 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
-    , VaultUpdate, update
+    , VaultUpdate, update, logs
     , addAccessToken, sendMessageEvent
     )
 
@@ -24,7 +24,7 @@ support a monolithic public registry. (:
 
 ## Keeping the Vault up-to-date
 
-@docs VaultUpdate, update
+@docs VaultUpdate, update, logs
 
 
 ## Debugging
@@ -112,12 +112,46 @@ fromUsername { username, host, port_ } =
         |> Vault
 
 
+{-| The VaultUpdate is a complex type that helps update the Vault. However,
+it also contains a human output!
+
+Using this function, you can get a human output that describes everything that
+the VaultUpdate has to tell the Vault.
+
+The `channel` field describes the context of the log, allowing you to filter
+further. For example:
+
+  - `debug` is a comprehensive channel describing everything the Elm runtime has
+    executed.
+  - `warn` contains warnings that aren't breaking, but relevant.
+  - `securityWarn` warns about potential security issues or potential attacks.
+  - `error` has errors that were encountered.
+  - `caughtError` has errors that were dealt with successfully.
+
+-}
+logs : VaultUpdate -> List { channel : String, content : String }
+logs (VaultUpdate vu) =
+    vu.logs
+
+
 {-| Send a message event to a room.
 
 This function can be used in a scenario where the user does not want to sync
 the client, or is unable to. This function doesn't check whether the given room
 exists and the user is able to send a message to, and instead just sends the
 request to the Matrix API.
+
+The fields stand for the following:
+
+  - `content` is the JSON object that is sent to the Matrix room.
+  - `eventType` is the event type that is sent to the Matrix room.
+  - `roomId` is the Matrix room ID.
+  - `toMsg` is the `msg` type that is returned after the message has been sent.
+  - `transactionId` is a unique identifier that helps the Matrix server
+    distringuish messages. If you send the same message with the same transactionId,
+    the server promises to register it only once.
+  - `vault` is the Matrix Vault that contains all the latest and most relevant
+    information.
 
 -}
 sendMessageEvent :
