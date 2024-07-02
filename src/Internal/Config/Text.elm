@@ -118,7 +118,6 @@ docs :
     , event : TypeDocs
     , hashdict : TypeDocs
     , ibatch : TypeDocs
-    , iddict : TypeDocs
     , itoken : TypeDocs
     , mashdict : TypeDocs
     , room : TypeDocs
@@ -167,12 +166,6 @@ docs =
         { name = "IBatch"
         , description =
             [ "The internal batch tracks a patch of events on the Matrix timeline."
-            ]
-        }
-    , iddict =
-        { name = "Iddict"
-        , description =
-            [ "An iddict automatically handles creating appropriate keys by incrementally assiging a new key to new values."
             ]
         }
     , itoken =
