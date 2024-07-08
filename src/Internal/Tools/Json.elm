@@ -362,7 +362,7 @@ then the following field type would be used:
         , coder = string
         }
 
-Suppose the JSO isn't obligated to provide a list of hobbies, and the list would
+Suppose the JSON isn't obligated to provide a list of hobbies, and the list would
 by default be overriden with an empty list, then we would use the following
 field type:
 
@@ -373,8 +373,7 @@ field type:
             [ "The hobbies of the person. Can be omitted."
             ]
         , coder = list string
-        , default = ( [], [] ) -- The `List Log` can be inserted in case you wish to insert a message when relying on a default
-        , defaultToString = always "[]" -- Default converted to a string
+        , default = ( [ "football" ], [] ) -- The `List Log` can be inserted in case you wish to insert a message when relying on a default
         }
 
 -}
@@ -382,7 +381,7 @@ field :
     { required : { fieldName : String, toField : object -> a, description : List String, coder : Coder a } -> Field a object
     , optional :
         { value : { fieldName : String, toField : object -> Maybe a, description : List String, coder : Coder a } -> Field (Maybe a) object
-        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : Coder a, default : ( a, List Log ), defaultToString : a -> String } -> Field a object
+        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : Coder a, default : ( a, List Log ) } -> Field a object
         }
     }
 field =
@@ -425,7 +424,7 @@ field =
                             , requiredness = OptionalField
                             }
         , withDefault =
-            \{ fieldName, toField, description, coder, default, defaultToString } ->
+            \{ fieldName, toField, description, coder, default } ->
                 case coder of
                     Coder { encoder, decoder, docs } ->
                         Field
@@ -449,7 +448,8 @@ field =
                             , requiredness =
                                 default
                                     |> Tuple.first
-                                    |> defaultToString
+                                    |> encoder
+                                    |> E.encode 0
                                     |> OptionalFieldWithDefault
                             }
         }

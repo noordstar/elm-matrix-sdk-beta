@@ -80,7 +80,6 @@ coder x =
             , description = Text.fields.iddict.cursor
             , coder = Json.int
             , default = ( 0, [] )
-            , defaultToString = String.fromInt
             }
         )
         (Json.field.required

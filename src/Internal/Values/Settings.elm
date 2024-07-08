@@ -55,7 +55,6 @@ coder =
             , description = Text.fields.settings.currentVersion
             , coder = Json.string
             , default = Tuple.pair Default.currentVersion []
-            , defaultToString = identity
             }
         )
         (Json.field.optional.withDefault
@@ -64,7 +63,6 @@ coder =
             , description = Text.fields.settings.deviceName
             , coder = Json.string
             , default = Tuple.pair Default.deviceName []
-            , defaultToString = identity
             }
         )
         (Json.field.optional.withDefault
@@ -73,13 +71,6 @@ coder =
             , description = Text.fields.settings.removePasswordOnLogin
             , coder = Json.bool
             , default = Tuple.pair Default.removePasswordOnLogin []
-            , defaultToString =
-                \b ->
-                    if b then
-                        "true"
-
-                    else
-                        "false"
             }
         )
         (Json.field.optional.withDefault
@@ -88,7 +79,6 @@ coder =
             , description = Text.fields.settings.syncTime
             , coder = Json.int
             , default = Tuple.pair Default.syncTime []
-            , defaultToString = String.fromInt
             }
         )
 

@@ -439,6 +439,5 @@ versionsCoder =
             , description = Text.fields.versions.unstableFeatures
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
-            , defaultToString = Json.encode (Json.set Json.string) >> E.encode 0
             }
         )

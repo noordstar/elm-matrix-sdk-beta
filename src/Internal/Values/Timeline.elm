@@ -226,7 +226,6 @@ coder =
             , description = Text.fields.timeline.filledBatches
             , coder = Json.int
             , default = ( 0, [] )
-            , defaultToString = String.fromInt
             }
         )
         (Json.field.required
@@ -326,7 +325,6 @@ coderIToken =
             , description = Text.fields.itoken.starts
             , coder = Json.set coderIBatchPTRValue
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
         (Json.field.optional.withDefault
@@ -335,7 +333,6 @@ coderIToken =
             , description = Text.fields.itoken.ends
             , coder = Json.set coderIBatchPTRValue
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
         (Json.field.optional.withDefault
@@ -344,7 +341,6 @@ coderIToken =
             , description = Text.fields.itoken.inFrontOf
             , coder = Json.set coderITokenPTRValue
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
         (Json.field.optional.withDefault
@@ -353,7 +349,6 @@ coderIToken =
             , description = Text.fields.itoken.behind
             , coder = Json.set coderITokenPTRValue
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
 

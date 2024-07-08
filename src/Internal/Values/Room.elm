@@ -155,7 +155,6 @@ coder =
             , description = Text.fields.room.accountData
             , coder = Json.fastDict Json.value
             , default = ( Dict.empty, [] )
-            , defaultToString = Json.encode (Json.fastDict Json.value) >> E.encode 0
             }
         )
         (Json.field.optional.withDefault
@@ -164,7 +163,6 @@ coder =
             , description = Text.fields.room.ephemeral
             , coder = Json.list StrippedEvent.coder
             , default = ( [], [] )
-            , defaultToString = Json.encode (Json.list StrippedEvent.coder) >> E.encode 0
             }
         )
         (Json.field.optional.withDefault
@@ -173,7 +171,6 @@ coder =
             , description = Text.fields.room.events
             , coder = Hashdict.coder .eventId Event.coder
             , default = ( Hashdict.empty .eventId, [ log.warn "Found a room with no known events! Is it empty?" ] )
-            , defaultToString = Json.encode (Hashdict.coder .eventId Event.coder) >> E.encode 0
             }
         )
         (Json.field.required
@@ -189,7 +186,6 @@ coder =
             , description = Text.fields.room.state
             , coder = StateManager.coder
             , default = ( StateManager.empty, [] )
-            , defaultToString = Json.encode StateManager.coder >> E.encode 0
             }
         )
         (Json.field.optional.withDefault
@@ -198,7 +194,6 @@ coder =
             , description = Text.fields.room.timeline
             , coder = Timeline.coder
             , default = ( Timeline.empty, [] )
-            , defaultToString = Json.encode Timeline.coder >> E.encode 0
             }
         )
 

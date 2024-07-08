@@ -124,7 +124,6 @@ coder c1 =
             , description = Text.fields.envelope.settings
             , coder = Settings.coder
             , default = Tuple.pair Settings.init []
-            , defaultToString = always "<Default settings>"
             }
         )
 
