@@ -1,20 +1,18 @@
-module Internal.Api.Sync.V2 exposing (..)
+module Internal.Api.Sync.V4 exposing (..)
 
 {-|
 
 
 # Sync response
 
-This API module represents the /sync endpoint on Matrix spec version v1.2 and
-v1.3.
+This API module represents the /sync endpoint on Matrix spec version v1.11.
 
-<https://spec.matrix.org/v1.2/client-server-api/#syncing>
-<https://spec.matrix.org/v1.3/client-server-api/#syncing>
+<https://spec.matrix.org/v1.11/client-server-api/#syncing>
 
 -}
 
 import FastDict exposing (Dict)
-import Internal.Api.Sync.V1 as PV
+import Internal.Api.Sync.V3 as PV
 import Internal.Tools.Json as Json
 
 
@@ -75,6 +73,7 @@ type alias JoinedRoom =
     , summary : Maybe RoomSummary
     , timeline : Maybe Timeline
     , unreadNotifications : Maybe UnreadNotificationCounts
+    , unreadThreadNotifications : Maybe (Dict String ThreadNotificationCounts)
     }
 
 
@@ -100,6 +99,7 @@ type alias ClientEventWithoutRoomID =
 type UnsignedData
     = UnsignedData
         { age : Maybe Int
+        , membership : Maybe String
         , prevContent : Maybe Json.Value
         , redactedBecause : Maybe ClientEventWithoutRoomID
         , transactionId : Maybe String
@@ -121,6 +121,12 @@ type alias Timeline =
 
 
 type alias UnreadNotificationCounts =
+    { highlightCount : Maybe Int
+    , notificationCount : Maybe Int
+    }
+
+
+type alias ThreadNotificationCounts =
     { highlightCount : Maybe Int
     , notificationCount : Maybe Int
     }
@@ -162,7 +168,7 @@ coderSyncResponse : Json.Coder SyncResponse
 coderSyncResponse =
     Json.object8
         { name = "SyncResponse"
-        , description = [ "An event that is part of a response." ]
+        , description = [ "The response received when the server successfully processes the request." ]
         , init = SyncResponse
         }
         (Json.field.optional.value
@@ -196,7 +202,7 @@ coderSyncResponse =
         (Json.field.required
             { fieldName = "next_batch"
             , toField = .nextBatch
-            , description = [ "Required: The batch token to supply in the since param of the next /sync request." ]
+            , description = [ "The batch token to supply in the since param of the next /sync request." ]
             , coder = Json.string
             }
         )
@@ -225,17 +231,57 @@ coderSyncResponse =
 
 coderAccountData : Json.Coder AccountData
 coderAccountData =
-    PV.coderAccountData
+    Json.object1
+        { name = "AccountData"
+        , description = [ "The global private data created by this user." ]
+        , init = AccountData
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "List of events." ]
+            , coder = Json.list coderEvent
+            }
+        )
 
 
 coderEvent : Json.Coder Event
 coderEvent =
-    PV.coderEvent
+    Json.object2
+        { name = "Event"
+        , description = [ "Details of an event." ]
+        , init = Event
+        }
+        (Json.field.required
+            { fieldName = "content"
+            , toField = .content
+            , description = [ "The fields in this object will vary depending on the type of event. When interacting with the REST API, this is the HTTP body." ]
+            , coder = Json.value
+            }
+        )
+        (Json.field.required
+            { fieldName = "type"
+            , toField = .eventType
+            , description = [ "The type of event. This SHOULD be namespaced similar to Java package naming conventions e.g. ‘com.example.subdomain.event.type’" ]
+            , coder = Json.string
+            }
+        )
 
 
 coderPresence : Json.Coder Presence
 coderPresence =
-    PV.coderPresence
+    Json.object1
+        { name = "Presence"
+        , description = [ "The updates to the presence status of other users." ]
+        , init = Presence
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "List of events." ]
+            , coder = Json.list coderEvent
+            }
+        )
 
 
 coderRooms : Json.Coder Rooms
@@ -277,24 +323,78 @@ coderRooms =
 
 coderInvitedRoom : Json.Coder InvitedRoom
 coderInvitedRoom =
-    PV.coderInvitedRoom
+    Json.object1
+        { name = "InvitedRoom"
+        , description = [ "The room that the user has been invited to." ]
+        , init = InvitedRoom
+        }
+        (Json.field.optional.value
+            { fieldName = "invite_state"
+            , toField = .inviteState
+            , description = [ "The stripped state of a room that the user has been invited to." ]
+            , coder = coderInviteState
+            }
+        )
 
 
 coderInviteState : Json.Coder InviteState
 coderInviteState =
-    PV.coderInviteState
+    Json.object1
+        { name = "InviteState"
+        , description = [ "The stripped state of a room that the user has been invited to." ]
+        , init = InviteState
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "The stripped state events that form the invite state." ]
+            , coder = Json.list coderStrippedStateEvent
+            }
+        )
 
 
 coderStrippedStateEvent : Json.Coder StrippedStateEvent
 coderStrippedStateEvent =
-    PV.coderStrippedState
+    Json.object4
+        { name = "StrippedStateEvent"
+        , description = [ "A stripped state event that forms part of the invite state." ]
+        , init = StrippedStateEvent
+        }
+        (Json.field.required
+            { fieldName = "content"
+            , toField = .content
+            , description = [ "The content for the event." ]
+            , coder = Json.value
+            }
+        )
+        (Json.field.required
+            { fieldName = "sender"
+            , toField = .sender
+            , description = [ "The sender for the event." ]
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            { fieldName = "state_key"
+            , toField = .stateKey
+            , description = [ "The state_key for the event." ]
+            , coder = Json.string
+            }
+        )
+        (Json.field.required
+            { fieldName = "type"
+            , toField = .eventType
+            , description = [ "The type for the event." ]
+            , coder = Json.string
+            }
+        )
 
 
 coderJoinedRoom : Json.Coder JoinedRoom
 coderJoinedRoom =
-    Json.object6
+    Json.object7
         { name = "JoinedRoom"
-        , description = [ "The rooms that the user has joined." ]
+        , description = [ "The room that the user has joined." ]
         , init = JoinedRoom
         }
         (Json.field.optional.value
@@ -307,7 +407,7 @@ coderJoinedRoom =
         (Json.field.optional.value
             { fieldName = "ephemeral"
             , toField = .ephemeral
-            , description = [ "The ephemeral events in the room that aren’t recorded in the timeline or state of the room. e.g. typing." ]
+            , description = [ "The new ephemeral events in the room (events that aren’t recorded in the timeline or state of the room). In this version of the spec, these are typing notification and read receipt events." ]
             , coder = coderEphemeral
             }
         )
@@ -335,22 +435,40 @@ coderJoinedRoom =
         (Json.field.optional.value
             { fieldName = "unread_notifications"
             , toField = .unreadNotifications
-            , description = [ "Counts of unread notifications for this room. See the Receiving notifications section for more information on how these are calculated." ]
+            , description = [ "Counts of unread notifications for this room. See the Receiving notifications section for more information on how these are calculated.", "If unread_thread_notifications was specified as true on the RoomEventFilter, these counts will only be for the main timeline rather than all events in the room. See the threading module for more information.", "Changed in v1.4: Updated to reflect behaviour of having unread_thread_notifications as true in the RoomEventFilter for /sync." ]
             , coder = coderUnreadNotificationCounts
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "unread_thread_notifications"
+            , toField = .unreadThreadNotifications
+            , description = [ "If unread_thread_notifications was specified as true on the RoomEventFilter, the notification counts for each thread in this room. The object is keyed by thread root ID, with values matching unread_notifications.", "If a thread does not have any notifications it can be omitted from this object. If no threads have notification counts, this whole object can be omitted.", "Added in v1.4" ]
+            , coder = Json.fastDict coderThreadNotificationCounts
             }
         )
 
 
 coderEphemeral : Json.Coder Ephemeral
 coderEphemeral =
-    PV.coderEphemeral
+    Json.object1
+        { name = "Ephemeral"
+        , description = [ "The new ephemeral events in the room." ]
+        , init = Ephemeral
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "List of events." ]
+            , coder = Json.list coderEvent
+            }
+        )
 
 
 coderState : Json.Coder State
 coderState =
     Json.object1
         { name = "State"
-        , description = [ "Updates to the state." ]
+        , description = [ "Updates to the state of the room." ]
         , init = State
         }
         (Json.field.optional.value
@@ -366,48 +484,48 @@ coderClientEventWithoutRoomID : Json.Coder ClientEventWithoutRoomID
 coderClientEventWithoutRoomID =
     Json.object7
         { name = "ClientEventWithoutRoomID"
-        , description = [ "An event without a room ID." ]
+        , description = [ "An event without the room ID." ]
         , init = ClientEventWithoutRoomID
         }
         (Json.field.required
             { fieldName = "content"
             , toField = .content
-            , description = [ "Required: The body of this event, as created by the client which sent it." ]
+            , description = [ "The body of this event, as created by the client which sent it." ]
             , coder = Json.value
             }
         )
         (Json.field.required
             { fieldName = "event_id"
             , toField = .eventId
-            , description = [ "Required: The globally unique identifier for this event." ]
+            , description = [ "The globally unique identifier for this event." ]
             , coder = Json.string
             }
         )
         (Json.field.required
             { fieldName = "origin_server_ts"
             , toField = .originServerTs
-            , description = [ "Required: Timestamp (in milliseconds since the unix epoch) on originating homeserver when this event was sent." ]
+            , description = [ "Timestamp (in milliseconds since the unix epoch) on originating homeserver when this event was sent." ]
             , coder = Json.int
             }
         )
         (Json.field.required
             { fieldName = "sender"
             , toField = .sender
-            , description = [ "Required: Contains the fully-qualified ID of the user who sent this event." ]
+            , description = [ "Contains the fully-qualified ID of the user who sent this event." ]
             , coder = Json.string
             }
         )
         (Json.field.optional.value
             { fieldName = "state_key"
             , toField = .stateKey
-            , description = [ "Present if, and only if, this event is a state event. The key making this piece of state unique in the room. Note that it is often an empty string." ]
+            , description = [ "Present if, and only if, this event is a state event. The key making this piece of state unique in the room. Note that it is often an empty string.", "State keys starting with an @ are reserved for referencing user IDs, such as room members. With the exception of a few events, state events set with a given user’s ID as the state key MUST only be set by that user." ]
             , coder = Json.string
             }
         )
         (Json.field.required
             { fieldName = "type"
             , toField = .eventType
-            , description = [ "Required: The type of the event." ]
+            , description = [ "The type of the event." ]
             , coder = Json.string
             }
         )
@@ -422,16 +540,17 @@ coderClientEventWithoutRoomID =
 
 coderUnsignedData : Json.Coder UnsignedData
 coderUnsignedData =
-    Json.object4
+    Json.object5
         { name = "UnsignedData"
         , description = [ "Contains optional extra information about the event." ]
         , init =
-            \a b c d ->
+            \a b c d e ->
                 UnsignedData
                     { age = a
-                    , prevContent = b
-                    , redactedBecause = c
-                    , transactionId = d
+                    , membership = b
+                    , prevContent = c
+                    , redactedBecause = d
+                    , transactionId = e
                     }
         }
         (Json.field.optional.value
@@ -439,6 +558,13 @@ coderUnsignedData =
             , toField = \(UnsignedData u) -> u.age
             , description = [ "The time in milliseconds that has elapsed since the event was sent. This field is generated by the local homeserver, and may be incorrect if the local time on at least one of the two servers is out of sync, which can cause the age to either be negative or greater than it actually is." ]
             , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "membership"
+            , toField = \(UnsignedData u) -> u.membership
+            , description = [ "The room membership of the user making the request, at the time of the event.", "This property is the value of the membership property of the requesting user’s m.room.member state at the point of the event, including any changes caused by the event. If the user had yet to join the room at the time of the event (i.e, they have no m.room.member state), this property is set to leave.", "Homeservers SHOULD populate this property wherever practical, but they MAY omit it if necessary (for example, if calculating the value is expensive, servers might choose to only implement it in encrypted rooms). The property is not normally populated in events pushed to application services via the application service transaction API (where there is no clear definition of “requesting user”).", "Added in v1.11" ]
+            , coder = Json.string
             }
         )
         (Json.field.optional.value
@@ -466,7 +592,32 @@ coderUnsignedData =
 
 coderRoomSummary : Json.Coder RoomSummary
 coderRoomSummary =
-    PV.coderRoomSummary
+    Json.object3
+        { name = "RoomSummary"
+        , description = [ "Information about the room which clients may need to correctly render it to users." ]
+        , init = RoomSummary
+        }
+        (Json.field.optional.value
+            { fieldName = "m.heroes"
+            , toField = .mHeroes
+            , description = [ "The users which can be used to generate a room name if the room does not have one. Required if the room’s m.room.name or m.room.canonical_alias state events are unset or empty.", "This should be the first 5 members of the room, ordered by stream ordering, which are joined or invited. The list must never include the client’s own user ID. When no joined or invited members are available, this should consist of the banned and left users. More than 5 members may be provided, however less than 5 should only be provided when there are less than 5 members to represent.", "When lazy-loading room members is enabled, the membership events for the heroes MUST be included in the state, unless they are redundant. When the list of users changes, the server notifies the client by sending a fresh list of heroes. If there are no changes since the last sync, this field may be omitted." ]
+            , coder = Json.list Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "m.invited_member_count"
+            , toField = .mInvitedMemberCount
+            , description = [ "The number of users with membership of invite. If this field has not changed since the last sync, it may be omitted. Required otherwise." ]
+            , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "m.joined_member_count"
+            , toField = .mJoinedMemberCount
+            , description = [ "The number of users with membership of join, including the client’s own user ID. If this field has not changed since the last sync, it may be omitted. Required otherwise." ]
+            , coder = Json.int
+            }
+        )
 
 
 coderTimeline : Json.Coder Timeline
@@ -479,7 +630,7 @@ coderTimeline =
         (Json.field.required
             { fieldName = "events"
             , toField = .events
-            , description = [ "Required: List of events." ]
+            , description = [ "List of events." ]
             , coder = Json.list coderClientEventWithoutRoomID
             }
         )
@@ -501,24 +652,87 @@ coderTimeline =
 
 coderUnreadNotificationCounts : Json.Coder UnreadNotificationCounts
 coderUnreadNotificationCounts =
-    PV.coderUnreadNotificationCounts
+    Json.object2
+        { name = "UnreadNotificationCounts"
+        , description = [ "Counts of unread notifications for this room." ]
+        , init = UnreadNotificationCounts
+        }
+        (Json.field.optional.value
+            { fieldName = "highlight_count"
+            , toField = .highlightCount
+            , description = [ "The number of unread notifications for this room with the highlight flag set." ]
+            , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "notification_count"
+            , toField = .notificationCount
+            , description = [ "The total number of unread notifications for this room." ]
+            , coder = Json.int
+            }
+        )
+
+
+coderThreadNotificationCounts : Json.Coder ThreadNotificationCounts
+coderThreadNotificationCounts =
+    Json.object2
+        { name = "ThreadNotificationCounts"
+        , description = [ "The notification counts for each thread in this room." ]
+        , init = ThreadNotificationCounts
+        }
+        (Json.field.optional.value
+            { fieldName = "highlight_count"
+            , toField = .highlightCount
+            , description = [ "The number of unread notifications for this thread with the highlight flag set." ]
+            , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "notification_count"
+            , toField = .notificationCount
+            , description = [ "The total number of unread notifications for this thread." ]
+            , coder = Json.int
+            }
+        )
 
 
 coderKnockedRoom : Json.Coder KnockedRoom
 coderKnockedRoom =
-    PV.coderKnockedRoom
+    Json.object1
+        { name = "KnockedRoom"
+        , description = [ "The room that the user has knocked upon." ]
+        , init = KnockedRoom
+        }
+        (Json.field.optional.value
+            { fieldName = "knock_state"
+            , toField = .knockState
+            , description = [ "The stripped state of a room that the user has knocked upon." ]
+            , coder = coderKnockState
+            }
+        )
 
 
 coderKnockState : Json.Coder KnockState
 coderKnockState =
-    PV.coderKnockState
+    Json.object1
+        { name = "KnockState"
+        , description = [ "The stripped state of a room that the user has knocked upon." ]
+        , init = KnockState
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "The stripped state events that form the knock state." ]
+            , coder = Json.list coderStrippedStateEvent
+            }
+        )
 
 
 coderLeftRoom : Json.Coder LeftRoom
 coderLeftRoom =
     Json.object3
         { name = "LeftRoom"
-        , description = [ "The rooms that the user has left or been banned from." ]
+        , description = [ "The room that the user has left or been banned from." ]
         , init = LeftRoom
         }
         (Json.field.optional.value
@@ -546,14 +760,68 @@ coderLeftRoom =
 
 coderDeviceLists : Json.Coder DeviceLists
 coderDeviceLists =
-    PV.coderDeviceLists
+    Json.object2
+        { name = "DeviceLists"
+        , description = [ "Information on end-to-end device updates, as specified in End-to-end encryption." ]
+        , init = DeviceLists
+        }
+        (Json.field.optional.value
+            { fieldName = "changed"
+            , toField = .changed
+            , description = [ "List of users who have updated their device identity or cross-signing keys, or who now share an encrypted room with the client since the previous sync response." ]
+            , coder = Json.list Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "left"
+            , toField = .left
+            , description = [ "List of users with whom we do not share any encrypted rooms anymore since the previous sync response." ]
+            , coder = Json.list Json.string
+            }
+        )
 
 
 coderToDevice : Json.Coder ToDevice
 coderToDevice =
-    PV.coderToDevice
+    Json.object1
+        { name = "ToDevice"
+        , description = [ "Information on the send-to-device messages for the client device, as defined in Send-to-Device messaging." ]
+        , init = ToDevice
+        }
+        (Json.field.optional.value
+            { fieldName = "events"
+            , toField = .events
+            , description = [ "List of send-to-device messages." ]
+            , coder = Json.list coderToDeviceEvent
+            }
+        )
 
 
 coderToDeviceEvent : Json.Coder ToDeviceEvent
 coderToDeviceEvent =
-    PV.coderToDeviceEvent
+    Json.object3
+        { name = "ToDeviceEvent"
+        , description = [ "A send-to-device event." ]
+        , init = ToDeviceEvent
+        }
+        (Json.field.optional.value
+            { fieldName = "content"
+            , toField = .content
+            , description = [ "The content of this event. The fields in this object will vary depending on the type of event." ]
+            , coder = Json.value
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "sender"
+            , toField = .sender
+            , description = [ "The Matrix user ID of the user who sent this event." ]
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "type"
+            , toField = .eventType
+            , description = [ "The type of event." ]
+            , coder = Json.string
+            }
+        )

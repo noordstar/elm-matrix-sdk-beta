@@ -5,11 +5,16 @@ module Internal.Api.Sync.V3 exposing (..)
 
 # Sync response
 
-This API module represents the /sync endpoint on Matrix spec version v1.1.
+This API module represents the /sync endpoint on the following Matrix spec
+versions:
 
 <https://spec.matrix.org/v1.4/client-server-api/#syncing>
 <https://spec.matrix.org/v1.5/client-server-api/#syncing>
 <https://spec.matrix.org/v1.6/client-server-api/#syncing>
+<https://spec.matrix.org/v1.7/client-server-api/#syncing>
+<https://spec.matrix.org/v1.8/client-server-api/#syncing>
+<https://spec.matrix.org/v1.9/client-server-api/#syncing>
+<https://spec.matrix.org/v1.10/client-server-api/#syncing>
 
 -}
 
