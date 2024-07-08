@@ -277,6 +277,7 @@ fields :
         , baseUrl : Desc
         , deviceId : Desc
         , experimental : Desc
+        , nextBatch : Desc
         , now : Desc
         , password : Desc
         , refreshToken : Desc
@@ -387,6 +388,9 @@ fields =
             ]
         , experimental =
             [ "Experimental features supported by the homeserver."
+            ]
+        , nextBatch =
+            [ "The batch token to supply in the since param of the next /sync request."
             ]
         , now =
             [ "The most recently found timestamp."

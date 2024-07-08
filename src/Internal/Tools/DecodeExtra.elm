@@ -1,6 +1,6 @@
 module Internal.Tools.DecodeExtra exposing
     ( opField, opFieldWithDefault
-    , map9, map10, map11
+    , map9, map10, map11, map12
     )
 
 {-|
@@ -18,7 +18,7 @@ This module contains helper functions that help decode JSON.
 
 ## Extended map functions
 
-@docs map9, map10, map11
+@docs map9, map10, map11, map12
 
 -}
 
@@ -153,3 +153,35 @@ map11 func da db dc dd de df dg dh di dj dk =
         (D.map2 Tuple.pair df dg)
         (D.map2 Tuple.pair dh di)
         (D.map2 Tuple.pair dj dk)
+
+
+{-| Try 12 decoders and combine the result.
+-}
+map12 :
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> value)
+    -> D.Decoder a
+    -> D.Decoder b
+    -> D.Decoder c
+    -> D.Decoder d
+    -> D.Decoder e
+    -> D.Decoder f
+    -> D.Decoder g
+    -> D.Decoder h
+    -> D.Decoder i
+    -> D.Decoder j
+    -> D.Decoder k
+    -> D.Decoder l
+    -> D.Decoder value
+map12 func da db dc dd de df dg dh di dj dk dl =
+    D.map8
+        (\a b c d ( e, f ) ( g, h ) ( i, j ) ( k, l ) ->
+            func a b c d e f g h i j k l
+        )
+        da
+        db
+        dc
+        dd
+        (D.map2 Tuple.pair de df)
+        (D.map2 Tuple.pair dg dh)
+        (D.map2 Tuple.pair di dj)
+        (D.map2 Tuple.pair dk dl)

@@ -11,10 +11,14 @@ This API module represents the /sync endpoint on Matrix spec version v1.1.
 
 -}
 
-import FastDict exposing (Dict)
+import FastDict as Dict exposing (Dict)
+import Internal.Config.Log exposing (Log)
 import Internal.Tools.Json as Json
 import Internal.Tools.StrippedEvent as StrippedEvent exposing (StrippedEvent)
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
+import Internal.Values.Envelope as E
+import Internal.Values.Room as R
+import Internal.Values.Vault as V
 
 
 type alias SyncResponse =
@@ -807,3 +811,85 @@ coderToDeviceEvent =
             , coder = Json.string
             }
         )
+
+
+updateSyncResponse : SyncResponse -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
+updateSyncResponse response =
+    -- TODO: Add account data
+    -- TODO: Add device lists
+    -- Next batch
+    [ Just ( E.SetNextBatch response.nextBatch, [] )
+
+    -- TODO: Add presence
+    -- Rooms
+    , Maybe.map (updateRooms >> Tuple.mapFirst E.ContentUpdate) response.rooms
+
+    -- TODO: Add to_device
+    ]
+        |> List.filterMap identity
+        |> List.unzip
+        |> Tuple.mapFirst E.More
+        |> Tuple.mapSecond List.concat
+
+
+updateRooms : Rooms -> ( V.VaultUpdate, List Log )
+updateRooms rooms =
+    let
+        ( roomUpdate, roomLogs ) =
+            rooms.join
+                |> Maybe.withDefault Dict.empty
+                |> Dict.toList
+                |> List.map
+                    (\( roomId, room ) ->
+                        let
+                            ( u, l ) =
+                                updateJoinedRoom room
+                        in
+                        ( V.MapRoom roomId u, l )
+                    )
+                |> List.unzip
+                |> Tuple.mapBoth V.More List.concat
+    in
+    ( V.More
+        -- Add rooms
+        [ rooms.join
+            |> Maybe.withDefault Dict.empty
+            |> Dict.keys
+            |> List.map V.CreateRoomIfNotExists
+            |> V.More
+
+        -- Update rooms
+        , roomUpdate
+
+        -- TODO: Add invited rooms
+        -- TODO: Add knocked rooms
+        -- TODO: Add left rooms
+        ]
+    , roomLogs
+    )
+
+
+updateJoinedRoom : JoinedRoom -> ( R.RoomUpdate, List Log )
+updateJoinedRoom room =
+    ( R.More
+        [ room.accountData
+            |> Maybe.andThen .events
+            |> Maybe.map
+                (\events ->
+                    events
+                        |> List.map (\e -> R.SetAccountData e.eventType e.content)
+                        |> R.More
+                )
+            |> R.Optional
+        , room.ephemeral
+            |> Maybe.andThen .events
+            |> Maybe.map R.SetEphemeral
+            |> R.Optional
+
+        -- TODO: Add state
+        -- TODO: Add RoomSummary
+        -- TODO: Add timeline
+        -- TODO: Add unread notifications
+        ]
+    , []
+    )
