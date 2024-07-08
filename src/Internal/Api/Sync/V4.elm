@@ -8,11 +8,13 @@ module Internal.Api.Sync.V4 exposing (..)
 This API module represents the /sync endpoint on Matrix spec version v1.1.
 
 <https://spec.matrix.org/v1.4/client-server-api/#syncing>
+<https://spec.matrix.org/v1.5/client-server-api/#syncing>
+<https://spec.matrix.org/v1.6/client-server-api/#syncing>
 
 -}
 
 import FastDict exposing (Dict)
-import Internal.Api.Sync.V3 as PV
+import Internal.Api.Sync.V2 as PV
 import Internal.Tools.Json as Json
 
 

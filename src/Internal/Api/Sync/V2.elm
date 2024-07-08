@@ -8,6 +8,7 @@ module Internal.Api.Sync.V2 exposing (..)
 This API module represents the /sync endpoint on Matrix spec version v1.1.
 
 <https://spec.matrix.org/v1.2/client-server-api/#syncing>
+<https://spec.matrix.org/v1.3/client-server-api/#syncing>
 
 -}
 

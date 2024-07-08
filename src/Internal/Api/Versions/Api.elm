@@ -86,6 +86,5 @@ versionsCoder =
                                 Set.empty
                         }
             , default = ( Set.empty, [] )
-            , defaultToString = always "{}"
             }
         )
