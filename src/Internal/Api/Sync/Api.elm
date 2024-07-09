@@ -1,4 +1,4 @@
-module Internal.Api.Sync.Api exposing (..)
+module Internal.Api.Sync.Api exposing (sync, Phantom)
 
 {-|
 
@@ -9,7 +9,7 @@ The sync module might be one of the most crucial parts of the Elm SDK. It offers
 users the guarantee that the `Vault` type remains up-to-date, and it helps
 communicate with the Matrix server about the Vault's needs.
 
-@docs Phantom
+@docs sync, Phantom
 
 -}
 
@@ -57,16 +57,10 @@ type alias PhantomV1 a =
     { a | accessToken : (), baseUrl : () }
 
 
-type PresenceV1
-    = OfflineV1
-    | OnlineV1
-    | UnavailableV1
-
-
 type alias SyncInput =
     { -- filter : FilterV1,
       fullState : Maybe Bool
-    , presenceV1 : Maybe PresenceV1
+    , presence : Maybe String
     , since : Maybe String
     , timeout : Maybe Int
     }
@@ -77,22 +71,21 @@ type alias SyncInputV1 a =
         | -- filter : FilterV1 ,
           since : Maybe String
         , fullState : Maybe Bool
-        , presenceV1 : Maybe PresenceV1
+        , presence : Maybe String
         , timeout : Maybe Int
     }
 
 
-presenceV1ToString : PresenceV1 -> String
-presenceV1ToString p =
-    case p of
-        OfflineV1 ->
-            "offline"
+presenceFromOptions : List String -> Maybe String -> Maybe String
+presenceFromOptions options =
+    Maybe.andThen
+        (\v ->
+            if List.member v options then
+                Just v
 
-        OnlineV1 ->
-            "online"
-
-        UnavailableV1 ->
-            "unavailable"
+            else
+                Nothing
+        )
 
 
 syncV1 : SyncInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
@@ -102,8 +95,8 @@ syncV1 data =
             [ R.accessToken
             , R.queryOpString "filter" Nothing -- FILTER HERE
             , R.queryOpBool "full_state" data.fullState
-            , data.presenceV1
-                |> Maybe.map presenceV1ToString
+            , data.presence
+                |> presenceFromOptions [ "offline", "online", "unavailable" ]
                 |> R.queryOpString "set_presence"
             , R.queryOpString "since" data.since
             , R.queryOpInt "timeout" data.timeout
@@ -124,8 +117,8 @@ syncV2 data =
             [ R.accessToken
             , R.queryOpString "filter" Nothing
             , R.queryOpBool "full_state" data.fullState
-            , data.presenceV1
-                |> Maybe.map presenceV1ToString
+            , data.presence
+                |> presenceFromOptions [ "offline", "online", "unavailable" ]
                 |> R.queryOpString "set_presence"
             , R.queryOpString "since" data.since
             , R.queryOpInt "timeout" data.timeout
@@ -146,8 +139,8 @@ syncV3 data =
             [ R.accessToken
             , R.queryOpString "filter" Nothing
             , R.queryOpBool "full_state" data.fullState
-            , data.presenceV1
-                |> Maybe.map presenceV1ToString
+            , data.presence
+                |> presenceFromOptions [ "offline", "online", "unavailable" ]
                 |> R.queryOpString "set_presence"
             , R.queryOpString "since" data.since
             , R.queryOpInt "timeout" data.timeout
@@ -168,8 +161,8 @@ syncV4 data =
             [ R.accessToken
             , R.queryOpString "filter" Nothing
             , R.queryOpBool "full_state" data.fullState
-            , data.presenceV1
-                |> Maybe.map presenceV1ToString
+            , data.presence
+                |> presenceFromOptions [ "offline", "online", "unavailable" ]
                 |> R.queryOpString "set_presence"
             , R.queryOpString "since" data.since
             , R.queryOpInt "timeout" data.timeout

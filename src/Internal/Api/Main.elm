@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent
+    , sendMessageEvent, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent
+@docs sendMessageEvent, sync
 
 -}
 
@@ -54,6 +54,25 @@ sendMessageEvent env data =
             , eventType = data.eventType
             , roomId = data.roomId
             , transactionId = data.transactionId
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Sync with the Matrix API to stay up-to-date.
+-}
+sync :
+    E.Envelope a
+    -> { timeout : Int, toMsg : Msg -> msg }
+    -> Cmd msg
+sync env data =
+    ITask.run
+        data.toMsg
+        (ITask.sync
+            { fullState = Nothing
+            , presence = env.settings.presence
+            , since = env.context.nextBatch
+            , timeout = Just data.timeout
             }
         )
         (Context.apiFormat env.context)

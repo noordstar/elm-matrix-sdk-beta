@@ -330,6 +330,7 @@ fields :
     , settings :
         { currentVersion : Desc
         , deviceName : Desc
+        , presence : Desc
         , removePasswordOnLogin : Desc
         , syncTime : Desc
         }
@@ -518,6 +519,9 @@ fields =
             ]
         , deviceName =
             [ "Indicates the device name that is communicated to the Matrix API."
+            ]
+        , presence =
+            [ "Controls whether the client is automatically marked as online. The value is passed on to the Matrix API."
             ]
         , removePasswordOnLogin =
             [ "Remove the password as soon as a valid access token has been received."
