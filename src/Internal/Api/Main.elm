@@ -63,7 +63,7 @@ sendMessageEvent env data =
 -}
 sync :
     E.Envelope a
-    -> { timeout : Int, toMsg : Msg -> msg }
+    -> { toMsg : Msg -> msg }
     -> Cmd msg
 sync env data =
     ITask.run
@@ -72,7 +72,7 @@ sync env data =
             { fullState = Nothing
             , presence = env.settings.presence
             , since = env.context.nextBatch
-            , timeout = Just data.timeout
+            , timeout = Just env.settings.syncTime
             }
         )
         (Context.apiFormat env.context)
