@@ -740,6 +740,7 @@ toUnsigned ev unsigned =
 
         ( Just e, Nothing ) ->
             { age = Nothing
+            , membership = Nothing
             , prevContent = Nothing
             , redactedBecause = Just e
             , transactionId = Nothing
@@ -749,6 +750,7 @@ toUnsigned ev unsigned =
 
         ( _, Just (UnsignedData u) ) ->
             { age = u.age
+            , membership = Nothing
             , prevContent = u.prevContent
             , redactedBecause = ev
             , transactionId = u.transactionId

@@ -967,6 +967,7 @@ toUnsigned : UnsignedData -> Event.UnsignedData
 toUnsigned u =
     Event.UnsignedData
         { age = u.age
+        , membership = Nothing
         , prevContent = Nothing
         , redactedBecause = Nothing
         , transactionId = u.transactionId
