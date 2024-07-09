@@ -67,10 +67,10 @@ events!
 -}
 
 import FastDict as Dict exposing (Dict)
+import Iddict exposing (Iddict)
 import Internal.Config.Text as Text
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
-import Internal.Tools.Iddict as Iddict exposing (Iddict)
 import Internal.Tools.Json as Json
 import Recursion
 import Recursion.Traverse
@@ -210,7 +210,7 @@ coder =
             { fieldName = "batches"
             , toField = \(Timeline t) -> t.batches
             , description = Text.fields.timeline.batches
-            , coder = Iddict.coder coderIBatch
+            , coder = Json.iddict coderIBatch
             }
         )
         (Json.field.required
@@ -406,8 +406,8 @@ connectIBatchToIToken (IBatchPTR bptr) pointer (Timeline tl) =
             Timeline
                 { tl
                     | batches =
-                        Iddict.map bptr
-                            (\batch -> { batch | end = pointer })
+                        Iddict.update bptr
+                            (Maybe.map (\batch -> { batch | end = pointer }))
                             tl.batches
                     , tokens =
                         Hashdict.map tptr
@@ -432,8 +432,8 @@ connectITokenToIBatch pointer (IBatchPTR bptr) (Timeline tl) =
                             (\token -> { token | starts = Set.insert bptr token.starts })
                             tl.tokens
                     , batches =
-                        Iddict.map bptr
-                            (\batch -> { batch | start = pointer })
+                        Iddict.update bptr
+                            (Maybe.map (\batch -> { batch | start = pointer }))
                             tl.batches
                 }
 
