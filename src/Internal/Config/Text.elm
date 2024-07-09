@@ -636,7 +636,8 @@ happened. Most of these unexpected results, are taken account of by the Elm SDK,
 but logged so that the programmer can do something about it.
 -}
 logs :
-    { baseUrlFound : String -> String -> String
+    { baseUrlFailed : String -> String
+    , baseUrlFound : String -> String -> String
     , getEventId : String -> String
     , getNow : Int -> String
     , httpRequest : String -> String -> String
@@ -649,7 +650,9 @@ logs :
     , syncAccountDataFound : Int -> String
     }
 logs =
-    { baseUrlFound =
+    { baseUrlFailed =
+        (++) "Failed to find .well-known, using default server address: "
+    , baseUrlFound =
         \url baseUrl ->
             String.concat [ "Found baseURL of ", url, " at address ", baseUrl ]
     , getEventId = (++) "Received event with id = "

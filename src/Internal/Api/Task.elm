@@ -36,9 +36,10 @@ import Internal.Api.SendMessageEvent.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
+import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (APIContext)
-import Internal.Values.Envelope exposing (EnvelopeUpdate(..))
+import Internal.Values.Envelope as E exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
 import Internal.Values.Vault exposing (VaultUpdate(..))
 import Task
@@ -112,7 +113,20 @@ getBaseUrl c =
         Nothing ->
             Internal.Api.BaseUrl.Api.baseUrl
                 { url = Context.fromApiFormat c |> .serverName }
-                c
+                |> C.catchWith
+                    (\_ ->
+                        let
+                            url : String
+                            url =
+                                Context.fromApiFormat c
+                                    |> .serverName
+                        in
+                        { contextChange = Context.setBaseUrl url
+                        , logs = [ log.warn (Text.logs.baseUrlFailed url) ]
+                        , messages = [ E.SetBaseUrl url ]
+                        }
+                    )
+                |> (|>) c
 
 
 {-| Get the current timestamp

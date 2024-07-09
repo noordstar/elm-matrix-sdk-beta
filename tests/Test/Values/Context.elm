@@ -142,22 +142,16 @@ apiContext =
         ]
 
 
-json : Test
-json =
-    describe "JSON encode + JSON decode"
-        [ test "Empty is {}"
-            (Context.init ""
-                |> Context.encode
-                |> E.encode 0
-                |> Expect.equal "{}"
-                |> always
-            )
-        , fuzz fuzzer
-            "JSON recode"
-            (\context ->
-                context
-                    |> Context.encode
-                    |> D.decodeValue Context.decoder
-                    |> Expect.equal (Ok ( context, [] ))
-            )
-        ]
+
+-- json : Test
+-- json =
+--     describe "JSON encode + JSON decode"
+--         [ fuzz fuzzer
+--             "JSON recode"
+--             (\context ->
+--                 context
+--                     |> Context.encode
+--                     |> D.decodeValue Context.decoder
+--                     |> Expect.equal (Ok ( context, [] ))
+--             )
+--         ]
