@@ -638,6 +638,7 @@ logs :
     , sendEvent : Maybe String -> String
     , serverReturnedInvalidJSON : String -> String
     , serverReturnedUnknownJSON : String -> String
+    , syncAccountDataFound : Int -> String
     }
 logs =
     { baseUrlFound =
@@ -675,6 +676,8 @@ logs =
                     "Sent event, event id not known - make sure to check transaction id"
     , serverReturnedInvalidJSON = (++) "The server returned invalid JSON: "
     , serverReturnedUnknownJSON = (++) "The server returned JSON that doesn't seem to live up to spec rules: "
+    , syncAccountDataFound =
+        \n -> String.concat [ "Found ", String.fromInt n, " account data updates" ]
     }
 
 

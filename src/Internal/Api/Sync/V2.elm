@@ -13,9 +13,19 @@ v1.3.
 
 -}
 
-import FastDict exposing (Dict)
+import FastDict as Dict exposing (Dict)
 import Internal.Api.Sync.V1 as PV
+import Internal.Config.Log exposing (Log, log)
+import Internal.Config.Text as Text
+import Internal.Filter.Timeline exposing (Filter)
 import Internal.Tools.Json as Json
+import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
+import Internal.Values.Envelope as E
+import Internal.Values.Event as Event
+import Internal.Values.Room as R
+import Internal.Values.User as User exposing (User)
+import Internal.Values.Vault as V
+import Recursion
 
 
 type alias SyncResponse =
@@ -62,7 +72,7 @@ type alias InviteState =
 
 type alias StrippedStateEvent =
     { content : Json.Value
-    , sender : String
+    , sender : User
     , stateKey : String
     , eventType : String
     }
@@ -89,8 +99,8 @@ type alias State =
 type alias ClientEventWithoutRoomID =
     { content : Json.Value
     , eventId : String
-    , originServerTs : Int
-    , sender : String
+    , originServerTs : Timestamp
+    , sender : User
     , stateKey : Maybe String
     , eventType : String
     , unsigned : Maybe UnsignedData
@@ -153,7 +163,7 @@ type alias ToDevice =
 
 type alias ToDeviceEvent =
     { content : Maybe Json.Value
-    , sender : Maybe String
+    , sender : Maybe User
     , eventType : Maybe String
     }
 
@@ -387,14 +397,14 @@ coderClientEventWithoutRoomID =
             { fieldName = "origin_server_ts"
             , toField = .originServerTs
             , description = [ "Required: Timestamp (in milliseconds since the unix epoch) on originating homeserver when this event was sent." ]
-            , coder = Json.int
+            , coder = Timestamp.coder
             }
         )
         (Json.field.required
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Required: Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.optional.value
@@ -557,3 +567,191 @@ coderToDevice =
 coderToDeviceEvent : Json.Coder ToDeviceEvent
 coderToDeviceEvent =
     PV.coderToDeviceEvent
+
+
+updateSyncResponse : { filter : Filter, since : Maybe String } -> SyncResponse -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
+updateSyncResponse { filter, since } response =
+    -- Account data
+    [ response.accountData
+        |> Maybe.andThen .events
+        |> Maybe.map (List.map (\e -> V.SetAccountData e.eventType e.content))
+        |> Maybe.map
+            (\x ->
+                ( E.ContentUpdate <| V.More x
+                , if List.length x > 0 then
+                    List.length x
+                        |> Text.logs.syncAccountDataFound
+                        |> log.debug
+                        |> List.singleton
+
+                  else
+                    []
+                )
+            )
+
+    -- TODO: Add device lists
+    -- Next batch
+    , Just ( E.SetNextBatch response.nextBatch, [] )
+
+    -- TODO: Add presence
+    -- Rooms
+    , Maybe.map
+        (updateRooms { filter = filter, nextBatch = response.nextBatch, since = since }
+            >> Tuple.mapFirst E.ContentUpdate
+        )
+        response.rooms
+
+    -- TODO: Add to_device
+    ]
+        |> List.filterMap identity
+        |> List.unzip
+        |> Tuple.mapFirst E.More
+        |> Tuple.mapSecond List.concat
+
+
+updateRooms : { filter : Filter, nextBatch : String, since : Maybe String } -> Rooms -> ( V.VaultUpdate, List Log )
+updateRooms { filter, nextBatch, since } rooms =
+    let
+        ( roomUpdate, roomLogs ) =
+            rooms.join
+                |> Maybe.withDefault Dict.empty
+                |> Dict.toList
+                |> List.map
+                    (\( roomId, room ) ->
+                        let
+                            ( u, l ) =
+                                updateJoinedRoom
+                                    { filter = filter
+                                    , nextBatch = nextBatch
+                                    , roomId = roomId
+                                    , since = since
+                                    }
+                                    room
+                        in
+                        ( V.MapRoom roomId u, l )
+                    )
+                |> List.unzip
+                |> Tuple.mapBoth V.More List.concat
+    in
+    ( V.More
+        -- Add rooms
+        [ rooms.join
+            |> Maybe.withDefault Dict.empty
+            |> Dict.keys
+            |> List.map V.CreateRoomIfNotExists
+            |> V.More
+
+        -- Update rooms
+        , roomUpdate
+
+        -- TODO: Add invited rooms
+        -- TODO: Add knocked rooms
+        -- TODO: Add left rooms
+        ]
+    , roomLogs
+    )
+
+
+updateJoinedRoom : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> JoinedRoom -> ( R.RoomUpdate, List Log )
+updateJoinedRoom data room =
+    ( R.More
+        [ room.accountData
+            |> Maybe.andThen .events
+            |> Maybe.map
+                (\events ->
+                    events
+                        |> List.map (\e -> R.SetAccountData e.eventType e.content)
+                        |> R.More
+                )
+            |> R.Optional
+        , room.ephemeral
+            |> Maybe.andThen .events
+            |> Maybe.map R.SetEphemeral
+            |> R.Optional
+
+        -- TODO: Add state
+        -- TODO: Add RoomSummary
+        , room.timeline
+            |> Maybe.map (updateTimeline data)
+            |> R.Optional
+
+        -- TODO: Add unread notifications
+        ]
+    , []
+    )
+
+
+updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Timeline -> R.RoomUpdate
+updateTimeline { filter, nextBatch, roomId, since } timeline =
+    R.AddSync
+        { events = List.map (toEvent roomId) timeline.events
+        , filter = filter
+        , start =
+            case timeline.prevBatch of
+                Just _ ->
+                    timeline.prevBatch
+
+                Nothing ->
+                    since
+        , end = nextBatch
+        }
+
+
+toEvent : String -> ClientEventWithoutRoomID -> Event.Event
+toEvent roomId event =
+    Recursion.runRecursion
+        (\ev ->
+            case Maybe.andThen (\(UnsignedData u) -> u.redactedBecause) ev.unsigned of
+                Just e ->
+                    Recursion.recurseThen e
+                        (\eo ->
+                            Recursion.base
+                                { content = ev.content
+                                , eventId = ev.eventId
+                                , originServerTs = ev.originServerTs
+                                , roomId = roomId
+                                , sender = ev.sender
+                                , stateKey = ev.stateKey
+                                , eventType = ev.eventType
+                                , unsigned = toUnsigned (Just eo) ev.unsigned
+                                }
+                        )
+
+                Nothing ->
+                    Recursion.base
+                        { content = ev.content
+                        , eventId = ev.eventId
+                        , originServerTs = ev.originServerTs
+                        , roomId = roomId
+                        , sender = ev.sender
+                        , stateKey = ev.stateKey
+                        , eventType = ev.eventType
+                        , unsigned = toUnsigned Nothing ev.unsigned
+                        }
+        )
+        event
+
+
+toUnsigned : Maybe Event.Event -> Maybe UnsignedData -> Maybe Event.UnsignedData
+toUnsigned ev unsigned =
+    case ( ev, unsigned ) of
+        ( Nothing, Nothing ) ->
+            Nothing
+
+        ( Just e, Nothing ) ->
+            { age = Nothing
+            , prevContent = Nothing
+            , redactedBecause = Just e
+            , transactionId = Nothing
+            }
+                |> Event.UnsignedData
+                |> Just
+
+        ( _, Just (UnsignedData u) ) ->
+            { age = u.age
+            , prevContent = u.prevContent
+            , redactedBecause = ev
+            , transactionId = u.transactionId
+            }
+                |> Event.UnsignedData
+                |> Just

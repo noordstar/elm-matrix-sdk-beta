@@ -12,12 +12,16 @@ This API module represents the /sync endpoint on Matrix spec version v1.1.
 -}
 
 import FastDict as Dict exposing (Dict)
-import Internal.Config.Log exposing (Log)
+import Internal.Config.Log exposing (Log, log)
+import Internal.Config.Text as Text
+import Internal.Filter.Timeline exposing (Filter)
 import Internal.Tools.Json as Json
-import Internal.Tools.StrippedEvent as StrippedEvent exposing (StrippedEvent)
+import Internal.Tools.StrippedEvent as StrippedEvent
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
 import Internal.Values.Envelope as E
+import Internal.Values.Event as Event
 import Internal.Values.Room as R
+import Internal.Values.User as User exposing (User)
 import Internal.Values.Vault as V
 
 
@@ -64,7 +68,7 @@ type alias InviteState =
 
 type alias StrippedState =
     { content : Json.Value
-    , sender : String
+    , sender : User
     , stateKey : String
     , eventType : String
     }
@@ -93,7 +97,7 @@ type alias SyncStateEvent =
     , eventId : String
     , originServerTs : Timestamp
     , prevContent : Maybe Json.Value
-    , sender : String
+    , sender : User
     , stateKey : String
     , eventType : String
     , unsigned : Maybe UnsignedData
@@ -125,7 +129,7 @@ type alias SyncRoomEvent =
     { content : Json.Value
     , eventId : String
     , originServerTs : Timestamp
-    , sender : String
+    , sender : User
     , eventType : String
     , unsigned : Maybe UnsignedData
     }
@@ -164,7 +168,7 @@ type alias ToDevice =
 
 type alias ToDeviceEvent =
     { content : Maybe Json.Value
-    , sender : Maybe String
+    , sender : Maybe User
     , eventType : Maybe String
     }
 
@@ -351,7 +355,7 @@ coderStrippedState =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "The sender for the event." ]
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.required
@@ -492,7 +496,7 @@ coderSyncStateEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.required
@@ -640,7 +644,7 @@ coderSyncRoomEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.required
@@ -801,7 +805,7 @@ coderToDeviceEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "The Matrix user ID of the user who sent this event." ]
-            , coder = Json.string
+            , coder = User.coder
             }
         )
         (Json.field.optional.value
@@ -813,16 +817,37 @@ coderToDeviceEvent =
         )
 
 
-updateSyncResponse : SyncResponse -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
-updateSyncResponse response =
-    -- TODO: Add account data
+updateSyncResponse : { filter : Filter, since : Maybe String } -> SyncResponse -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
+updateSyncResponse { filter, since } response =
+    -- Account data
+    [ response.accountData
+        |> Maybe.andThen .events
+        |> Maybe.map (List.map (\e -> V.SetAccountData e.eventType e.content))
+        |> Maybe.map
+            (\x ->
+                ( E.ContentUpdate <| V.More x
+                , if List.length x > 0 then
+                    List.length x
+                        |> Text.logs.syncAccountDataFound
+                        |> log.debug
+                        |> List.singleton
+
+                  else
+                    []
+                )
+            )
+
     -- TODO: Add device lists
     -- Next batch
-    [ Just ( E.SetNextBatch response.nextBatch, [] )
+    , Just ( E.SetNextBatch response.nextBatch, [] )
 
     -- TODO: Add presence
     -- Rooms
-    , Maybe.map (updateRooms >> Tuple.mapFirst E.ContentUpdate) response.rooms
+    , Maybe.map
+        (updateRooms { filter = filter, nextBatch = response.nextBatch, since = since }
+            >> Tuple.mapFirst E.ContentUpdate
+        )
+        response.rooms
 
     -- TODO: Add to_device
     ]
@@ -832,8 +857,8 @@ updateSyncResponse response =
         |> Tuple.mapSecond List.concat
 
 
-updateRooms : Rooms -> ( V.VaultUpdate, List Log )
-updateRooms rooms =
+updateRooms : { filter : Filter, nextBatch : String, since : Maybe String } -> Rooms -> ( V.VaultUpdate, List Log )
+updateRooms { filter, nextBatch, since } rooms =
     let
         ( roomUpdate, roomLogs ) =
             rooms.join
@@ -843,7 +868,13 @@ updateRooms rooms =
                     (\( roomId, room ) ->
                         let
                             ( u, l ) =
-                                updateJoinedRoom room
+                                updateJoinedRoom
+                                    { filter = filter
+                                    , nextBatch = nextBatch
+                                    , roomId = roomId
+                                    , since = since
+                                    }
+                                    room
                         in
                         ( V.MapRoom roomId u, l )
                     )
@@ -869,8 +900,8 @@ updateRooms rooms =
     )
 
 
-updateJoinedRoom : JoinedRoom -> ( R.RoomUpdate, List Log )
-updateJoinedRoom room =
+updateJoinedRoom : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> JoinedRoom -> ( R.RoomUpdate, List Log )
+updateJoinedRoom data room =
     ( R.More
         [ room.accountData
             |> Maybe.andThen .events
@@ -888,8 +919,55 @@ updateJoinedRoom room =
 
         -- TODO: Add state
         -- TODO: Add RoomSummary
-        -- TODO: Add timeline
+        , room.timeline
+            |> Maybe.andThen
+                (updateTimeline data)
+            |> R.Optional
+
         -- TODO: Add unread notifications
         ]
     , []
     )
+
+
+updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Timeline -> Maybe R.RoomUpdate
+updateTimeline { filter, nextBatch, roomId, since } timeline =
+    timeline.events
+        |> Maybe.map
+            (\events ->
+                R.AddSync
+                    { events = List.map (toEvent roomId) events
+                    , filter = filter
+                    , start =
+                        case timeline.prevBatch of
+                            Just _ ->
+                                timeline.prevBatch
+
+                            Nothing ->
+                                since
+                    , end = nextBatch
+                    }
+            )
+
+
+toEvent : String -> SyncRoomEvent -> Event.Event
+toEvent roomId event =
+    { content = event.content
+    , eventId = event.eventId
+    , originServerTs = event.originServerTs
+    , roomId = roomId
+    , sender = event.sender
+    , stateKey = Nothing
+    , eventType = event.eventType
+    , unsigned = Maybe.map toUnsigned event.unsigned
+    }
+
+
+toUnsigned : UnsignedData -> Event.UnsignedData
+toUnsigned u =
+    Event.UnsignedData
+        { age = u.age
+        , prevContent = Nothing
+        , redactedBecause = Nothing
+        , transactionId = u.transactionId
+        }
