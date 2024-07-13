@@ -36,7 +36,7 @@ coder =
             }
         )
         (Json.field.required
-            { fieldName = "eventType"
+            { fieldName = "type"
             , toField = .eventType
             , description =
                 [ "Event type, generally namespaced using the Java package naming convention."
