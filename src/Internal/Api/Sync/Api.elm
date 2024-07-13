@@ -104,9 +104,9 @@ syncV1 data =
         , coder = V1.coderSyncResponse
         , contextChange = always identity
         , method = "GET"
-        , path = [ "_matrix", "client", "r0", "sync" ]
+        , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            V1.updateSyncResponse { filter = Filter.pass, since = data.since }
+            Debug.log "Handling output v1" >> V1.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
         }
 
 
@@ -126,9 +126,9 @@ syncV2 data =
         , coder = V2.coderSyncResponse
         , contextChange = always identity
         , method = "GET"
-        , path = [ "_matrix", "client", "r0", "sync" ]
+        , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            V2.updateSyncResponse { filter = Filter.pass, since = data.since }
+            Debug.log "Handling output v2" >> V2.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
         }
 
 
@@ -148,9 +148,9 @@ syncV3 data =
         , coder = V3.coderSyncResponse
         , contextChange = always identity
         , method = "GET"
-        , path = [ "_matrix", "client", "r0", "sync" ]
+        , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            V3.updateSyncResponse { filter = Filter.pass, since = data.since }
+            Debug.log "Handling output v3" >> V3.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
         }
 
 
@@ -170,7 +170,7 @@ syncV4 data =
         , coder = V4.coderSyncResponse
         , contextChange = always identity
         , method = "GET"
-        , path = [ "_matrix", "client", "r0", "sync" ]
+        , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            V4.updateSyncResponse { filter = Filter.pass, since = data.since }
+            Debug.log "Handling output v4" >> V4.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
         }

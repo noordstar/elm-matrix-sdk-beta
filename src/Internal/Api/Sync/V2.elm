@@ -683,18 +683,56 @@ updateJoinedRoom data room =
 
 updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Timeline -> R.RoomUpdate
 updateTimeline { filter, nextBatch, roomId, since } timeline =
-    R.AddSync
-        { events = List.map (toEvent roomId) timeline.events
-        , filter = filter
-        , start =
-            case timeline.prevBatch of
-                Just _ ->
-                    timeline.prevBatch
+    let
+        limited : Bool
+        limited =
+            Maybe.withDefault False timeline.limited
 
-                Nothing ->
-                    since
-        , end = nextBatch
-        }
+        newEvents : List Event.Event
+        newEvents =
+            List.map (toEvent roomId) timeline.events
+    in
+    case ( limited, timeline.prevBatch ) of
+        ( False, Just p ) ->
+            if timeline.prevBatch == since then
+                R.AddSync
+                    { events = newEvents
+                    , filter = filter
+                    , start = Just p
+                    , end = nextBatch
+                    }
+
+            else
+                R.More
+                    [ R.AddSync
+                        { events = []
+                        , filter = filter
+                        , start = since
+                        , end = p
+                        }
+                    , R.AddSync
+                        { events = newEvents
+                        , filter = filter
+                        , start = Just p
+                        , end = nextBatch
+                        }
+                    ]
+
+        ( False, Nothing ) ->
+            R.AddSync
+                { events = newEvents
+                , filter = filter
+                , start = since
+                , end = nextBatch
+                }
+
+        ( True, _ ) ->
+            R.AddSync
+                { events = newEvents
+                , filter = filter
+                , start = timeline.prevBatch
+                , end = nextBatch
+                }
 
 
 toEvent : String -> ClientEventWithoutRoomID -> Event.Event
