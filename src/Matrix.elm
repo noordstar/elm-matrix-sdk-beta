@@ -1,6 +1,6 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
-    , VaultUpdate, update, logs
+    , VaultUpdate, update, sync, logs
     , addAccessToken, sendMessageEvent
     )
 
@@ -24,7 +24,7 @@ support a monolithic public registry. (:
 
 ## Keeping the Vault up-to-date
 
-@docs VaultUpdate, update, logs
+@docs VaultUpdate, update, sync, logs
 
 
 ## Debugging
@@ -173,6 +173,17 @@ sendMessageEvent data =
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , transactionId = data.transactionId
                 }
+
+
+{-| Synchronize the Vault with the Matrix API.
+
+Effectively, this task asks the Matrix API to provide the latest information,
+which will be returned as your VaultUpdate.
+
+-}
+sync : (VaultUpdate -> msg) -> Vault -> Cmd msg
+sync toMsg (Vault vault) =
+    Api.sync vault { toMsg = Types.VaultUpdate >> toMsg }
 
 
 {-| Using new VaultUpdate information, update the Vault accordingly.

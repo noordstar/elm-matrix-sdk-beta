@@ -82,6 +82,7 @@ type EnvelopeUpdate a
     | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetDeviceId String
+    | SetNextBatch String
     | SetNow Timestamp
     | SetRefreshToken String
     | SetVersions Versions
@@ -124,7 +125,6 @@ coder c1 =
             , description = Text.fields.envelope.settings
             , coder = Settings.coder
             , default = Tuple.pair Settings.init []
-            , defaultToString = always "<Default settings>"
             }
         )
 
@@ -327,6 +327,9 @@ update updateContent eu ({ context } as data) =
 
         SetDeviceId d ->
             { data | context = { context | deviceId = Just d } }
+
+        SetNextBatch nextBatch ->
+            { data | context = { context | nextBatch = Just nextBatch } }
 
         SetNow n ->
             { data | context = { context | now = Just n } }

@@ -59,6 +59,7 @@ helper functions.
 type UnsignedData
     = UnsignedData
         { age : Maybe Int
+        , membership : Maybe String
         , prevContent : Maybe Json.Value
         , redactedBecause : Maybe Event
         , transactionId : Maybe String
@@ -242,16 +243,23 @@ transactionId event =
 
 unsignedCoder : Json.Coder UnsignedData
 unsignedCoder =
-    Json.object4
+    Json.object5
         { name = Text.docs.unsigned.name
         , description = Text.docs.unsigned.description
-        , init = \a b c d -> UnsignedData { age = a, prevContent = b, redactedBecause = c, transactionId = d }
+        , init = \a b c d e -> UnsignedData { age = a, membership = b, prevContent = c, redactedBecause = d, transactionId = e }
         }
         (Json.field.optional.value
             { fieldName = "age"
             , toField = \(UnsignedData data) -> data.age
             , description = Text.fields.unsigned.age
             , coder = Json.int
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "membership"
+            , toField = \(UnsignedData data) -> data.membership
+            , description = Text.fields.unsigned.membership
+            , coder = Json.string
             }
         )
         (Json.field.optional.value

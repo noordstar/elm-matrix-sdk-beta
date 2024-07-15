@@ -12,11 +12,12 @@ import Test.Values.User as TestUser
 
 vault : Fuzzer Vault
 vault =
-    Fuzz.map3 Vault
+    Fuzz.map4 Vault
         (Fuzz.string
             |> Fuzz.map (\k -> ( k, Json.encode Json.int 0 ))
             |> Fuzz.list
             |> Fuzz.map Dict.fromList
         )
+        (Fuzz.maybe Fuzz.string)
         (TestHashdict.fuzzer .roomId TestRoom.fuzzer)
         (Fuzz.maybe TestUser.fuzzer)
