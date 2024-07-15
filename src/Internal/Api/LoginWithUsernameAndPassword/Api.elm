@@ -888,12 +888,12 @@ disoveryInformationCoderV1 =
             { fieldName = "m.homeserver"
             , toField = .homeserver
             , coder =
-                Json.object2
+                Json.object1
                     { name = "Homeserver Information"
                     , description =
                         [ "Used by clients to discover homeserver information."
                         ]
-                    , init = \a _ -> { baseUrl = a }
+                    , init = HomeserverInformation
                     }
                     (Json.field.required
                         { fieldName = "base_url"
@@ -902,17 +902,6 @@ disoveryInformationCoderV1 =
                             [ "The base URL for the homeserver for client-server connections."
                             ]
                         , coder = Json.string
-                        }
-                    )
-                    (Json.field.optional.value
-                        { fieldName = L.field
-                        , toField = always Nothing
-                        , description =
-                            [ "The Elm SDK always expects objects to have at least two fields."
-                            , "Otherwise, what's the point of hiding the value in an object?"
-                            , "For this reason, this empty placeholder key will always be ignored."
-                            ]
-                        , coder = Json.value
                         }
                     )
             , description =
@@ -924,12 +913,12 @@ disoveryInformationCoderV1 =
             { fieldName = "m.identity_server"
             , toField = .identityServer
             , coder =
-                Json.object2
+                Json.object1
                     { name = "Homeserver Information"
                     , description =
                         [ "Used by clients to discover homeserver information."
                         ]
-                    , init = \a _ -> { baseUrl = a }
+                    , init = HomeserverInformation
                     }
                     (Json.field.required
                         { fieldName = "base_url"
@@ -938,17 +927,6 @@ disoveryInformationCoderV1 =
                             [ "The base URL for the homeserver for client-server connections."
                             ]
                         , coder = Json.string
-                        }
-                    )
-                    (Json.field.optional.value
-                        { fieldName = L.field
-                        , toField = always Nothing
-                        , description =
-                            [ "The Elm SDK always expects objects to have at least two fields."
-                            , "Otherwise, what's the point of hiding the value in an object?"
-                            , "For this reason, this empty placeholder key will always be ignored."
-                            ]
-                        , coder = Json.value
                         }
                     )
             , description =

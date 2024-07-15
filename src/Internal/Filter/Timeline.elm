@@ -183,7 +183,6 @@ coder =
             , description = Text.fields.timelineFilter.senders
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
         (Json.field.required
@@ -199,7 +198,6 @@ coder =
             , description = Text.fields.timelineFilter.types
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
-            , defaultToString = always "[]"
             }
         )
         (Json.field.required
