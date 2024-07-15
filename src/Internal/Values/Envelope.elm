@@ -358,10 +358,10 @@ update updateContent eu startData =
 
                 SetNextBatch nextBatch ->
                     Recursion.base
-                        (\{ context } as data ->
+                        (\({ context } as data) ->
                             { data | context = { context | nextBatch = Just nextBatch } }
                         )
-                
+
                 SetNow n ->
                     Recursion.base
                         (\({ context } as data) ->
