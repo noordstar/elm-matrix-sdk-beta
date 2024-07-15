@@ -1,6 +1,7 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
     , VaultUpdate, update, sync, logs
+    , rooms, fromRoomId
     , addAccessToken, sendMessageEvent
     )
 
@@ -25,6 +26,11 @@ support a monolithic public registry. (:
 ## Keeping the Vault up-to-date
 
 @docs VaultUpdate, update, sync, logs
+
+
+## Exploring the Vault
+
+@docs rooms, fromRoomId
 
 
 ## Debugging
@@ -64,6 +70,14 @@ addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
     Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
         |> Vault
+
+
+{-| Get a room based on its room ID, if the user is a member of that room.
+-}
+fromRoomId : String -> Vault -> Maybe Types.Room
+fromRoomId roomId (Vault vault) =
+    Envelope.mapMaybe (Internal.fromRoomId roomId) vault
+        |> Maybe.map Types.Room
 
 
 {-| Use a fully-fledged Matrix ID to connect.
@@ -110,6 +124,14 @@ fromUsername { username, host, port_ } =
         |> Envelope.init
         |> Envelope.mapContext (\c -> { c | username = Just username })
         |> Vault
+
+
+{-| Get a list of all the rooms that the user has joined.
+-}
+rooms : Vault -> List Types.Room
+rooms (Vault vault) =
+    Envelope.mapList Internal.rooms vault
+        |> List.map Types.Room
 
 
 {-| The VaultUpdate is a complex type that helps update the Vault. However,

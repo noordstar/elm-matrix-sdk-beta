@@ -1,7 +1,7 @@
 module Internal.Values.Vault exposing
     ( Vault, init
     , VaultUpdate(..), update
-    , fromRoomId, mapRoom, updateRoom
+    , rooms, fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
     )
 
@@ -23,7 +23,7 @@ To update the Vault, one uses VaultUpdate types.
 
 Rooms are environments where people can have a conversation with each other.
 
-@docs fromRoomId, mapRoom, updateRoom
+@docs rooms, fromRoomId, mapRoom, updateRoom
 
 
 ## Account data
@@ -131,6 +131,13 @@ ignored.
 mapRoom : String -> (Room -> Room) -> Vault -> Vault
 mapRoom roomId f vault =
     { vault | rooms = Hashdict.map roomId f vault.rooms }
+
+
+{-| Get a list of all joined rooms present in the vault.
+-}
+rooms : Vault -> List Room
+rooms vault =
+    Hashdict.values vault.rooms
 
 
 {-| Set a piece of account data as information in the global vault data.
