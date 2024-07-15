@@ -277,16 +277,15 @@ update roomUpdate startRoom =
 
                 Optional (Just u) ->
                     Recursion.recurse u
-                
+
                 Optional Nothing ->
                     Recursion.base identity
-                
+
                 SetAccountData key value ->
                     Recursion.base (setAccountData key value)
-                
+
                 SetEphemeral eph ->
                     Recursion.base (\room -> { room | ephemeral = eph })
         )
         roomUpdate
         startRoom
-
