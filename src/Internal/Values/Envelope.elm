@@ -317,20 +317,20 @@ update updateContent eu startData =
                     Recursion.base identity
 
                 RemoveAccessToken token ->
-                    Recursion.base 
-                        (\({context} as data) ->
+                    Recursion.base
+                        (\({ context } as data) ->
                             { data
-                            | context =
-                                { context
-                                | accessTokens =
-                                    Hashdict.removeKey token context.accessTokens
-                                }
+                                | context =
+                                    { context
+                                        | accessTokens =
+                                            Hashdict.removeKey token context.accessTokens
+                                    }
                             }
                         )
 
                 RemovePasswordIfNecessary ->
                     Recursion.base
-                        (\({context} as data) ->
+                        (\({ context } as data) ->
                             if data.settings.removePasswordOnLogin then
                                 { data | context = { context | password = Nothing } }
 
@@ -340,7 +340,7 @@ update updateContent eu startData =
 
                 SetAccessToken a ->
                     Recursion.base
-                        (\({context} as data) ->
+                        (\({ context } as data) ->
                             { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }
                         )
 
