@@ -38,6 +38,8 @@ import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Room as Room exposing (Room)
 import Internal.Values.User as User exposing (User)
+import Recursion
+import Recursion.Fold
 
 
 {-| This is the Vault type.
@@ -139,21 +141,29 @@ updateRoom roomId f vault =
 {-| Update the Vault using a VaultUpdate type.
 -}
 update : VaultUpdate -> Vault -> Vault
-update vu vault =
-    case vu of
-        CreateRoomIfNotExists roomId ->
-            updateRoom roomId
-                (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
-                vault
+update vaultUpdate startVault =
+    Recursion.runRecursion
+        (\vu ->
+            case vu of
+                CreateRoomIfNotExists roomId ->
+                    (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
+                        |> updateRoom roomId
+                        |> Recursion.base
 
-        MapRoom roomId ru ->
-            mapRoom roomId (Room.update ru) vault
+                MapRoom roomId ru ->
+                    Recursion.base (mapRoom roomId (Room.update ru))
 
-        More items ->
-            List.foldl update vault items
+                More items ->
+                    Recursion.Fold.foldList (<<) identity items
 
-        SetAccountData key value ->
-            setAccountData key value vault
+                SetAccountData key value ->
+                    Recursion.base (setAccountData key value)
 
-        SetUser user ->
-            { vault | user = Just user }
+                SetUser user ->
+                    Recursion.base
+                        (\vault ->
+                            { vault | user = Just user }
+                        )
+        )
+        vaultUpdate
+        startVault

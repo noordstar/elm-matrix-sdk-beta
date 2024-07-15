@@ -58,6 +58,8 @@ import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Internal.Values.User exposing (User)
 import Json.Encode as E
+import Recursion
+import Recursion.Fold
 
 
 {-| The Batch is a group of new events from somewhere in the timeline.
@@ -246,21 +248,26 @@ setAccountData key value room =
 {-| Update the Room based on given instructions.
 -}
 update : RoomUpdate -> Room -> Room
-update ru room =
-    case ru of
-        AddEvent _ ->
-            -- TODO: Add event
-            room
+update roomUpdate startRoom =
+    Recursion.runRecursion
+        (\ru ->
+            case ru of
+                AddEvent _ ->
+                    -- TODO: Add event
+                    Recursion.base identity
 
-        AddSync batch ->
-            addSync batch room
+                AddSync batch ->
+                    Recursion.base (addSync batch)
 
-        Invite _ ->
-            -- TODO: Invite user
-            room
+                Invite _ ->
+                    -- TODO: Invite user
+                    Recursion.base identity
 
-        More items ->
-            List.foldl update room items
+                More items ->
+                    Recursion.Fold.foldList (<<) identity items
 
-        SetAccountData key value ->
-            setAccountData key value room
+                SetAccountData key value ->
+                    Recursion.base (setAccountData key value)
+        )
+        roomUpdate
+        startRoom
