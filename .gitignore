@@ -8,3 +8,6 @@ repl-temp-*
 # Elm output
 index.html
 elm.js
+
+# Elm configurations
+elm-*.json

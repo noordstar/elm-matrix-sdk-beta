@@ -1,5 +1,5 @@
 module Matrix.Room exposing
-    ( Room, mostRecentEvents
+    ( Room, mostRecentEvents, roomId
     , getAccountData
     )
 
@@ -12,7 +12,7 @@ What is usually called a chat, a channel, a conversation or a group chat on
 other platforms, the term used in Matrix is a "room". A room is a conversation
 where a group of users talk to each other.
 
-@docs Room, mostRecentEvents
+@docs Room, mostRecentEvents, roomId
 
 This module exposes various functions that help you inspect various aspects of
 a room.
@@ -54,6 +54,14 @@ type alias Room =
 getAccountData : String -> Room -> Maybe E.Value
 getAccountData key (Room room) =
     Envelope.extract (Internal.getAccountData key) room
+
+
+{-| Get a room's room id. This is an opaque string that distinguishes rooms from
+each other.
+-}
+roomId : Room -> String
+roomId (Room room) =
+    Envelope.extract .roomId room
 
 
 {-| Get a list of the most recent events sent in the room.

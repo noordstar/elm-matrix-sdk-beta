@@ -84,6 +84,7 @@ type EnvelopeUpdate a
     | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetDeviceId String
+    | SetNextBatch String
     | SetNow Timestamp
     | SetRefreshToken String
     | SetVersions Versions
@@ -126,7 +127,6 @@ coder c1 =
             , description = Text.fields.envelope.settings
             , coder = Settings.coder
             , default = Tuple.pair Settings.init []
-            , defaultToString = always "<Default settings>"
             }
         )
 
@@ -356,6 +356,12 @@ update updateContent eu startData =
                             { data | context = { context | deviceId = Just d } }
                         )
 
+                SetNextBatch nextBatch ->
+                    Recursion.base
+                        (\{ context } as data ->
+                            { data | context = { context | nextBatch = Just nextBatch } }
+                        )
+                
                 SetNow n ->
                     Recursion.base
                         (\({ context } as data) ->

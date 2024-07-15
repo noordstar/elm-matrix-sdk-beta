@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent
+    , sendMessageEvent, sync
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent
+@docs sendMessageEvent, sync
 
 -}
 
@@ -33,6 +33,7 @@ import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
+import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
@@ -228,6 +229,15 @@ sendMessageEvent : { content : Json.Value, eventType : String, roomId : String, 
 sendMessageEvent input =
     makeVBA
         |> C.andThen (Internal.Api.SendMessageEvent.Api.sendMessageEvent input)
+        |> finishTask
+
+
+{-| Sync with the Matrix API to stay up-to-date.
+-}
+sync : { fullState : Maybe Bool, presence : Maybe String, since : Maybe String, timeout : Maybe Int } -> Task
+sync input =
+    makeVBA
+        |> C.andThen (Internal.Api.Sync.Api.sync input)
         |> finishTask
 
 
