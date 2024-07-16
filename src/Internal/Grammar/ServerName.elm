@@ -189,21 +189,20 @@ ipv6RightParser n =
             |. P.symbol ":"
 
 
-{-| Convert an IPv6 address to a readable string format
--}
-ipv6ToString : IPv6Address -> String
-ipv6ToString { front, back } =
-    (if List.length front == 8 then
-        front
 
-     else if List.length back == 8 then
-        back
-
-     else
-        List.concat [ front, [ "" ], back ]
-    )
-        |> List.intersperse ":"
-        |> String.concat
+-- {-| Convert an IPv6 address to a readable string format
+-- -}
+-- ipv6ToString : IPv6Address -> String
+-- ipv6ToString { front, back } =
+--     (if List.length front == 8 then
+--         front
+--      else if List.length back == 8 then
+--         back
+--      else
+--         List.concat [ front, [ "" ], back ]
+--     )
+--         |> List.intersperse ":"
+--         |> String.concat
 
 
 portParser : Parser Int

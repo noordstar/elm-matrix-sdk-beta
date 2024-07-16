@@ -12,7 +12,6 @@ This API module represents the /sync endpoint on Matrix spec version v1.11.
 -}
 
 import FastDict as Dict exposing (Dict)
-import Internal.Api.Sync.V3 as PV
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Filter.Timeline exposing (Filter)
