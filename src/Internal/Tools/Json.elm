@@ -477,13 +477,14 @@ iddict (Coder old) =
     Coder
         { encoder = Iddict.encode old.encoder
         , decoder =
-            D.andThen
-                (\( out, logs ) ->
-                    D.succeed out
-                        |> Iddict.decoder
-                        |> D.map (\o -> ( o, logs ))
-                )
-                old.decoder
+            Iddict.decoder old.decoder
+                |> D.map
+                    (\out ->
+                        ( Iddict.map (always Tuple.first) out
+                        , Iddict.values out
+                            |> List.concatMap Tuple.second
+                        )
+                    )
         , docs = DocsIddict old.docs
         }
 
