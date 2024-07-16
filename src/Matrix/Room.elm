@@ -1,6 +1,7 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
     , getAccountData
+    , sendMessageEvent
     )
 
 {-|
@@ -35,8 +36,19 @@ other users.
 
 @docs getAccountData
 
+
+## Sending events
+
+Besides reading the latest events, one can also send new events to the Matrix
+room. These events are JSON objects that can be shaped in any way or form that
+you like. To help other users with decoding your JSON objects, you pass an
+`eventType` string which helps them figure out the nature of your JSON object.
+
+@docs sendMessageEvent
+
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Room as Internal
 import Json.Encode as E
@@ -70,3 +82,25 @@ mostRecentEvents : Room -> List Types.Event
 mostRecentEvents (Room room) =
     Envelope.mapList Internal.mostRecentEvents room
         |> List.map Types.Event
+
+
+{-| Send a message event to a given room.
+-}
+sendMessageEvent :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    }
+    -> Cmd msg
+sendMessageEvent data =
+    case data.room of
+        Room room ->
+            Api.sendMessageEvent room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
