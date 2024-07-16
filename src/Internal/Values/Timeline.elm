@@ -678,20 +678,21 @@ mostRecentFrom filter timeline ptr =
         { ptr = ptr, visited = Set.empty }
 
 
-{-| Recount the Timeline's amount of filled batches. Since the Timeline
-automatically tracks the count on itself, this is generally exclusively used in
-specific scenarios like decoding JSON values.
--}
-recountFilledBatches : Timeline -> Timeline
-recountFilledBatches (Timeline tl) =
-    Timeline
-        { tl
-            | filledBatches =
-                tl.batches
-                    |> Iddict.values
-                    |> List.filter (\v -> v.events /= [])
-                    |> List.length
-        }
+
+-- {-| Recount the Timeline's amount of filled batches. Since the Timeline
+-- automatically tracks the count on itself, this is generally exclusively used in
+-- specific scenarios like decoding JSON values.
+-- -}
+-- recountFilledBatches : Timeline -> Timeline
+-- recountFilledBatches (Timeline tl) =
+--     Timeline
+--         { tl
+--             | filledBatches =
+--                 tl.batches
+--                     |> Iddict.values
+--                     |> List.filter (\v -> v.events /= [])
+--                     |> List.length
+--         }
 
 
 {-| Create a timeline with a single batch inserted. This batch is considered the

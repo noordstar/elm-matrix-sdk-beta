@@ -5,8 +5,6 @@ import Fuzz exposing (Fuzzer)
 import Internal.Config.Leaks as Leaks
 import Internal.Tools.Hashdict as Hashdict
 import Internal.Values.Context as Context exposing (Context, Versions)
-import Json.Decode as D
-import Json.Encode as E
 import Set
 import Test exposing (..)
 import Test.Tools.Timestamp as TestTimestamp
@@ -19,12 +17,15 @@ fuzzer =
         maybeString =
             Fuzz.maybe Fuzz.string
     in
-    Fuzz.map8 (\a b c d e ( f, g ) ( h, i ) ( j, k ) -> Context a b c d e f g h i j k)
+    Fuzz.map8 (\a b c d ( e, f ) ( g, h ) ( i, j ) ( k, l ) -> Context a b c d e f g h i j k l)
         (Fuzz.constant <| Hashdict.empty .value)
         maybeString
         maybeString
-        (Fuzz.maybe TestTimestamp.fuzzer)
         maybeString
+        (Fuzz.pair
+            (Fuzz.maybe TestTimestamp.fuzzer)
+            maybeString
+        )
         (Fuzz.pair
             maybeString
             Fuzz.string

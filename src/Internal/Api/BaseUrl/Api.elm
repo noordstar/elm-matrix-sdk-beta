@@ -13,7 +13,6 @@ This module looks for the right homeserver address.
 
 import Internal.Api.Chain as C
 import Internal.Api.Request as R
-import Internal.Config.Leaks as L
 import Internal.Config.Log exposing (log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json

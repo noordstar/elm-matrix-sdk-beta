@@ -6,6 +6,7 @@ import Internal.Filter.Timeline as Filter
 import Internal.Tools.Json as Json
 import Internal.Values.Timeline as Timeline exposing (Batch, Timeline)
 import Json.Decode as D
+import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
 
@@ -250,7 +251,8 @@ suite =
                 (\timeline ->
                     timeline
                         |> Json.encode Timeline.coder
-                        |> D.decodeValue (Json.decode Timeline.coder)
+                        |> E.encode 0
+                        |> D.decodeString (Json.decode Timeline.coder)
                         |> Result.map Tuple.first
                         |> Result.map (Timeline.mostRecentEvents Filter.pass)
                         |> Expect.equal (Ok <| Timeline.mostRecentEvents Filter.pass timeline)

@@ -13,7 +13,6 @@ This module allows the user to log in using a username and password.
 
 import Internal.Api.Api as A
 import Internal.Api.Request as R
-import Internal.Config.Leaks as L
 import Internal.Config.Log exposing (log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
