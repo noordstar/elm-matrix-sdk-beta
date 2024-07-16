@@ -53,11 +53,13 @@ import Internal.Config.Text as Text
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
+import Internal.Tools.StrippedEvent as StrippedEvent exposing (StrippedEvent)
 import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Internal.Values.User exposing (User)
-import Json.Encode as E
+import Recursion
+import Recursion.Fold
 
 
 {-| The Batch is a group of new events from somewhere in the timeline.
@@ -71,6 +73,7 @@ homeserver.
 -}
 type alias Room =
     { accountData : Dict String Json.Value
+    , ephemeral : List StrippedEvent
     , events : Hashdict Event
     , roomId : String
     , state : StateManager
@@ -86,7 +89,9 @@ type RoomUpdate
     | AddSync Batch
     | Invite User
     | More (List RoomUpdate)
+    | Optional (Maybe RoomUpdate)
     | SetAccountData String Json.Value
+    | SetEphemeral (List { eventType : String, content : Json.Value })
 
 
 {-| Add new events to the Room's event directory + Room's timeline.
@@ -140,7 +145,7 @@ addSync =
 -}
 coder : Json.Coder Room
 coder =
-    Json.object5
+    Json.object6
         { name = Text.docs.room.name
         , description = Text.docs.room.description
         , init = Room
@@ -151,7 +156,14 @@ coder =
             , description = Text.fields.room.accountData
             , coder = Json.fastDict Json.value
             , default = ( Dict.empty, [] )
-            , defaultToString = Json.encode (Json.fastDict Json.value) >> E.encode 0
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "ephemeral"
+            , toField = .ephemeral
+            , description = Text.fields.room.ephemeral
+            , coder = Json.list StrippedEvent.coder
+            , default = ( [], [] )
             }
         )
         (Json.field.optional.withDefault
@@ -160,7 +172,6 @@ coder =
             , description = Text.fields.room.events
             , coder = Hashdict.coder .eventId Event.coder
             , default = ( Hashdict.empty .eventId, [ log.warn "Found a room with no known events! Is it empty?" ] )
-            , defaultToString = Json.encode (Hashdict.coder .eventId Event.coder) >> E.encode 0
             }
         )
         (Json.field.required
@@ -176,7 +187,6 @@ coder =
             , description = Text.fields.room.state
             , coder = StateManager.coder
             , default = ( StateManager.empty, [] )
-            , defaultToString = Json.encode StateManager.coder >> E.encode 0
             }
         )
         (Json.field.optional.withDefault
@@ -185,7 +195,6 @@ coder =
             , description = Text.fields.room.timeline
             , coder = Timeline.coder
             , default = ( Timeline.empty, [] )
-            , defaultToString = Json.encode Timeline.coder >> E.encode 0
             }
         )
 
@@ -216,6 +225,7 @@ getAccountData key room =
 init : String -> Room
 init roomId =
     { accountData = Dict.empty
+    , ephemeral = []
     , events = Hashdict.empty .eventId
     , roomId = roomId
     , state = StateManager.empty
@@ -246,21 +256,35 @@ setAccountData key value room =
 {-| Update the Room based on given instructions.
 -}
 update : RoomUpdate -> Room -> Room
-update ru room =
-    case ru of
-        AddEvent _ ->
-            -- TODO: Add event
-            room
+update roomUpdate startRoom =
+    Recursion.runRecursion
+        (\ru ->
+            case ru of
+                AddEvent _ ->
+                    -- TODO: Add event
+                    Recursion.base identity
 
-        AddSync batch ->
-            addSync batch room
+                AddSync batch ->
+                    Recursion.base (addSync batch)
 
-        Invite _ ->
-            -- TODO: Invite user
-            room
+                Invite _ ->
+                    -- TODO: Invite user
+                    Recursion.base identity
 
-        More items ->
-            List.foldl update room items
+                More items ->
+                    Recursion.Fold.foldList (<<) identity items
 
-        SetAccountData key value ->
-            setAccountData key value room
+                Optional (Just u) ->
+                    Recursion.recurse u
+
+                Optional Nothing ->
+                    Recursion.base identity
+
+                SetAccountData key value ->
+                    Recursion.base (setAccountData key value)
+
+                SetEphemeral eph ->
+                    Recursion.base (\room -> { room | ephemeral = eph })
+        )
+        roomUpdate
+        startRoom

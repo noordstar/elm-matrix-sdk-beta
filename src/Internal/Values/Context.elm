@@ -71,7 +71,6 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
-import Json.Encode as E
 import Set exposing (Set)
 import Time
 
@@ -95,6 +94,7 @@ type alias Context =
     { accessTokens : Hashdict AccessToken
     , baseUrl : Maybe String
     , deviceId : Maybe String
+    , nextBatch : Maybe String
     , now : Maybe Timestamp
     , password : Maybe String
     , refreshToken : Maybe String
@@ -152,7 +152,7 @@ fromApiFormat (APIContext c) =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object11
+    Json.object12
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
@@ -175,6 +175,13 @@ coder =
             { fieldName = "deviceId"
             , toField = .deviceId
             , description = Text.fields.context.deviceId
+            , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "nextBatch"
+            , toField = .nextBatch
+            , description = Text.fields.context.nextBatch
             , coder = Json.string
             }
         )
@@ -303,6 +310,7 @@ init sn =
     { accessTokens = Hashdict.empty .value
     , baseUrl = Nothing
     , deviceId = Nothing
+    , nextBatch = Nothing
     , now = Nothing
     , refreshToken = Nothing
     , password = Nothing
@@ -439,6 +447,5 @@ versionsCoder =
             , description = Text.fields.versions.unstableFeatures
             , coder = Json.set Json.string
             , default = ( Set.empty, [] )
-            , defaultToString = Json.encode (Json.set Json.string) >> E.encode 0
             }
         )

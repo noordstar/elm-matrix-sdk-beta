@@ -41,16 +41,18 @@ fuzzerState =
 
 unsignedDataFuzzer : Fuzzer Event.UnsignedData
 unsignedDataFuzzer =
-    Fuzz.map4
-        (\age prev redact trans ->
+    Fuzz.map5
+        (\age memb prev redact trans ->
             Event.UnsignedData
                 { age = age
+                , membership = memb
                 , prevContent = prev
                 , redactedBecause = redact
                 , transactionId = trans
                 }
         )
         (Fuzz.maybe Fuzz.int)
+        (Fuzz.maybe Fuzz.string)
         (Fuzz.maybe valueFuzzer)
         (Fuzz.maybe <| Fuzz.lazy (\_ -> fuzzer))
         (Fuzz.maybe Fuzz.string)

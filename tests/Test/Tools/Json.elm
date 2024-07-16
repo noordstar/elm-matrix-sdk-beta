@@ -100,7 +100,6 @@ gridField =
         , description = []
         , coder = Json.list (Json.list Json.int)
         , default = ( [], [] )
-        , defaultToString = always "[]"
         }
 
 
@@ -132,7 +131,6 @@ hobbiesField =
         , description = []
         , coder = Json.list Json.string
         , default = ( [], [] )
-        , defaultToString = always "[]"
         }
 
 
@@ -149,13 +147,6 @@ invitedToPartyField =
         , description = []
         , coder = Json.bool
         , default = ( False, [] )
-        , defaultToString =
-            \b ->
-                if b then
-                    "True"
-
-                else
-                    "False"
         }
 
 

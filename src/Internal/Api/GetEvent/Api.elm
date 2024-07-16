@@ -204,7 +204,7 @@ getEventCoderV1 =
                         [ "UnsignedData as described by the Matrix spec"
                         , "https://spec.matrix.org/v1.10/client-server-api/#get_matrixclientv3roomsroomideventeventid"
                         ]
-                    , init = \a b c d -> Event.UnsignedData { age = a, prevContent = b, redactedBecause = c, transactionId = d }
+                    , init = \a b c d -> Event.UnsignedData { age = a, membership = Nothing, prevContent = b, redactedBecause = c, transactionId = d }
                     }
                     (Json.field.optional.value
                         { fieldName = "age"

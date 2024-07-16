@@ -1,8 +1,9 @@
 module Internal.Values.Vault exposing
     ( Vault, init
     , VaultUpdate(..), update
-    , fromRoomId, mapRoom, updateRoom
+    , rooms, fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
+    , coder
     )
 
 {-| This module hosts the Vault module. The Vault is the data type storing all
@@ -23,12 +24,17 @@ To update the Vault, one uses VaultUpdate types.
 
 Rooms are environments where people can have a conversation with each other.
 
-@docs fromRoomId, mapRoom, updateRoom
+@docs rooms, fromRoomId, mapRoom, updateRoom
 
 
 ## Account data
 
 @docs getAccountData, setAccountData
+
+
+## JSON
+
+@docs coder
 
 -}
 
@@ -38,12 +44,15 @@ import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Room as Room exposing (Room)
 import Internal.Values.User as User exposing (User)
+import Recursion
+import Recursion.Fold
 
 
 {-| This is the Vault type.
 -}
 type alias Vault =
     { accountData : Dict String Json.Value
+    , nextBatch : Maybe String
     , rooms : Hashdict Room
     , user : Maybe User
     }
@@ -56,13 +65,17 @@ type VaultUpdate
     = CreateRoomIfNotExists String
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
+    | Optional (Maybe VaultUpdate)
     | SetAccountData String Json.Value
+    | SetNextBatch String
     | SetUser User
 
 
+{-| Convert a Vault to and from a JSON object.
+-}
 coder : Json.Coder Vault
 coder =
-    Json.object3
+    Json.object4
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -72,6 +85,13 @@ coder =
             , toField = .accountData
             , description = Text.fields.vault.accountData
             , coder = Json.fastDict Json.value
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "nextBatch"
+            , toField = .nextBatch
+            , description = Text.fields.vault.nextBatch
+            , coder = Json.string
             }
         )
         (Json.field.required
@@ -109,6 +129,7 @@ getAccountData key vault =
 init : Maybe User -> Vault
 init mUser =
     { accountData = Dict.empty
+    , nextBatch = Nothing
     , rooms = Hashdict.empty .roomId
     , user = mUser
     }
@@ -120,6 +141,13 @@ ignored.
 mapRoom : String -> (Room -> Room) -> Vault -> Vault
 mapRoom roomId f vault =
     { vault | rooms = Hashdict.map roomId f vault.rooms }
+
+
+{-| Get a list of all joined rooms present in the vault.
+-}
+rooms : Vault -> List Room
+rooms vault =
+    Hashdict.values vault.rooms
 
 
 {-| Set a piece of account data as information in the global vault data.
@@ -139,21 +167,41 @@ updateRoom roomId f vault =
 {-| Update the Vault using a VaultUpdate type.
 -}
 update : VaultUpdate -> Vault -> Vault
-update vu vault =
-    case vu of
-        CreateRoomIfNotExists roomId ->
-            updateRoom roomId
-                (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
-                vault
+update vaultUpdate startVault =
+    Recursion.runRecursion
+        (\vu ->
+            case vu of
+                CreateRoomIfNotExists roomId ->
+                    (Maybe.withDefault (Room.init roomId) >> Maybe.Just)
+                        |> updateRoom roomId
+                        |> Recursion.base
 
-        MapRoom roomId ru ->
-            mapRoom roomId (Room.update ru) vault
+                MapRoom roomId ru ->
+                    Recursion.base (mapRoom roomId (Room.update ru))
 
-        More items ->
-            List.foldl update vault items
+                More items ->
+                    Recursion.Fold.foldList (<<) identity items
 
-        SetAccountData key value ->
-            setAccountData key value vault
+                Optional (Just u) ->
+                    Recursion.recurse u
 
-        SetUser user ->
-            { vault | user = Just user }
+                Optional Nothing ->
+                    Recursion.base identity
+
+                SetAccountData key value ->
+                    Recursion.base (setAccountData key value)
+
+                SetNextBatch nb ->
+                    Recursion.base
+                        (\vault ->
+                            { vault | nextBatch = Just nb }
+                        )
+
+                SetUser user ->
+                    Recursion.base
+                        (\vault ->
+                            { vault | user = Just user }
+                        )
+        )
+        vaultUpdate
+        startVault

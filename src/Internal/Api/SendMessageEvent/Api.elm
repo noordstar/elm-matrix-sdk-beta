@@ -13,7 +13,6 @@ This module helps send message events to rooms on the Matrix API.
 
 import Internal.Api.Api as A
 import Internal.Api.Request as R
-import Internal.Config.Leaks as L
 import Internal.Config.Log exposing (log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
@@ -143,26 +142,15 @@ sendMessageEventV3 { content, eventType, roomId, transactionId } =
 
 coderV1 : Json.Coder SendMessageEventOutputV1
 coderV1 =
-    Json.object2
+    Json.object1
         { name = "EventResponse"
         , description =
             [ "This endpoint is used to send a message event to a room. Message events allow access to historical events and pagination, making them suited for \"once-off\" activity in a room."
             , "The body of the request should be the content object of the event; the fields in this object will vary depending on the type of event."
             , "https://spec.matrix.org/legacy/r0.0.0/client_server.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid"
             ]
-        , init = always SendMessageEventOutputV1
+        , init = SendMessageEventOutputV1
         }
-        (Json.field.optional.value
-            { fieldName = L.field
-            , toField = always Nothing
-            , description =
-                [ "The Elm SDK always expects objects to have at least two fields."
-                , "Otherwise, what's the point of hiding the value in an object?"
-                , "For this reason, this empty placeholder key will always be ignored."
-                ]
-            , coder = Json.value
-            }
-        )
         (Json.field.optional.value
             { fieldName = "event_id"
             , toField = .eventId
@@ -174,26 +162,15 @@ coderV1 =
 
 coderV2 : Json.Coder SendMessageEventOutputV2
 coderV2 =
-    Json.object2
+    Json.object1
         { name = "EventResponse"
         , description =
             [ "This endpoint is used to send a message event to a room. Message events allow access to historical events and pagination, making them suited for \"once-off\" activity in a room."
             , "The body of the request should be the content object of the event; the fields in this object will vary depending on the type of event."
             , "https://spec.matrix.org/legacy/client_server/r0.6.1.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid"
             ]
-        , init = always SendMessageEventOutputV2
+        , init = SendMessageEventOutputV2
         }
-        (Json.field.optional.value
-            { fieldName = L.field
-            , toField = always Nothing
-            , description =
-                [ "The Elm SDK always expects objects to have at least two fields."
-                , "Otherwise, what's the point of hiding the value in an object?"
-                , "For this reason, this empty placeholder key will always be ignored."
-                ]
-            , coder = Json.value
-            }
-        )
         (Json.field.required
             { fieldName = "event_id"
             , toField = .eventId

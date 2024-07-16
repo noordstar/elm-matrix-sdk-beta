@@ -3,9 +3,9 @@ module Internal.Tools.Json exposing
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
-    , list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
+    , list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
     , Field, field, parser
-    , object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
     )
 
 {-|
@@ -49,7 +49,7 @@ module to build its encoders and decoders.
 
 ## Data types
 
-@docs list, listWithOne, slowDict, fastDict, fastIntDict, set, maybe
+@docs list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
 
 
 ## Objects
@@ -62,12 +62,13 @@ first.
 
 Once all fields are constructed, the user can create JSON objects.
 
-@docs object2, object3, object4, object5, object6, object7, object8, object9, object10, object11
+@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
 
 -}
 
 import Dict as SlowDict
 import FastDict
+import Iddict exposing (Iddict)
 import Internal.Config.Log as Log exposing (Log)
 import Internal.Config.Text as Text
 import Internal.Tools.DecodeExtra as D
@@ -141,6 +142,7 @@ type Docs
     = DocsBool
     | DocsDict Docs
     | DocsFloat
+    | DocsIddict Docs
     | DocsInt
     | DocsIntDict Docs
     | DocsLazy (() -> Docs)
@@ -362,7 +364,7 @@ then the following field type would be used:
         , coder = string
         }
 
-Suppose the JSO isn't obligated to provide a list of hobbies, and the list would
+Suppose the JSON isn't obligated to provide a list of hobbies, and the list would
 by default be overriden with an empty list, then we would use the following
 field type:
 
@@ -373,8 +375,7 @@ field type:
             [ "The hobbies of the person. Can be omitted."
             ]
         , coder = list string
-        , default = ( [], [] ) -- The `List Log` can be inserted in case you wish to insert a message when relying on a default
-        , defaultToString = always "[]" -- Default converted to a string
+        , default = ( [ "football" ], [] ) -- The `List Log` can be inserted in case you wish to insert a message when relying on a default
         }
 
 -}
@@ -382,7 +383,7 @@ field :
     { required : { fieldName : String, toField : object -> a, description : List String, coder : Coder a } -> Field a object
     , optional :
         { value : { fieldName : String, toField : object -> Maybe a, description : List String, coder : Coder a } -> Field (Maybe a) object
-        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : Coder a, default : ( a, List Log ), defaultToString : a -> String } -> Field a object
+        , withDefault : { fieldName : String, toField : object -> a, description : List String, coder : Coder a, default : ( a, List Log ) } -> Field a object
         }
     }
 field =
@@ -425,7 +426,7 @@ field =
                             , requiredness = OptionalField
                             }
         , withDefault =
-            \{ fieldName, toField, description, coder, default, defaultToString } ->
+            \{ fieldName, toField, description, coder, default } ->
                 case coder of
                     Coder { encoder, decoder, docs } ->
                         Field
@@ -449,7 +450,8 @@ field =
                             , requiredness =
                                 default
                                     |> Tuple.first
-                                    |> defaultToString
+                                    |> encoder
+                                    |> E.encode 0
                                     |> OptionalFieldWithDefault
                             }
         }
@@ -464,6 +466,26 @@ float =
         { encoder = E.float
         , decoder = D.map empty D.float
         , docs = DocsFloat
+        }
+
+
+{-| Define an Iddict as defined in
+[noordstar/elm-iddict](https://package.elm-lang.org/packages/noordstar/elm-iddict/latest/).
+-}
+iddict : Coder a -> Coder (Iddict a)
+iddict (Coder old) =
+    Coder
+        { encoder = Iddict.encode old.encoder
+        , decoder =
+            Iddict.decoder old.decoder
+                |> D.map
+                    (\out ->
+                        ( Iddict.map (always Tuple.first) out
+                        , Iddict.values out
+                            |> List.concatMap Tuple.second
+                        )
+                    )
+        , docs = DocsIddict old.docs
         }
 
 
@@ -594,6 +616,23 @@ objectEncoder items object =
     items
         |> List.map (Tuple.mapSecond (\f -> f object))
         |> E.maybeObject
+
+
+object1 :
+    Descriptive { init : a -> object }
+    -> Field a object
+    -> Coder object
+object1 { name, description, init } fa =
+    Coder
+        { encoder = objectEncoder [ toEncodeField fa ]
+        , decoder = D.map (Tuple.mapFirst init) (toDecoderField fa)
+        , docs =
+            DocsObject
+                { name = name
+                , description = description
+                , keys = [ toDocsField fa ]
+                }
+        }
 
 
 {-| Define an object with 2 keys
@@ -1153,6 +1192,81 @@ object11 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk =
                     , toDocsField fi
                     , toDocsField fj
                     , toDocsField fk
+                    ]
+                }
+        }
+
+
+{-| Define an object with 12 keys
+-}
+object12 :
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> object }
+    -> Field a object
+    -> Field b object
+    -> Field c object
+    -> Field d object
+    -> Field e object
+    -> Field f object
+    -> Field g object
+    -> Field h object
+    -> Field i object
+    -> Field j object
+    -> Field k object
+    -> Field l object
+    -> Coder object
+object12 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk fl =
+    Coder
+        { encoder =
+            objectEncoder
+                [ toEncodeField fa
+                , toEncodeField fb
+                , toEncodeField fc
+                , toEncodeField fd
+                , toEncodeField fe
+                , toEncodeField ff
+                , toEncodeField fg
+                , toEncodeField fh
+                , toEncodeField fi
+                , toEncodeField fj
+                , toEncodeField fk
+                , toEncodeField fl
+                ]
+        , decoder =
+            D.map12
+                (\( a, la ) ( b, lb ) ( c, lc ) ( d, ld ) ( e, le ) ( f, lf ) ( g, lg ) ( h, lh ) ( i, li ) ( j, lj ) ( k, lk ) ( l, ll ) ->
+                    ( init a b c d e f g h i j k l
+                    , List.concat [ la, lb, lc, ld, le, lf, lg, lh, li, lj, lk, ll ]
+                    )
+                )
+                (toDecoderField fa)
+                (toDecoderField fb)
+                (toDecoderField fc)
+                (toDecoderField fd)
+                (toDecoderField fe)
+                (toDecoderField ff)
+                (toDecoderField fg)
+                (toDecoderField fh)
+                (toDecoderField fi)
+                (toDecoderField fj)
+                (toDecoderField fk)
+                (toDecoderField fl)
+        , docs =
+            DocsObject
+                { name = name
+                , description = description
+                , keys =
+                    [ toDocsField fa
+                    , toDocsField fb
+                    , toDocsField fc
+                    , toDocsField fd
+                    , toDocsField fe
+                    , toDocsField ff
+                    , toDocsField fg
+                    , toDocsField fh
+                    , toDocsField fi
+                    , toDocsField fj
+                    , toDocsField fk
+                    , toDocsField fl
                     ]
                 }
         }

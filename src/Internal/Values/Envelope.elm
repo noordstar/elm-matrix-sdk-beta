@@ -56,6 +56,8 @@ import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Context as Context exposing (AccessToken, Context, Versions)
 import Internal.Values.Settings as Settings
+import Recursion
+import Recursion.Fold
 
 
 {-| There are lots of different data types in the Elm SDK, and many of them
@@ -82,6 +84,7 @@ type EnvelopeUpdate a
     | SetAccessToken AccessToken
     | SetBaseUrl String
     | SetDeviceId String
+    | SetNextBatch String
     | SetNow Timestamp
     | SetRefreshToken String
     | SetVersions Versions
@@ -124,7 +127,6 @@ coder c1 =
             , description = Text.fields.envelope.settings
             , coder = Settings.coder
             , default = Tuple.pair Settings.init []
-            , defaultToString = always "<Default settings>"
             }
         )
 
@@ -292,47 +294,91 @@ toMaybe data =
 {-| Updates the Envelope with a given EnvelopeUpdate value.
 -}
 update : (au -> a -> a) -> EnvelopeUpdate au -> Envelope a -> Envelope a
-update updateContent eu ({ context } as data) =
-    case eu of
-        ContentUpdate v ->
-            { data | content = updateContent v data.content }
+update updateContent eu startData =
+    Recursion.runRecursion
+        (\updt ->
+            case updt of
+                ContentUpdate v ->
+                    Recursion.base
+                        (\data ->
+                            { data | content = updateContent v data.content }
+                        )
 
-        HttpRequest _ ->
-            data
+                HttpRequest _ ->
+                    Recursion.base identity
 
-        More items ->
-            List.foldl (update updateContent) data items
+                More items ->
+                    Recursion.Fold.foldList (<<) identity items
 
-        Optional (Just u) ->
-            update updateContent u data
+                Optional (Just u) ->
+                    Recursion.recurse u
 
-        Optional Nothing ->
-            data
+                Optional Nothing ->
+                    Recursion.base identity
 
-        RemoveAccessToken token ->
-            { data | context = { context | accessTokens = Hashdict.removeKey token context.accessTokens } }
+                RemoveAccessToken token ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data
+                                | context =
+                                    { context
+                                        | accessTokens =
+                                            Hashdict.removeKey token context.accessTokens
+                                    }
+                            }
+                        )
 
-        RemovePasswordIfNecessary ->
-            if data.settings.removePasswordOnLogin then
-                { data | context = { context | password = Nothing } }
+                RemovePasswordIfNecessary ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            if data.settings.removePasswordOnLogin then
+                                { data | context = { context | password = Nothing } }
 
-            else
-                data
+                            else
+                                data
+                        )
 
-        SetAccessToken a ->
-            { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }
+                SetAccessToken a ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | accessTokens = Hashdict.insert a context.accessTokens } }
+                        )
 
-        SetBaseUrl b ->
-            { data | context = { context | baseUrl = Just b } }
+                SetBaseUrl b ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | baseUrl = Just b } }
+                        )
 
-        SetDeviceId d ->
-            { data | context = { context | deviceId = Just d } }
+                SetDeviceId d ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | deviceId = Just d } }
+                        )
 
-        SetNow n ->
-            { data | context = { context | now = Just n } }
+                SetNextBatch nextBatch ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | nextBatch = Just nextBatch } }
+                        )
 
-        SetRefreshToken r ->
-            { data | context = { context | refreshToken = Just r } }
+                SetNow n ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | now = Just n } }
+                        )
 
-        SetVersions vs ->
-            { data | context = { context | versions = Just vs } }
+                SetRefreshToken r ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | refreshToken = Just r } }
+                        )
+
+                SetVersions vs ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | versions = Just vs } }
+                        )
+        )
+        eu
+        startData

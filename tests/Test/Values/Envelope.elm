@@ -3,10 +3,7 @@ module Test.Values.Envelope exposing (..)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Config.Default as Default
-import Internal.Tools.Json as Json
 import Internal.Values.Envelope as Envelope exposing (Envelope)
-import Json.Decode as D
-import Json.Encode as E
 import Test exposing (..)
 import Test.Values.Context as TestContext
 import Test.Values.Settings as TestSettings
