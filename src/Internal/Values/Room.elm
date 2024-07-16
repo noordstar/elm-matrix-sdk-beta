@@ -58,7 +58,6 @@ import Internal.Values.Event as Event exposing (Event)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Internal.Values.User exposing (User)
-import Json.Encode as E
 import Recursion
 import Recursion.Fold
 

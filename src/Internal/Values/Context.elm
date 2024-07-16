@@ -71,7 +71,6 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
-import Json.Encode as E
 import Set exposing (Set)
 import Time
 

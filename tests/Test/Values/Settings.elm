@@ -11,7 +11,7 @@ import Test exposing (..)
 
 fuzzer : Fuzzer Settings
 fuzzer =
-    Fuzz.map4 Settings
+    Fuzz.map5 Settings
         (Fuzz.oneOf
             [ Fuzz.constant Default.currentVersion
             , Fuzz.string
@@ -22,6 +22,7 @@ fuzzer =
             , Fuzz.string
             ]
         )
+        (Fuzz.maybe Fuzz.string)
         (Fuzz.oneOf
             [ Fuzz.constant Default.removePasswordOnLogin
             , Fuzz.bool

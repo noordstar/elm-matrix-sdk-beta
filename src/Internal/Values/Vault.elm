@@ -3,6 +3,7 @@ module Internal.Values.Vault exposing
     , VaultUpdate(..), update
     , rooms, fromRoomId, mapRoom, updateRoom
     , getAccountData, setAccountData
+    , coder
     )
 
 {-| This module hosts the Vault module. The Vault is the data type storing all
@@ -29,6 +30,11 @@ Rooms are environments where people can have a conversation with each other.
 ## Account data
 
 @docs getAccountData, setAccountData
+
+
+## JSON
+
+@docs coder
 
 -}
 
@@ -65,6 +71,8 @@ type VaultUpdate
     | SetUser User
 
 
+{-| Convert a Vault to and from a JSON object.
+-}
 coder : Json.Coder Vault
 coder =
     Json.object4
