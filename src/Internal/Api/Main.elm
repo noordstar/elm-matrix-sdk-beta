@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent, sync
+    , sendMessageEvent, sendStateEvent, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent, sync
+@docs sendMessageEvent, sendStateEvent, sync
 
 -}
 
@@ -54,6 +54,31 @@ sendMessageEvent env data =
             , eventType = data.eventType
             , roomId = data.roomId
             , transactionId = data.transactionId
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Send a state event to a room.
+-}
+sendStateEvent :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , roomId : String
+        , stateKey : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+sendStateEvent env data =
+    ITask.run
+        data.toMsg
+        (ITask.sendStateEvent
+            { content = data.content
+            , eventType = data.eventType
+            , roomId = data.roomId
+            , stateKey = data.stateKey
             }
         )
         (Context.apiFormat env.context)

@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent, sync
+    , sendMessageEvent, sendStateEvent, sync
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent, sync
+@docs sendMessageEvent, sendStateEvent, sync
 
 -}
 
@@ -33,6 +33,7 @@ import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
+import Internal.Api.SendStateEvent.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
@@ -229,6 +230,15 @@ sendMessageEvent : { content : Json.Value, eventType : String, roomId : String, 
 sendMessageEvent input =
     makeVBA
         |> C.andThen (Internal.Api.SendMessageEvent.Api.sendMessageEvent input)
+        |> finishTask
+
+
+{-| Send a state event to a room.
+-}
+sendStateEvent : { content : Json.Value, eventType : String, roomId : String, stateKey : String } -> Task
+sendStateEvent input =
+    makeVBA
+        |> C.andThen (Internal.Api.SendStateEvent.Api.sendStateEvent input)
         |> finishTask
 
 

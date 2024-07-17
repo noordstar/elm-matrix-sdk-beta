@@ -1,7 +1,7 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
     , getAccountData
-    , sendMessageEvent
+    , sendMessageEvent, sendStateEvent
     )
 
 {-|
@@ -44,7 +44,7 @@ room. These events are JSON objects that can be shaped in any way or form that
 you like. To help other users with decoding your JSON objects, you pass an
 `eventType` string which helps them figure out the nature of your JSON object.
 
-@docs sendMessageEvent
+@docs sendMessageEvent, sendStateEvent
 
 -}
 
@@ -103,4 +103,26 @@ sendMessageEvent data =
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , transactionId = data.transactionId
+                }
+
+
+{-| Send a state event to a given room.
+-}
+sendStateEvent :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , stateKey : String
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+sendStateEvent data =
+    case data.room of
+        Room room ->
+            Api.sendStateEvent room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
+                , stateKey = data.stateKey
+                , toMsg = Types.VaultUpdate >> data.toMsg
                 }
