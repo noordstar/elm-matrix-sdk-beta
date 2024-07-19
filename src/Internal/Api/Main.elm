@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent, sendStateEvent, sync
+    , sendMessageEvent, sendStateEvent, setRoomAccountData, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent, sendStateEvent, sync
+@docs sendMessageEvent, sendStateEvent, setRoomAccountData, sync
 
 -}
 
@@ -26,6 +26,8 @@ import Internal.Api.Task as ITask exposing (Backpack)
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
+import Internal.Values.User as User
+import Internal.Values.Vault as V
 
 
 {-| Update message type that is being returned.
@@ -82,6 +84,39 @@ sendStateEvent env data =
             }
         )
         (Context.apiFormat env.context)
+
+
+{-| Set the account data for a Matrix room.
+-}
+setRoomAccountData :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , roomId : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+setRoomAccountData env data =
+    case env.context.user of
+        Just u ->
+            ITask.run
+                data.toMsg
+                (ITask.setRoomAccountData
+                    { content = data.content
+                    , eventType = data.eventType
+                    , roomId = data.roomId
+                    , userId = User.toString u
+                    }
+                )
+                (Context.apiFormat env.context)
+
+        Nothing ->
+            Cmd.none
+
+
+
+-- TODO: Return error about lacking user capabilities
 
 
 {-| Sync with the Matrix API to stay up-to-date.

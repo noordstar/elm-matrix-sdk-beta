@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent, sendStateEvent, sync
+    , sendMessageEvent, sendStateEvent, setRoomAccountData, sync
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent, sendStateEvent, sync
+@docs sendMessageEvent, sendStateEvent, setRoomAccountData, sync
 
 -}
 
@@ -34,6 +34,7 @@ import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
 import Internal.Api.SendStateEvent.Api
+import Internal.Api.SetRoomAccountData.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
@@ -239,6 +240,15 @@ sendStateEvent : { content : Json.Value, eventType : String, roomId : String, st
 sendStateEvent input =
     makeVBA
         |> C.andThen (Internal.Api.SendStateEvent.Api.sendStateEvent input)
+        |> finishTask
+
+
+{-| Set account data for a Matrix room.
+-}
+setRoomAccountData : { content : Json.Value, eventType : String, roomId : String, userId : String } -> Task
+setRoomAccountData input =
+    makeVBA
+        |> C.andThen (Internal.Api.SetRoomAccountData.Api.setRoomAccountData input)
         |> finishTask
 
 

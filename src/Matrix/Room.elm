@@ -1,6 +1,6 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
-    , getAccountData
+    , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
     )
 
@@ -34,7 +34,7 @@ data is linked to the user account: other logged in devices can see the account
 data too, as the server synchronizes it, but the server shouldn´t show it to
 other users.
 
-@docs getAccountData
+@docs getAccountData, setAccountData
 
 
 ## Sending events
@@ -124,5 +124,25 @@ sendStateEvent data =
                 , eventType = data.eventType
                 , roomId = roomId data.room
                 , stateKey = data.stateKey
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
+
+
+{-| Set account data to a Matrix room.
+-}
+setAccountData :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+setAccountData data =
+    case data.room of
+        Room room ->
+            Api.setRoomAccountData room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 }

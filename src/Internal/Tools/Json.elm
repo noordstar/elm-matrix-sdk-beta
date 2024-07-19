@@ -1,5 +1,5 @@
 module Internal.Tools.Json exposing
-    ( Coder, string, bool, int, float, value
+    ( Coder, string, bool, int, float, value, unit
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
@@ -29,7 +29,7 @@ data types. Because this module uses dynamic builder types, this also means it
 is relatively easy to write documentation for any data type that uses this
 module to build its encoders and decoders.
 
-@docs Coder, string, bool, int, float, value
+@docs Coder, string, bool, int, float, value, unit
 
 
 ## JSON Coding
@@ -165,6 +165,7 @@ type Docs
     | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
     | DocsSet Docs
     | DocsString
+    | DocsUnit
     | DocsValue
 
 
@@ -1460,6 +1461,18 @@ toDocsField x =
 toEncodeField : Field a object -> ( String, object -> Maybe E.Value )
 toEncodeField (Field data) =
     ( data.fieldName, data.toField >> data.encoder )
+
+
+{-| Completely ignore whatever needs to be encoded, and simply return a unit
+value.
+-}
+unit : Coder ()
+unit =
+    Coder
+        { encoder = \() -> E.object []
+        , decoder = D.succeed ( (), [] )
+        , docs = DocsUnit
+        }
 
 
 {-| Do not do anything useful with a JSON value, just bring it to Elm as a
