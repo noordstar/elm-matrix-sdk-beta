@@ -8,6 +8,7 @@ import Internal.Values.Context as Context exposing (Context, Versions)
 import Set
 import Test exposing (..)
 import Test.Tools.Timestamp as TestTimestamp
+import Test.Values.User as TestUser
 
 
 fuzzer : Fuzzer Context
@@ -17,22 +18,25 @@ fuzzer =
         maybeString =
             Fuzz.maybe Fuzz.string
     in
-    Fuzz.map8 (\a b c d ( e, f ) ( g, h ) ( i, j ) ( k, l ) -> Context a b c d e f g h i j k l)
+    Fuzz.map8 (\a b c ( d, e ) ( f, g ) ( h, i ) ( j, k ) ( l, m ) -> Context a b c d e f g h i j k l m)
         (Fuzz.constant <| Hashdict.empty .value)
         maybeString
         maybeString
-        maybeString
         (Fuzz.pair
+            maybeString
             (Fuzz.maybe TestTimestamp.fuzzer)
-            maybeString
         )
         (Fuzz.pair
             maybeString
+            maybeString
+        )
+        (Fuzz.pair
             Fuzz.string
+            maybeString
         )
         (Fuzz.pair
             maybeString
-            maybeString
+            (Fuzz.maybe TestUser.fuzzer)
         )
         (Fuzz.pair
             maybeString

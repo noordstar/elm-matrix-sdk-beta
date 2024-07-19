@@ -25,7 +25,7 @@ suite =
                 [ fuzz Fuzz.string
                     "currentVersion"
                     (\s ->
-                        { content = s, serverName = "" }
+                        { content = s, serverName = "", user = Nothing }
                             |> Envelope.init
                             |> Envelope.extractSettings .currentVersion
                             |> Expect.equal Default.currentVersion
@@ -33,7 +33,7 @@ suite =
                 , fuzz Fuzz.string
                     "deviceName"
                     (\s ->
-                        { content = s, serverName = "" }
+                        { content = s, serverName = "", user = Nothing }
                             |> Envelope.init
                             |> Envelope.extractSettings .deviceName
                             |> Expect.equal Default.deviceName
@@ -41,7 +41,7 @@ suite =
                 , fuzz Fuzz.string
                     "syncTime"
                     (\s ->
-                        { content = s, serverName = "" }
+                        { content = s, serverName = "", user = Nothing }
                             |> Envelope.init
                             |> Envelope.extractSettings .syncTime
                             |> Expect.equal Default.syncTime
