@@ -5,7 +5,7 @@ module Internal.Tools.Json exposing
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
     , Field, field, parser
-    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
+    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12, object13
     )
 
 {-|
@@ -62,7 +62,7 @@ first.
 
 Once all fields are constructed, the user can create JSON objects.
 
-@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
+@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12, object13
 
 -}
 
@@ -1267,6 +1267,85 @@ object12 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk fl =
                     , toDocsField fj
                     , toDocsField fk
                     , toDocsField fl
+                    ]
+                }
+        }
+
+
+{-| Define an object with 13 keys
+-}
+object13 :
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> object }
+    -> Field a object
+    -> Field b object
+    -> Field c object
+    -> Field d object
+    -> Field e object
+    -> Field f object
+    -> Field g object
+    -> Field h object
+    -> Field i object
+    -> Field j object
+    -> Field k object
+    -> Field l object
+    -> Field m object
+    -> Coder object
+object13 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk fl fm =
+    Coder
+        { encoder =
+            objectEncoder
+                [ toEncodeField fa
+                , toEncodeField fb
+                , toEncodeField fc
+                , toEncodeField fd
+                , toEncodeField fe
+                , toEncodeField ff
+                , toEncodeField fg
+                , toEncodeField fh
+                , toEncodeField fi
+                , toEncodeField fj
+                , toEncodeField fk
+                , toEncodeField fl
+                , toEncodeField fm
+                ]
+        , decoder =
+            D.map13
+                (\( a, la ) ( b, lb ) ( c, lc ) ( d, ld ) ( e, le ) ( f, lf ) ( g, lg ) ( h, lh ) ( i, li ) ( j, lj ) ( k, lk ) ( l, ll ) ( m, lm ) ->
+                    ( init a b c d e f g h i j k l m
+                    , List.concat [ la, lb, lc, ld, le, lf, lg, lh, li, lj, lk, ll, lm ]
+                    )
+                )
+                (toDecoderField fa)
+                (toDecoderField fb)
+                (toDecoderField fc)
+                (toDecoderField fd)
+                (toDecoderField fe)
+                (toDecoderField ff)
+                (toDecoderField fg)
+                (toDecoderField fh)
+                (toDecoderField fi)
+                (toDecoderField fj)
+                (toDecoderField fk)
+                (toDecoderField fl)
+                (toDecoderField fm)
+        , docs =
+            DocsObject
+                { name = name
+                , description = description
+                , keys =
+                    [ toDocsField fa
+                    , toDocsField fb
+                    , toDocsField fc
+                    , toDocsField fd
+                    , toDocsField fe
+                    , toDocsField ff
+                    , toDocsField fg
+                    , toDocsField fh
+                    , toDocsField fi
+                    , toDocsField fj
+                    , toDocsField fk
+                    , toDocsField fl
+                    , toDocsField fm
                     ]
                 }
         }

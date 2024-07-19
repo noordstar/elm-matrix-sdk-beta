@@ -97,8 +97,9 @@ fromUserId uid =
         |> Maybe.map
             (\u ->
                 Envelope.init
-                    { serverName = "https://" ++ User.domain u
-                    , content = Internal.init (Just u)
+                    { content = Internal.init
+                    , serverName = "https://" ++ User.domain u
+                    , user = Just u
                     }
                     |> Envelope.mapContext (\c -> { c | username = Just uid })
             )
@@ -113,13 +114,14 @@ you can either insert `alice` or `@alice:example.org`.
 -}
 fromUsername : { username : String, host : String, port_ : Maybe Int } -> Vault
 fromUsername { username, host, port_ } =
-    { serverName =
+    { content = Internal.init
+    , serverName =
         port_
             |> Maybe.map String.fromInt
             |> Maybe.map ((++) ":")
             |> Maybe.withDefault ""
             |> (++) host
-    , content = Internal.init (User.fromString username)
+    , user = User.fromString username
     }
         |> Envelope.init
         |> Envelope.mapContext (\c -> { c | username = Just username })

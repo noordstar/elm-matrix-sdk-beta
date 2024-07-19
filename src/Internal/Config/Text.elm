@@ -278,6 +278,7 @@ fields :
         , serverName : Desc
         , suggestedAccessToken : Desc
         , transaction : Desc
+        , user : Desc
         , versions : Desc
         }
     , envelope :
@@ -408,6 +409,9 @@ fields =
             ]
         , transaction =
             [ "A unique identifier for a transaction initiated by the user."
+            ]
+        , user =
+            [ "The Matrix user the Vault is representing."
             ]
         , versions =
             [ "The versions of the Matrix protocol that are supported by the server."
