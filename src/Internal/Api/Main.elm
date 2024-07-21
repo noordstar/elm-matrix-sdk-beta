@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent, sendStateEvent, setRoomAccountData, sync
+    , sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent, sendStateEvent, setRoomAccountData, sync
+@docs sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
@@ -84,6 +84,33 @@ sendStateEvent env data =
             }
         )
         (Context.apiFormat env.context)
+
+
+{-| Set global account data.
+-}
+setAccountData :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+setAccountData env data =
+    case env.context.user of
+        Just u ->
+            ITask.run
+                data.toMsg
+                (ITask.setAccountData
+                    { content = data.content
+                    , eventType = data.eventType
+                    , userId = User.toString u
+                    }
+                )
+                (Context.apiFormat env.context)
+
+        Nothing ->
+            Cmd.none
 
 
 {-| Set the account data for a Matrix room.

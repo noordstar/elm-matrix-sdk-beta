@@ -2,6 +2,7 @@ module Matrix exposing
     ( Vault, fromUserId, fromUsername
     , VaultUpdate, update, sync, logs
     , rooms, fromRoomId
+    , getAccountData, setAccountData
     , addAccessToken, sendMessageEvent
     )
 
@@ -31,6 +32,11 @@ support a monolithic public registry. (:
 ## Exploring the Vault
 
 @docs rooms, fromRoomId
+
+
+## Account data
+
+@docs getAccountData, setAccountData
 
 
 ## Debugging
@@ -78,6 +84,13 @@ fromRoomId : String -> Vault -> Maybe Types.Room
 fromRoomId roomId (Vault vault) =
     Envelope.mapMaybe (Internal.fromRoomId roomId) vault
         |> Maybe.map Types.Room
+
+
+{-| Get global account data.
+-}
+getAccountData : String -> Vault -> Maybe E.Value
+getAccountData key (Vault vault) =
+    Envelope.extract (Internal.getAccountData key) vault
 
 
 {-| Use a fully-fledged Matrix ID to connect.
@@ -196,6 +209,25 @@ sendMessageEvent data =
                 , roomId = data.roomId
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , transactionId = data.transactionId
+                }
+
+
+{-| Set global account data.
+-}
+setAccountData :
+    { content : E.Value
+    , eventType : String
+    , room : Vault
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+setAccountData data =
+    case data.room of
+        Vault vault ->
+            Api.setAccountData vault
+                { content = data.content
+                , eventType = data.eventType
+                , toMsg = Types.VaultUpdate >> data.toMsg
                 }
 
 

@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent, sendStateEvent, setRoomAccountData, sync
+    , sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent, sendStateEvent, setRoomAccountData, sync
+@docs sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
@@ -34,6 +34,7 @@ import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
 import Internal.Api.SendStateEvent.Api
+import Internal.Api.SetAccountData.Api
 import Internal.Api.SetRoomAccountData.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
@@ -240,6 +241,15 @@ sendStateEvent : { content : Json.Value, eventType : String, roomId : String, st
 sendStateEvent input =
     makeVBA
         |> C.andThen (Internal.Api.SendStateEvent.Api.sendStateEvent input)
+        |> finishTask
+
+
+{-| Set global account data.
+-}
+setAccountData : { content : Json.Value, eventType : String, userId : String } -> Task
+setAccountData input =
+    makeVBA
+        |> C.andThen (Internal.Api.SetAccountData.Api.setAccountData input)
         |> finishTask
 
 
