@@ -12,7 +12,6 @@ This module sends state events to Matrix rooms.
 -}
 
 import Internal.Api.Api as A
-import Internal.Api.Invite.Api exposing (Phantom)
 import Internal.Api.Request as R
 import Internal.Config.Log exposing (log)
 import Internal.Config.Text as Text

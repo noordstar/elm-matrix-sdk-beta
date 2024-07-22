@@ -44,7 +44,7 @@ room. These events are JSON objects that can be shaped in any way or form that
 you like. To help other users with decoding your JSON objects, you pass an
 `eventType` string which helps them figure out the nature of your JSON object.
 
-@docs sendMessageEvent, sendStateEvent
+@docs inviteUser, sendMessageEvent, sendStateEvent
 
 -}
 
@@ -67,6 +67,25 @@ getAccountData : String -> Room -> Maybe E.Value
 getAccountData key (Room room) =
     Envelope.extract (Internal.getAccountData key) room
 
+
+{-| Invite a user to a room.
+-}
+invite :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+invite data =
+    case (data.room, data.user) of
+        (Room room, Types.User user) ->
+            Api.inviteUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = user.content
+                }
 
 {-| Get a room's room id. This is an opaque string that distinguishes rooms from
 each other.

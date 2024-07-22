@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -23,12 +23,13 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
+import Internal.Api.InviteUser.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
@@ -46,6 +47,7 @@ import Internal.Values.Envelope as E exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
 import Internal.Values.Vault exposing (VaultUpdate(..))
 import Task
+import Internal.Values.User exposing (User)
 
 
 {-| A Backpack is the ultimate message type that gets sent back by the Elm
@@ -205,6 +207,15 @@ finishTask uftask =
                         , contextChange = Context.reset
                         }
             )
+
+
+{-| Invite a user to a room.
+-}
+inviteUser : { reason : Maybe String, roomId : String, user : User } -> Task
+inviteUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.InviteUser.Api.inviteUser input)
+        |> finishTask
 
 
 {-| Establish a Task Chain context where the base URL and supported list of

@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
@@ -28,12 +28,35 @@ import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
 import Internal.Values.User as User
 import Internal.Values.Vault as V
+import Internal.Values.User exposing (User)
 
 
 {-| Update message type that is being returned.
 -}
 type alias Msg =
     Backpack
+
+{-| Invite a user to a room.
+-}
+inviteUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+inviteUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.inviteUser
+            { reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
 
 
 {-| Send a message event.
