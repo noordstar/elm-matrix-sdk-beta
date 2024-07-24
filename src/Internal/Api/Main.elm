@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
@@ -26,15 +26,38 @@ import Internal.Api.Task as ITask exposing (Backpack)
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
-import Internal.Values.User as User
+import Internal.Values.User as User exposing (User)
 import Internal.Values.Vault as V
-import Internal.Values.User exposing (User)
 
 
 {-| Update message type that is being returned.
 -}
 type alias Msg =
     Backpack
+
+
+{-| Ban a user from a room.
+-}
+banUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+banUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.banUser
+            { reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
 
 {-| Invite a user to a room.
 -}
@@ -52,6 +75,31 @@ inviteUser env data =
         data.toMsg
         (ITask.inviteUser
             { reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Kick a user from a room.
+-}
+kickUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+kickUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.kickUser
+            { avatarUrl = Nothing
+            , displayname = Nothing
+            , reason = data.reason
             , roomId = data.roomId
             , user = data.user
             }

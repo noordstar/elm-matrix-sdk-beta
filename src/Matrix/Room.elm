@@ -2,6 +2,7 @@ module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
     , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
+    , invite, kick, ban
     )
 
 {-|
@@ -46,6 +47,10 @@ you like. To help other users with decoding your JSON objects, you pass an
 
 @docs inviteUser, sendMessageEvent, sendStateEvent
 
+## Moderating users
+
+@docs invite, kick, ban
+
 -}
 
 import Internal.Api.Main as Api
@@ -60,6 +65,24 @@ import Types exposing (Room(..))
 type alias Room =
     Types.Room
 
+{-| Ban a user from a room.
+-}
+ban :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+ban data =
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
+            Api.kickUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = Envelope.getContent user
+                }
 
 {-| Get a piece of account data linked to a certain string key.
 -}
@@ -78,14 +101,34 @@ invite :
     }
     -> Cmd msg
 invite data =
-    case (data.room, data.user) of
-        (Room room, Types.User user) ->
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
             Api.inviteUser room
                 { reason = data.reason
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
-                , user = user.content
+                , user = Envelope.getContent user
                 }
+
+{-| Kick a user from a room.
+-}
+kick :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+kick data =
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
+            Api.kickUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = Envelope.getContent user
+                }
+
 
 {-| Get a room's room id. This is an opaque string that distinguishes rooms from
 each other.

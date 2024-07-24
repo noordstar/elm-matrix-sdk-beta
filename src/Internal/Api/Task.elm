@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -23,13 +23,15 @@ up-to-date.
 
 ## Tasks
 
-@docs inviteUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
+import Internal.Api.BanUser.Api
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
 import Internal.Api.InviteUser.Api
+import Internal.Api.KickUser.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
@@ -45,9 +47,9 @@ import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (APIContext)
 import Internal.Values.Envelope as E exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
+import Internal.Values.User exposing (User)
 import Internal.Values.Vault exposing (VaultUpdate(..))
 import Task
-import Internal.Values.User exposing (User)
 
 
 {-| A Backpack is the ultimate message type that gets sent back by the Elm
@@ -69,6 +71,13 @@ complete Task type.
 type alias UFTask a b =
     C.TaskChain Request.Error (EnvelopeUpdate VaultUpdate) a b
 
+{-| Ban a user from a room.
+-}
+banUser : { reason : Maybe String, roomId : String, user : User } -> Task
+banUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.BanUser.Api.banUser input)
+        |> finishTask
 
 {-| Get an access token to talk to the Matrix API
 -}
@@ -215,6 +224,22 @@ inviteUser : { reason : Maybe String, roomId : String, user : User } -> Task
 inviteUser input =
     makeVBA
         |> C.andThen (Internal.Api.InviteUser.Api.inviteUser input)
+        |> finishTask
+
+
+{-| Kick a user from a room.
+-}
+kickUser :
+    { avatarUrl : Maybe String
+    , displayname : Maybe String
+    , reason : Maybe String
+    , roomId : String
+    , user : User
+    }
+    -> Task
+kickUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.KickUser.Api.kickUser input)
         |> finishTask
 
 
