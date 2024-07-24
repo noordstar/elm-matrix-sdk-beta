@@ -2,6 +2,7 @@ module Internal.Api.BanUser.Api exposing (Phantom, banUser)
 
 {-|
 
+
 # Ban user
 
 This module helps to ban users from a room.
@@ -64,7 +65,6 @@ type alias BanUserInput =
 
 type alias BanUserInputV1 a =
     { a | reason : Maybe String, roomId : String, user : User }
-
 
 
 type alias BanUserOutputV1 =

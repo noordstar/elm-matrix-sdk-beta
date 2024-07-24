@@ -47,6 +47,7 @@ you like. To help other users with decoding your JSON objects, you pass an
 
 @docs inviteUser, sendMessageEvent, sendStateEvent
 
+
 ## Moderating users
 
 @docs invite, kick, ban
@@ -64,6 +65,7 @@ import Types exposing (Room(..))
 -}
 type alias Room =
     Types.Room
+
 
 {-| Ban a user from a room.
 -}
@@ -83,6 +85,7 @@ ban data =
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , user = Envelope.getContent user
                 }
+
 
 {-| Get a piece of account data linked to a certain string key.
 -}
@@ -109,6 +112,7 @@ invite data =
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , user = Envelope.getContent user
                 }
+
 
 {-| Kick a user from a room.
 -}

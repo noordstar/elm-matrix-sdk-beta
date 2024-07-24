@@ -71,6 +71,7 @@ complete Task type.
 type alias UFTask a b =
     C.TaskChain Request.Error (EnvelopeUpdate VaultUpdate) a b
 
+
 {-| Ban a user from a room.
 -}
 banUser : { reason : Maybe String, roomId : String, user : User } -> Task
@@ -78,6 +79,7 @@ banUser input =
     makeVBA
         |> C.andThen (Internal.Api.BanUser.Api.banUser input)
         |> finishTask
+
 
 {-| Get an access token to talk to the Matrix API
 -}
