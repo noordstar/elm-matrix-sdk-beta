@@ -79,7 +79,7 @@ ban :
 ban data =
     case ( data.room, data.user ) of
         ( Room room, Types.User user ) ->
-            Api.kickUser room
+            Api.banUser room
                 { reason = data.reason
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg

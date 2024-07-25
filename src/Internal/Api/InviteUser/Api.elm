@@ -107,7 +107,8 @@ inviteV2 : InviteInputV2 a -> A.TaskChain (PhantomV1 ph1) (PhantomV1 ph1)
 inviteV2 { reason, roomId, user } =
     A.request
         { attributes =
-            [ R.bodyOpString "reason" reason
+            [ R.accessToken
+            , R.bodyOpString "reason" reason
             , R.bodyString "user_id" (User.toString user)
             , R.onStatusCode 400 "M_UNKNOWN"
             , R.onStatusCode 403 "M_FORBIDDEN"
