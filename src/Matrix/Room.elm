@@ -45,7 +45,7 @@ room. These events are JSON objects that can be shaped in any way or form that
 you like. To help other users with decoding your JSON objects, you pass an
 `eventType` string which helps them figure out the nature of your JSON object.
 
-@docs inviteUser, sendMessageEvent, sendStateEvent
+@docs sendMessageEvent, sendStateEvent
 
 
 ## Moderating users
