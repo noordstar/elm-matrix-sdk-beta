@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , sendMessageEvent, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -23,16 +23,22 @@ up-to-date.
 
 ## Tasks
 
-@docs sendMessageEvent, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
+import Internal.Api.BanUser.Api
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
+import Internal.Api.InviteUser.Api
+import Internal.Api.KickUser.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
+import Internal.Api.SendStateEvent.Api
+import Internal.Api.SetAccountData.Api
+import Internal.Api.SetRoomAccountData.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
 import Internal.Config.Log exposing (Log, log)
@@ -41,6 +47,7 @@ import Internal.Tools.Json as Json
 import Internal.Values.Context as Context exposing (APIContext)
 import Internal.Values.Envelope as E exposing (EnvelopeUpdate(..))
 import Internal.Values.Room exposing (RoomUpdate(..))
+import Internal.Values.User exposing (User)
 import Internal.Values.Vault exposing (VaultUpdate(..))
 import Task
 
@@ -63,6 +70,15 @@ complete Task type.
 -}
 type alias UFTask a b =
     C.TaskChain Request.Error (EnvelopeUpdate VaultUpdate) a b
+
+
+{-| Ban a user from a room.
+-}
+banUser : { reason : Maybe String, roomId : String, user : User } -> Task
+banUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.BanUser.Api.banUser input)
+        |> finishTask
 
 
 {-| Get an access token to talk to the Matrix API
@@ -204,6 +220,31 @@ finishTask uftask =
             )
 
 
+{-| Invite a user to a room.
+-}
+inviteUser : { reason : Maybe String, roomId : String, user : User } -> Task
+inviteUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.InviteUser.Api.inviteUser input)
+        |> finishTask
+
+
+{-| Kick a user from a room.
+-}
+kickUser :
+    { avatarUrl : Maybe String
+    , displayname : Maybe String
+    , reason : Maybe String
+    , roomId : String
+    , user : User
+    }
+    -> Task
+kickUser input =
+    makeVBA
+        |> C.andThen (Internal.Api.KickUser.Api.kickUser input)
+        |> finishTask
+
+
 {-| Establish a Task Chain context where the base URL and supported list of
 versions are known.
 -}
@@ -229,6 +270,33 @@ sendMessageEvent : { content : Json.Value, eventType : String, roomId : String, 
 sendMessageEvent input =
     makeVBA
         |> C.andThen (Internal.Api.SendMessageEvent.Api.sendMessageEvent input)
+        |> finishTask
+
+
+{-| Send a state event to a room.
+-}
+sendStateEvent : { content : Json.Value, eventType : String, roomId : String, stateKey : String } -> Task
+sendStateEvent input =
+    makeVBA
+        |> C.andThen (Internal.Api.SendStateEvent.Api.sendStateEvent input)
+        |> finishTask
+
+
+{-| Set global account data.
+-}
+setAccountData : { content : Json.Value, eventType : String, userId : String } -> Task
+setAccountData input =
+    makeVBA
+        |> C.andThen (Internal.Api.SetAccountData.Api.setAccountData input)
+        |> finishTask
+
+
+{-| Set account data for a Matrix room.
+-}
+setRoomAccountData : { content : Json.Value, eventType : String, roomId : String, userId : String } -> Task
+setRoomAccountData input =
+    makeVBA
+        |> C.andThen (Internal.Api.SetRoomAccountData.Api.setRoomAccountData input)
         |> finishTask
 
 

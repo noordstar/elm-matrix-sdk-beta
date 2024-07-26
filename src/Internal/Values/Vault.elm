@@ -54,7 +54,6 @@ type alias Vault =
     { accountData : Dict String Json.Value
     , nextBatch : Maybe String
     , rooms : Hashdict Room
-    , user : Maybe User
     }
 
 
@@ -68,14 +67,13 @@ type VaultUpdate
     | Optional (Maybe VaultUpdate)
     | SetAccountData String Json.Value
     | SetNextBatch String
-    | SetUser User
 
 
 {-| Convert a Vault to and from a JSON object.
 -}
 coder : Json.Coder Vault
 coder =
-    Json.object4
+    Json.object3
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -101,13 +99,6 @@ coder =
             , coder = Hashdict.coder .roomId Room.coder
             }
         )
-        (Json.field.optional.value
-            { fieldName = "user"
-            , toField = .user
-            , description = Text.fields.vault.user
-            , coder = User.coder
-            }
-        )
 
 
 {-| Get a given room by its room id.
@@ -126,12 +117,11 @@ getAccountData key vault =
 
 {-| Initiate a new Vault type.
 -}
-init : Maybe User -> Vault
-init mUser =
+init : Vault
+init =
     { accountData = Dict.empty
     , nextBatch = Nothing
     , rooms = Hashdict.empty .roomId
-    , user = mUser
     }
 
 
@@ -195,12 +185,6 @@ update vaultUpdate startVault =
                     Recursion.base
                         (\vault ->
                             { vault | nextBatch = Just nb }
-                        )
-
-                SetUser user ->
-                    Recursion.base
-                        (\vault ->
-                            { vault | user = Just user }
                         )
         )
         vaultUpdate

@@ -56,6 +56,7 @@ import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Context as Context exposing (AccessToken, Context, Versions)
 import Internal.Values.Settings as Settings
+import Internal.Values.User exposing (User)
 import Recursion
 import Recursion.Fold
 
@@ -87,6 +88,7 @@ type EnvelopeUpdate a
     | SetNextBatch String
     | SetNow Timestamp
     | SetRefreshToken String
+    | SetUser User
     | SetVersions Versions
 
 
@@ -188,10 +190,10 @@ getContent =
 {-| Create a new enveloped data type. All settings are set to default values
 from the [Internal.Config.Default](Internal-Config-Default) module.
 -}
-init : { serverName : String, content : a } -> Envelope a
+init : { content : a, serverName : String, user : Maybe User } -> Envelope a
 init data =
     { content = data.content
-    , context = Context.init data.serverName
+    , context = Context.init data.serverName data.user
     , settings = Settings.init
     }
 
@@ -372,6 +374,12 @@ update updateContent eu startData =
                     Recursion.base
                         (\({ context } as data) ->
                             { data | context = { context | refreshToken = Just r } }
+                        )
+
+                SetUser u ->
+                    Recursion.base
+                        (\({ context } as data) ->
+                            { data | context = { context | user = Just u } }
                         )
 
                 SetVersions vs ->

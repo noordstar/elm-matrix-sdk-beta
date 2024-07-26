@@ -1,4 +1,4 @@
-module Internal.Api.Invite.Api exposing (InviteInput, Phantom, invite)
+module Internal.Api.InviteUser.Api exposing (InviteInput, Phantom, inviteUser)
 
 {-|
 
@@ -14,7 +14,7 @@ room.
 If the user was invited to the room, the homeserver will append a m.room.member
 event to the room.
 
-@docs InviteInput, Phantom, invite
+@docs InviteInput, Phantom, inviteUser
 
 -}
 
@@ -31,8 +31,8 @@ import Internal.Values.Vault as V
 
 {-| Invite a user to a room.
 -}
-invite : InviteInput -> A.TaskChain (Phantom ph1) (Phantom ph1)
-invite =
+inviteUser : InviteInput -> A.TaskChain (Phantom ph1) (Phantom ph1)
+inviteUser =
     A.startWithVersion "r0.0.0" inviteV1
         |> A.sameForVersion "r0.0.1"
         |> A.sameForVersion "r0.1.0"
@@ -107,7 +107,8 @@ inviteV2 : InviteInputV2 a -> A.TaskChain (PhantomV1 ph1) (PhantomV1 ph1)
 inviteV2 { reason, roomId, user } =
     A.request
         { attributes =
-            [ R.bodyOpString "reason" reason
+            [ R.accessToken
+            , R.bodyOpString "reason" reason
             , R.bodyString "user_id" (User.toString user)
             , R.onStatusCode 400 "M_UNKNOWN"
             , R.onStatusCode 403 "M_FORBIDDEN"

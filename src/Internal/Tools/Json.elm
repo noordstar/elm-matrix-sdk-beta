@@ -1,11 +1,11 @@
 module Internal.Tools.Json exposing
-    ( Coder, string, bool, int, float, value
+    ( Coder, string, bool, int, float, value, unit
     , Encoder, encode, Decoder, decode, Value
     , succeed, fail, andThen, lazy, map
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
     , Field, field, parser
-    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
+    , object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12, object13
     )
 
 {-|
@@ -29,7 +29,7 @@ data types. Because this module uses dynamic builder types, this also means it
 is relatively easy to write documentation for any data type that uses this
 module to build its encoders and decoders.
 
-@docs Coder, string, bool, int, float, value
+@docs Coder, string, bool, int, float, value, unit
 
 
 ## JSON Coding
@@ -62,7 +62,7 @@ first.
 
 Once all fields are constructed, the user can create JSON objects.
 
-@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12
+@docs object1, object2, object3, object4, object5, object6, object7, object8, object9, object10, object11, object12, object13
 
 -}
 
@@ -165,6 +165,7 @@ type Docs
     | DocsRiskyMap (Descriptive { content : Docs, failure : List String })
     | DocsSet Docs
     | DocsString
+    | DocsUnit
     | DocsValue
 
 
@@ -1272,6 +1273,85 @@ object12 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk fl =
         }
 
 
+{-| Define an object with 13 keys
+-}
+object13 :
+    Descriptive { init : a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> object }
+    -> Field a object
+    -> Field b object
+    -> Field c object
+    -> Field d object
+    -> Field e object
+    -> Field f object
+    -> Field g object
+    -> Field h object
+    -> Field i object
+    -> Field j object
+    -> Field k object
+    -> Field l object
+    -> Field m object
+    -> Coder object
+object13 { name, description, init } fa fb fc fd fe ff fg fh fi fj fk fl fm =
+    Coder
+        { encoder =
+            objectEncoder
+                [ toEncodeField fa
+                , toEncodeField fb
+                , toEncodeField fc
+                , toEncodeField fd
+                , toEncodeField fe
+                , toEncodeField ff
+                , toEncodeField fg
+                , toEncodeField fh
+                , toEncodeField fi
+                , toEncodeField fj
+                , toEncodeField fk
+                , toEncodeField fl
+                , toEncodeField fm
+                ]
+        , decoder =
+            D.map13
+                (\( a, la ) ( b, lb ) ( c, lc ) ( d, ld ) ( e, le ) ( f, lf ) ( g, lg ) ( h, lh ) ( i, li ) ( j, lj ) ( k, lk ) ( l, ll ) ( m, lm ) ->
+                    ( init a b c d e f g h i j k l m
+                    , List.concat [ la, lb, lc, ld, le, lf, lg, lh, li, lj, lk, ll, lm ]
+                    )
+                )
+                (toDecoderField fa)
+                (toDecoderField fb)
+                (toDecoderField fc)
+                (toDecoderField fd)
+                (toDecoderField fe)
+                (toDecoderField ff)
+                (toDecoderField fg)
+                (toDecoderField fh)
+                (toDecoderField fi)
+                (toDecoderField fj)
+                (toDecoderField fk)
+                (toDecoderField fl)
+                (toDecoderField fm)
+        , docs =
+            DocsObject
+                { name = name
+                , description = description
+                , keys =
+                    [ toDocsField fa
+                    , toDocsField fb
+                    , toDocsField fc
+                    , toDocsField fd
+                    , toDocsField fe
+                    , toDocsField ff
+                    , toDocsField fg
+                    , toDocsField fh
+                    , toDocsField fi
+                    , toDocsField fj
+                    , toDocsField fk
+                    , toDocsField fl
+                    , toDocsField fm
+                    ]
+                }
+        }
+
+
 {-| Define a parser that converts a string into a custom Elm type.
 -}
 parser : { name : String, p : P.Parser ( a, List Log ), toString : a -> String } -> Coder a
@@ -1381,6 +1461,18 @@ toDocsField x =
 toEncodeField : Field a object -> ( String, object -> Maybe E.Value )
 toEncodeField (Field data) =
     ( data.fieldName, data.toField >> data.encoder )
+
+
+{-| Completely ignore whatever needs to be encoded, and simply return a unit
+value.
+-}
+unit : Coder ()
+unit =
+    Coder
+        { encoder = \() -> E.object []
+        , decoder = D.succeed ( (), [] )
+        , docs = DocsUnit
+        }
 
 
 {-| Do not do anything useful with a JSON value, just bring it to Elm as a
