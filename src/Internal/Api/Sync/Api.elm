@@ -106,7 +106,7 @@ syncV1 data =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            Debug.log "Handling output v1" >> V1.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
+            V1.updateSyncResponse { filter = Filter.pass, since = data.since }
         }
 
 
@@ -128,7 +128,7 @@ syncV2 data =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            Debug.log "Handling output v2" >> V2.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
+            V2.updateSyncResponse { filter = Filter.pass, since = data.since }
         }
 
 
@@ -150,7 +150,7 @@ syncV3 data =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            Debug.log "Handling output v3" >> V3.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
+            V3.updateSyncResponse { filter = Filter.pass, since = data.since }
         }
 
 
@@ -172,5 +172,5 @@ syncV4 data =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "sync" ]
         , toUpdate =
-            Debug.log "Handling output v4" >> V4.updateSyncResponse { filter = Filter.pass, since = data.since } >> Debug.log "Received"
+            V4.updateSyncResponse { filter = Filter.pass, since = data.since }
         }

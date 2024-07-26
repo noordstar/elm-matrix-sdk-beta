@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , sendMessageEvent, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs sendMessageEvent, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
 
 -}
 
@@ -26,12 +26,85 @@ import Internal.Api.Task as ITask exposing (Backpack)
 import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
+import Internal.Values.User as User exposing (User)
+import Internal.Values.Vault as V
 
 
 {-| Update message type that is being returned.
 -}
 type alias Msg =
     Backpack
+
+
+{-| Ban a user from a room.
+-}
+banUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+banUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.banUser
+            { reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Invite a user to a room.
+-}
+inviteUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+inviteUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.inviteUser
+            { reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Kick a user from a room.
+-}
+kickUser :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , user : User
+        }
+    -> Cmd msg
+kickUser env data =
+    ITask.run
+        data.toMsg
+        (ITask.kickUser
+            { avatarUrl = Nothing
+            , displayname = Nothing
+            , reason = data.reason
+            , roomId = data.roomId
+            , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
 
 
 {-| Send a message event.
@@ -57,6 +130,91 @@ sendMessageEvent env data =
             }
         )
         (Context.apiFormat env.context)
+
+
+{-| Send a state event to a room.
+-}
+sendStateEvent :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , roomId : String
+        , stateKey : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+sendStateEvent env data =
+    ITask.run
+        data.toMsg
+        (ITask.sendStateEvent
+            { content = data.content
+            , eventType = data.eventType
+            , roomId = data.roomId
+            , stateKey = data.stateKey
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Set global account data.
+-}
+setAccountData :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+setAccountData env data =
+    case env.context.user of
+        Just u ->
+            ITask.run
+                data.toMsg
+                (ITask.setAccountData
+                    { content = data.content
+                    , eventType = data.eventType
+                    , userId = User.toString u
+                    }
+                )
+                (Context.apiFormat env.context)
+
+        Nothing ->
+            Cmd.none
+
+
+{-| Set the account data for a Matrix room.
+-}
+setRoomAccountData :
+    E.Envelope a
+    ->
+        { content : Json.Value
+        , eventType : String
+        , roomId : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+setRoomAccountData env data =
+    case env.context.user of
+        Just u ->
+            ITask.run
+                data.toMsg
+                (ITask.setRoomAccountData
+                    { content = data.content
+                    , eventType = data.eventType
+                    , roomId = data.roomId
+                    , userId = User.toString u
+                    }
+                )
+                (Context.apiFormat env.context)
+
+        Nothing ->
+            Cmd.none
+
+
+
+-- TODO: Return error about lacking user capabilities
 
 
 {-| Sync with the Matrix API to stay up-to-date.

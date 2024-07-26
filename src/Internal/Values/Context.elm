@@ -71,6 +71,7 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
+import Internal.Values.User as User exposing (User)
 import Set exposing (Set)
 import Time
 
@@ -101,6 +102,7 @@ type alias Context =
     , serverName : String
     , suggestedAccessToken : Maybe String
     , transaction : Maybe String
+    , user : Maybe User
     , username : Maybe String
     , versions : Maybe Versions
     }
@@ -152,7 +154,7 @@ fromApiFormat (APIContext c) =
 -}
 coder : Json.Coder Context
 coder =
-    Json.object12
+    Json.object13
         { name = Text.docs.context.name
         , description = Text.docs.context.description
         , init = Context
@@ -225,6 +227,13 @@ coder =
             , toField = .transaction
             , description = Text.fields.context.transaction
             , coder = Json.string
+            }
+        )
+        (Json.field.optional.value
+            { fieldName = "user"
+            , toField = .user
+            , description = Text.fields.context.user
+            , coder = User.coder
             }
         )
         (Json.field.optional.value
@@ -305,8 +314,8 @@ encode =
 
 {-| A basic, untouched version of the Context, containing no information.
 -}
-init : String -> Context
-init sn =
+init : String -> Maybe User -> Context
+init sn mu =
     { accessTokens = Hashdict.empty .value
     , baseUrl = Nothing
     , deviceId = Nothing
@@ -317,6 +326,7 @@ init sn =
     , serverName = sn
     , suggestedAccessToken = Nothing
     , transaction = Nothing
+    , user = mu
     , username = Nothing
     , versions = Nothing
     }

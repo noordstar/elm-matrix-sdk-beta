@@ -2,6 +2,7 @@ module Matrix exposing
     ( Vault, fromUserId, fromUsername
     , VaultUpdate, update, sync, logs
     , rooms, fromRoomId
+    , getAccountData, setAccountData
     , addAccessToken, sendMessageEvent
     )
 
@@ -31,6 +32,11 @@ support a monolithic public registry. (:
 ## Exploring the Vault
 
 @docs rooms, fromRoomId
+
+
+## Account data
+
+@docs getAccountData, setAccountData
 
 
 ## Debugging
@@ -80,6 +86,13 @@ fromRoomId roomId (Vault vault) =
         |> Maybe.map Types.Room
 
 
+{-| Get global account data.
+-}
+getAccountData : String -> Vault -> Maybe E.Value
+getAccountData key (Vault vault) =
+    Envelope.extract (Internal.getAccountData key) vault
+
+
 {-| Use a fully-fledged Matrix ID to connect.
 
     case Matrix.fromUserId "@alice:example.org" of
@@ -97,8 +110,9 @@ fromUserId uid =
         |> Maybe.map
             (\u ->
                 Envelope.init
-                    { serverName = "https://" ++ User.domain u
-                    , content = Internal.init (Just u)
+                    { content = Internal.init
+                    , serverName = "https://" ++ User.domain u
+                    , user = Just u
                     }
                     |> Envelope.mapContext (\c -> { c | username = Just uid })
             )
@@ -113,13 +127,14 @@ you can either insert `alice` or `@alice:example.org`.
 -}
 fromUsername : { username : String, host : String, port_ : Maybe Int } -> Vault
 fromUsername { username, host, port_ } =
-    { serverName =
+    { content = Internal.init
+    , serverName =
         port_
             |> Maybe.map String.fromInt
             |> Maybe.map ((++) ":")
             |> Maybe.withDefault ""
             |> (++) host
-    , content = Internal.init (User.fromString username)
+    , user = User.fromString username
     }
         |> Envelope.init
         |> Envelope.mapContext (\c -> { c | username = Just username })
@@ -194,6 +209,25 @@ sendMessageEvent data =
                 , roomId = data.roomId
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , transactionId = data.transactionId
+                }
+
+
+{-| Set global account data.
+-}
+setAccountData :
+    { content : E.Value
+    , eventType : String
+    , room : Vault
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+setAccountData data =
+    case data.room of
+        Vault vault ->
+            Api.setAccountData vault
+                { content = data.content
+                , eventType = data.eventType
+                , toMsg = Types.VaultUpdate >> data.toMsg
                 }
 
 

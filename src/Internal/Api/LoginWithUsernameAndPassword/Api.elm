@@ -191,7 +191,7 @@ loginWithUsernameAndPasswordV1 { username, password } =
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         ]
                     , Text.logs.loggedInAs username
@@ -233,7 +233,7 @@ loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, username, p
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         , out.deviceId
                             |> Maybe.map E.SetDeviceId
@@ -285,7 +285,7 @@ loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, username, p
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         , out.deviceId
                             |> Maybe.map E.SetDeviceId
@@ -337,7 +337,7 @@ loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, username, p
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         , out.wellKnown
                             |> Maybe.map (.homeserver >> .baseUrl)
@@ -393,7 +393,7 @@ loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, username, p
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         , out.wellKnown
                             |> Maybe.map (.homeserver >> .baseUrl)
@@ -450,7 +450,7 @@ loginWithUsernameAndPasswordV6 { deviceId, enableRefreshToken, initialDeviceDisp
                             }
                         , E.RemovePasswordIfNecessary
                         , out.user
-                            |> Maybe.map (V.SetUser >> E.ContentUpdate)
+                            |> Maybe.map E.SetUser
                             |> E.Optional
                         , out.wellKnown
                             |> Maybe.map (.homeserver >> .baseUrl)
@@ -506,7 +506,7 @@ loginWithUsernameAndPasswordV7 { deviceId, enableRefreshToken, initialDeviceDisp
                             , value = out.accessToken
                             }
                         , E.RemovePasswordIfNecessary
-                        , E.ContentUpdate (V.SetUser out.user)
+                        , E.SetUser out.user
                         , out.wellKnown
                             |> Maybe.map (.homeserver >> .baseUrl)
                             |> Maybe.map E.SetBaseUrl

@@ -1,6 +1,8 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
-    , getAccountData
+    , getAccountData, setAccountData
+    , sendMessageEvent, sendStateEvent
+    , invite, kick, ban
     )
 
 {-|
@@ -33,10 +35,26 @@ data is linked to the user account: other logged in devices can see the account
 data too, as the server synchronizes it, but the server shouldn´t show it to
 other users.
 
-@docs getAccountData
+@docs getAccountData, setAccountData
+
+
+## Sending events
+
+Besides reading the latest events, one can also send new events to the Matrix
+room. These events are JSON objects that can be shaped in any way or form that
+you like. To help other users with decoding your JSON objects, you pass an
+`eventType` string which helps them figure out the nature of your JSON object.
+
+@docs sendMessageEvent, sendStateEvent
+
+
+## Moderating users
+
+@docs invite, kick, ban
 
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Room as Internal
 import Json.Encode as E
@@ -49,11 +67,71 @@ type alias Room =
     Types.Room
 
 
+{-| Ban a user from a room.
+-}
+ban :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+ban data =
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
+            Api.banUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = Envelope.getContent user
+                }
+
+
 {-| Get a piece of account data linked to a certain string key.
 -}
 getAccountData : String -> Room -> Maybe E.Value
 getAccountData key (Room room) =
     Envelope.extract (Internal.getAccountData key) room
+
+
+{-| Invite a user to a room.
+-}
+invite :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+invite data =
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
+            Api.inviteUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = Envelope.getContent user
+                }
+
+
+{-| Kick a user from a room.
+-}
+kick :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , user : Types.User
+    }
+    -> Cmd msg
+kick data =
+    case ( data.room, data.user ) of
+        ( Room room, Types.User user ) ->
+            Api.kickUser room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , user = Envelope.getContent user
+                }
 
 
 {-| Get a room's room id. This is an opaque string that distinguishes rooms from
@@ -70,3 +148,67 @@ mostRecentEvents : Room -> List Types.Event
 mostRecentEvents (Room room) =
     Envelope.mapList Internal.mostRecentEvents room
         |> List.map Types.Event
+
+
+{-| Send a message event to a given room.
+-}
+sendMessageEvent :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    }
+    -> Cmd msg
+sendMessageEvent data =
+    case data.room of
+        Room room ->
+            Api.sendMessageEvent room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
+
+
+{-| Send a state event to a given room.
+-}
+sendStateEvent :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , stateKey : String
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+sendStateEvent data =
+    case data.room of
+        Room room ->
+            Api.sendStateEvent room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
+                , stateKey = data.stateKey
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
+
+
+{-| Set account data to a Matrix room.
+-}
+setAccountData :
+    { content : E.Value
+    , eventType : String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+setAccountData data =
+    case data.room of
+        Room room ->
+            Api.setRoomAccountData room
+                { content = data.content
+                , eventType = data.eventType
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
