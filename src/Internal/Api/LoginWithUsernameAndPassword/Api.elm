@@ -46,6 +46,8 @@ loginWithUsernameAndPassword =
         |> A.sameForVersion "v1.8"
         |> A.sameForVersion "v1.9"
         |> A.sameForVersion "v1.10"
+        |> A.sameForVersion "v1.11"
+        |> A.sameForVersion "v1.12"
         |> A.versionChain
 
 
