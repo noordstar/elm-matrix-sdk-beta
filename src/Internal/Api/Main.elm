@@ -27,7 +27,6 @@ import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
 import Internal.Values.User as User exposing (User)
-import Internal.Values.Vault as V
 
 
 {-| Update message type that is being returned.

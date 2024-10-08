@@ -43,7 +43,6 @@ import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
 import Internal.Values.Room as Room exposing (Room)
-import Internal.Values.User as User exposing (User)
 import Recursion
 import Recursion.Fold
 
