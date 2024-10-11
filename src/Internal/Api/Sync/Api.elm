@@ -37,6 +37,7 @@ sync =
         |> A.sameForVersion "v1.9"
         |> A.sameForVersion "v1.10"
         |> A.forVersion "v1.11" syncV4
+        |> A.sameForVersion "v1.12"
         |> A.versionChain
 
 
