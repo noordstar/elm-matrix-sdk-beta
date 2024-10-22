@@ -20,6 +20,7 @@ where a group of users talk to each other.
 This module exposes various functions that help you inspect various aspects of
 a room.
 
+
 ## Actions
 
 @docs redact
@@ -148,7 +149,8 @@ redact :
     , room : Room
     , toMsg : Types.VaultUpdate -> msg
     , transactionId : String
-    } -> Cmd msg
+    }
+    -> Cmd msg
 redact data =
     case data.room of
         Room room ->

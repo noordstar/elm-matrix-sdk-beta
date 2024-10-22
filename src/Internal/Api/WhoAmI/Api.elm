@@ -1,6 +1,9 @@
 module Internal.Api.WhoAmI.Api exposing (..)
 
-{-| # Who Am I?
+{-|
+
+
+# Who Am I?
 
 This module allows the Elm SDK user to view who the vault represents.
 
@@ -12,6 +15,7 @@ import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 import Internal.Values.Room as R
 import Internal.Values.User as User exposing (User)
+
 
 whoAmI : WhoAmIInput -> A.TaskChain (Phantom a) (Phantom a)
 whoAmI =
@@ -34,6 +38,7 @@ whoAmI =
         |> A.sameForVersion "v1.12"
         |> A.versionChain
 
+
 {-| Context needed for setting global account data.
 -}
 type alias Phantom a =
@@ -43,16 +48,26 @@ type alias Phantom a =
 type alias PhantomV1 a =
     { a | accessToken : (), baseUrl : () }
 
+
 type alias WhoAmIInput =
     {}
 
-type alias WhoAmIInputV1 a = a
 
-type alias WhoAmIOutputV1 = { user : User }
+type alias WhoAmIInputV1 a =
+    a
 
-type alias WhoAmIOutputV2 = { deviceId : Maybe String, user : User }
 
-type alias WhoAmIOutputV3 = { deviceId : Maybe String, isGuest : Bool, user : User }
+type alias WhoAmIOutputV1 =
+    { user : User }
+
+
+type alias WhoAmIOutputV2 =
+    { deviceId : Maybe String, user : User }
+
+
+type alias WhoAmIOutputV3 =
+    { deviceId : Maybe String, isGuest : Bool, user : User }
+
 
 whoAmIV1 : WhoAmIInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 whoAmIV1 _ =
@@ -62,8 +77,9 @@ whoAmIV1 _ =
         , contextChange = always identity
         , method = "GET"
         , path = [ "_matrix", "client", "r0", "account", "whoami" ]
-        , toUpdate = (\out -> ( E.SetUser out.user, [] ))
+        , toUpdate = \out -> ( E.SetUser out.user, [] )
         }
+
 
 whoAmIV2 : WhoAmIInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 whoAmIV2 _ =
@@ -78,8 +94,9 @@ whoAmIV2 _ =
         , contextChange = always identity
         , method = "GET"
         , path = [ "_matrix", "client", "r0", "account", "whoami" ]
-        , toUpdate = (\out -> ( E.SetUser out.user, [] ))
+        , toUpdate = \out -> ( E.SetUser out.user, [] )
         }
+
 
 whoAmIV3 : WhoAmIInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 whoAmIV3 _ =
@@ -95,15 +112,15 @@ whoAmIV3 _ =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "account", "whoami" ]
         , toUpdate =
-            (\out ->
+            \out ->
                 ( E.More
                     [ E.SetUser out.user
                     , E.Optional (Maybe.map E.SetDeviceId out.deviceId)
                     ]
                 , []
                 )
-            )
         }
+
 
 whoAmIV4 : WhoAmIInputV1 i -> A.TaskChain (PhantomV1 a) (PhantomV1 a)
 whoAmIV4 _ =
@@ -119,15 +136,15 @@ whoAmIV4 _ =
         , method = "GET"
         , path = [ "_matrix", "client", "v3", "account", "whoami" ]
         , toUpdate =
-            (\out ->
+            \out ->
                 ( E.More
                     [ E.SetUser out.user
                     , E.Optional (Maybe.map E.SetDeviceId out.deviceId)
                     ]
                 , []
                 )
-            )
         }
+
 
 coderV1 : Json.Coder WhoAmIOutputV1
 coderV1 =
@@ -145,6 +162,7 @@ coderV1 =
             , coder = User.coder
             }
         )
+
 
 coderV2 : Json.Coder WhoAmIOutputV2
 coderV2 =
@@ -169,6 +187,7 @@ coderV2 =
             , coder = User.coder
             }
         )
+
 
 coderV3 : Json.Coder WhoAmIOutputV3
 coderV3 =

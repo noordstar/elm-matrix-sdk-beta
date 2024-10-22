@@ -262,6 +262,7 @@ When the vault logs in, it will automatically know this information. However,
 if you plug in an access token, the vault might not know. If you wish to ensure
 that such information is available, you can use this function to download that
 information.
+
 -}
 whoAmI : (VaultUpdate -> msg) -> Vault -> Cmd msg
 whoAmI toMsg (Vault vault) =

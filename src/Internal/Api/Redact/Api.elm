@@ -1,6 +1,9 @@
 module Internal.Api.Redact.Api exposing (..)
 
-{-| # Redact
+{-|
+
+
+# Redact
 
 This module allows the user to redact an event from a room.
 
@@ -10,6 +13,7 @@ import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
+
 
 redact : RedactInput -> A.TaskChain (Phantom a) (Phantom a)
 redact =
@@ -36,6 +40,7 @@ redact =
         |> A.sameForVersion "v1.12"
         |> A.versionChain
 
+
 {-| Context needed for setting global account data.
 -}
 type alias Phantom a =
@@ -45,6 +50,7 @@ type alias Phantom a =
 type alias PhantomV1 a =
     { a | accessToken : (), baseUrl : () }
 
+
 type alias RedactInput =
     { eventId : String
     , reason : Maybe String
@@ -52,10 +58,14 @@ type alias RedactInput =
     , transactionId : String
     }
 
+
 type alias RedactInputV1 a =
     { a | eventId : String, reason : Maybe String, roomId : String, transactionId : String }
 
-type alias RedactOutputV1 = { eventId : Maybe String }
+
+type alias RedactOutputV1 =
+    { eventId : Maybe String }
+
 
 redactV1 : RedactInputV1 i -> A.TaskChain (Phantom a) (Phantom a)
 redactV1 { eventId, reason, roomId, transactionId } =
@@ -68,6 +78,7 @@ redactV1 { eventId, reason, roomId, transactionId } =
         , toUpdate = always ( E.Optional Nothing, [] )
         }
 
+
 redactV2 : RedactInputV1 i -> A.TaskChain (Phantom a) (Phantom a)
 redactV2 { eventId, reason, roomId, transactionId } =
     A.request
@@ -78,6 +89,7 @@ redactV2 { eventId, reason, roomId, transactionId } =
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "redact", eventId, transactionId ]
         , toUpdate = always ( E.Optional Nothing, [] )
         }
+
 
 redactV3 : RedactInputV1 i -> A.TaskChain (Phantom a) (Phantom a)
 redactV3 { eventId, reason, roomId, transactionId } =
@@ -90,6 +102,7 @@ redactV3 { eventId, reason, roomId, transactionId } =
         , toUpdate = always ( E.Optional Nothing, [] )
         }
 
+
 coderV1 : Json.Coder RedactOutputV1
 coderV1 =
     Json.object1
@@ -99,7 +112,7 @@ coderV1 =
             ]
         , init = RedactOutputV1
         }
-        ( Json.field.optional.value
+        (Json.field.optional.value
             { fieldName = "event_id"
             , toField = .eventId
             , description = [ "Event ID of the redaction event" ]

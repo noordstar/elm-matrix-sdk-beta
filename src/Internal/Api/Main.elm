@@ -259,6 +259,7 @@ sync env data =
         )
         (Context.apiFormat env.context)
 
+
 {-| Reveal personal information about the account to the user.
 -}
 whoAmI :
@@ -266,4 +267,4 @@ whoAmI :
     -> { toMsg : Msg -> msg }
     -> Cmd msg
 whoAmI env data =
-    ITask.run data.toMsg (ITask.whoAmI) (Context.apiFormat env.context)
+    ITask.run data.toMsg ITask.whoAmI (Context.apiFormat env.context)

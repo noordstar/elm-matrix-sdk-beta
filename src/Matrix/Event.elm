@@ -118,7 +118,8 @@ redact :
     , reason : Maybe String
     , toMsg : Types.VaultUpdate -> msg
     , transactionId : String
-    } -> Cmd msg
+    }
+    -> Cmd msg
 redact data =
     case data.event of
         Event event ->
