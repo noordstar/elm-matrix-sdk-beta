@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+    , banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+@docs banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -101,6 +101,31 @@ kickUser env data =
             , reason = data.reason
             , roomId = data.roomId
             , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Redact an event.
+-}
+redact :
+    E.Envelope a
+    ->
+        { eventId : String
+        , reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , transactionId : String
+        }
+    -> Cmd msg
+redact env data =
+    ITask.run
+        data.toMsg
+        (ITask.redact
+            { eventId = data.eventId
+            , reason = data.reason
+            , roomId = data.roomId
+            , transactionId = data.transactionId
             }
         )
         (Context.apiFormat env.context)

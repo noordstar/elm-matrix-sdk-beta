@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+    , banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+@docs banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -34,6 +34,7 @@ import Internal.Api.InviteUser.Api
 import Internal.Api.KickUser.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
+import Internal.Api.Redact.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
 import Internal.Api.SendStateEvent.Api
@@ -263,6 +264,15 @@ makeVBA =
     makeVB
         |> C.andThen getNow
         |> C.andThen getAccessToken
+
+
+{-| Redact an event from a room.
+-}
+redact : { eventId : String, reason : Maybe String, roomId : String, transactionId : String } -> Task
+redact input =
+    makeVBA
+        |> C.andThen (Internal.Api.Redact.Api.redact input)
+        |> finishTask
 
 
 {-| Send a message event to a room.

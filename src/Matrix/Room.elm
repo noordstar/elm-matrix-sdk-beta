@@ -1,5 +1,6 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
+    , redact
     , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
     , invite, kick, ban
@@ -18,6 +19,10 @@ where a group of users talk to each other.
 
 This module exposes various functions that help you inspect various aspects of
 a room.
+
+## Actions
+
+@docs redact
 
 
 ## Account data
@@ -131,6 +136,29 @@ kick data =
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , user = Envelope.getContent user
+                }
+
+
+{-| Redact an event in the room. This erases as much information from the event
+as possible.
+-}
+redact :
+    { eventId : String
+    , reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    } -> Cmd msg
+redact data =
+    case data.room of
+        Room room ->
+            Api.redact
+                room
+                { eventId = data.eventId
+                , reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
                 }
 
 
