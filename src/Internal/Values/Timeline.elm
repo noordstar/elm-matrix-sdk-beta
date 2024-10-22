@@ -72,6 +72,7 @@ import Internal.Config.Text as Text
 import Internal.Filter.Timeline as Filter exposing (Filter)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
+import Internal.Values.StateManager exposing (StateManager)
 import Recursion
 import Recursion.Traverse
 import Set exposing (Set)
@@ -88,6 +89,7 @@ type alias Batch =
     { events : List String
     , filter : Filter
     , start : Maybe TokenValue
+    , state : StateManager
     , end : TokenValue
     }
 
