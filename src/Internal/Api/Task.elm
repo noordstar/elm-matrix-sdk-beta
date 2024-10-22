@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -41,6 +41,7 @@ import Internal.Api.SetAccountData.Api
 import Internal.Api.SetRoomAccountData.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
+import Internal.Api.WhoAmI.Api
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
@@ -306,6 +307,15 @@ sync : { fullState : Maybe Bool, presence : Maybe String, since : Maybe String, 
 sync input =
     makeVBA
         |> C.andThen (Internal.Api.Sync.Api.sync input)
+        |> finishTask
+
+
+{-| Reveal personal information about the account to the user.
+-}
+whoAmI : Task
+whoAmI =
+    makeVBA
+        |> C.andThen (Internal.Api.WhoAmI.Api.whoAmI {})
         |> finishTask
 
 

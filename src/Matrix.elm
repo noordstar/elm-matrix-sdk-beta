@@ -3,7 +3,7 @@ module Matrix exposing
     , VaultUpdate, update, sync, logs
     , rooms, fromRoomId
     , getAccountData, setAccountData
-    , addAccessToken, sendMessageEvent
+    , addAccessToken, sendMessageEvent, whoAmI
     )
 
 {-|
@@ -41,7 +41,7 @@ support a monolithic public registry. (:
 
 ## Debugging
 
-@docs addAccessToken, sendMessageEvent
+@docs addAccessToken, sendMessageEvent, whoAmI
 
 -}
 
@@ -253,3 +253,16 @@ update (VaultUpdate vu) (Vault vault) =
     vu.messages
         |> List.foldl (Envelope.update Internal.update) vault
         |> Vault
+
+
+{-| Get personal information about the vault, such as the user id, the device
+id or other vital information.
+
+When the vault logs in, it will automatically know this information. However,
+if you plug in an access token, the vault might not know. If you wish to ensure
+that such information is available, you can use this function to download that
+information.
+-}
+whoAmI : (VaultUpdate -> msg) -> Vault -> Cmd msg
+whoAmI toMsg (Vault vault) =
+    Api.whoAmI vault { toMsg = Types.VaultUpdate >> toMsg }

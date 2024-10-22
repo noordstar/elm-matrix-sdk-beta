@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -233,3 +233,12 @@ sync env data =
             }
         )
         (Context.apiFormat env.context)
+
+{-| Reveal personal information about the account to the user.
+-}
+whoAmI :
+    E.Envelope a
+    -> { toMsg : Msg -> msg }
+    -> Cmd msg
+whoAmI env data =
+    ITask.run data.toMsg (ITask.whoAmI) (Context.apiFormat env.context)
