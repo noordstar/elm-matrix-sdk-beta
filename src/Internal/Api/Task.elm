@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+    , banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+@docs banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -32,6 +32,7 @@ import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
 import Internal.Api.InviteUser.Api
 import Internal.Api.KickUser.Api
+import Internal.Api.Leave.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
 import Internal.Api.Redact.Api
@@ -244,6 +245,19 @@ kickUser :
 kickUser input =
     makeVBA
         |> C.andThen (Internal.Api.KickUser.Api.kickUser input)
+        |> finishTask
+
+
+{-| Leave a room.
+-}
+leave :
+    { reason : Maybe String
+    , roomId : String
+    }
+    -> Task
+leave input =
+    makeVBA
+        |> C.andThen (Internal.Api.Leave.Api.leave input)
         |> finishTask
 
 

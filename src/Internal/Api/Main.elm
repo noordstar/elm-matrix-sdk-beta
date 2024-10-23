@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+    , banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs banUser, inviteUser, kickUser, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+@docs banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -103,6 +103,23 @@ kickUser env data =
             , user = data.user
             }
         )
+        (Context.apiFormat env.context)
+
+
+{-| Leave a room.
+-}
+leave :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+leave env data =
+    ITask.run
+        data.toMsg
+        (ITask.leave { reason = data.reason, roomId = data.roomId })
         (Context.apiFormat env.context)
 
 

@@ -3,7 +3,7 @@ module Matrix exposing
     , VaultUpdate, update, sync, logs
     , rooms, fromRoomId
     , getAccountData, setAccountData
-    , addAccessToken, sendMessageEvent, whoAmI
+    , addAccessToken, leave, sendMessageEvent, whoAmI
     )
 
 {-|
@@ -41,7 +41,7 @@ support a monolithic public registry. (:
 
 ## Debugging
 
-@docs addAccessToken, sendMessageEvent, whoAmI
+@docs addAccessToken, leave, sendMessageEvent, whoAmI
 
 -}
 
@@ -141,12 +141,30 @@ fromUsername { username, host, port_ } =
         |> Vault
 
 
-{-| Get a list of all the rooms that the user has joined.
+{-| Leave a room. This stops a user from participating in a room.
+
+If the user was already in the room, they will no longer be able to see new events in the room. If the room requires an invite to join, they will need to be re-invited before they can re-join.
+
+If the user was invited to the room, but had not joined, this call serves to reject the invite.
+
+The user will still be allowed to retrieve history from the room which they were previously allowed to see.
+
 -}
-rooms : Vault -> List Types.Room
-rooms (Vault vault) =
-    Envelope.mapList Internal.rooms vault
-        |> List.map Types.Room
+leave :
+    { reason : Maybe String
+    , roomId : String
+    , toMsg : Types.VaultUpdate -> msg
+    , vault : Vault
+    }
+    -> Cmd msg
+leave data =
+    case data.vault of
+        Vault vault ->
+            Api.leave vault
+                { reason = data.reason
+                , roomId = data.roomId
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
 
 
 {-| The VaultUpdate is a complex type that helps update the Vault. However,
@@ -169,6 +187,14 @@ further. For example:
 logs : VaultUpdate -> List { channel : String, content : String }
 logs (VaultUpdate vu) =
     vu.logs
+
+
+{-| Get a list of all the rooms that the user has joined.
+-}
+rooms : Vault -> List Types.Room
+rooms (Vault vault) =
+    Envelope.mapList Internal.rooms vault
+        |> List.map Types.Room
 
 
 {-| Send a message event to a room.

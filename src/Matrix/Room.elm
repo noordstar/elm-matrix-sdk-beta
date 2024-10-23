@@ -1,6 +1,6 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
-    , redact
+    , leave, redact
     , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
     , invite, kick, ban
@@ -23,7 +23,7 @@ a room.
 
 ## Actions
 
-@docs redact
+@docs leave, redact
 
 
 ## Account data
@@ -137,6 +137,24 @@ kick data =
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , user = Envelope.getContent user
+                }
+
+
+{-| Leave a room.
+-}
+leave :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+leave data =
+    case data.room of
+        Room room ->
+            Api.leave room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
                 }
 
 
