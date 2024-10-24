@@ -11,5 +11,29 @@ homeserver, or that it may be better to not rely on a specific feature.
 
 ---
 
-Considering that the current version does not support interaction with a
-homeserver, no functionality is supported at any spec version.
+The following table describes which versions are supported by which endpoint.
+The table assumes an order. For the Matrix spec, spec versions are usually
+ordered as following:
+
+(oldest) `r0.0.0`, `r0.0.1`, `r0.1.0`, `r0.2.0`, `r0.3.0`, `r0.4.0`, `r0.5.0`,
+`r0.6.0`, `r0.6.1`, `v1.1`, `v1.2`, `v1.3`, `v1.4`, `v1.5`, `v1.6`, `v1.7`,
+`v1.8`, `v1.9`, `v1.10`, `v1.11`, `v1.12` (newer)
+
+| Elm SDK function        | Spec versions    | Notes |
+| ----------------------- | ---------------- | ----- |
+| Matrix.leave                 | all              |       |
+| Matrix.sendMessageEvent      | all              |       |
+| Matrix.setAccountData        | all              |       |
+| Matrix.sync             | v1.1 and newer   | The `/sync` endpoint is very complex and hence tedious to implement. For this reason, I have not had the time to waste on building support. |
+| Matrix.whoAmI           | r0.3.0 and newer | This endpoint did not exist before that version. |
+| Matrix.Event.redact          | all              |       |
+| Matrix.Invite.accept         | all              |       |
+| Matrix.Invite.reject         | all              |       |
+| Matrix.Room.ban              | all              |       |
+| Matrix.Room.invite           | all              |       |
+| Matrix.Room.kick             | all              | The `/kick` endpoint was added in `r0.1.0`. If a server only supports older versions than that, then the action is taken by sending a custom membership state event. |
+| Matrix.Room.leave            | all              |       |
+| Matrix.Room.redact           | all              |       |
+| Matrix.Room.sendMessageEvent | all              |       |
+| Matrix.Room.sendStateEvent   | all              |       |
+| Matrix.Room.setAccountData   | all              |       |
