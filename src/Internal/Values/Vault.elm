@@ -2,6 +2,7 @@ module Internal.Values.Vault exposing
     ( Vault, init
     , VaultUpdate(..), update
     , rooms, fromRoomId, mapRoom, updateRoom
+    , invites, fromInviteId, mapInvite, updateInvite
     , getAccountData, setAccountData
     , coder
     )
@@ -27,6 +28,13 @@ Rooms are environments where people can have a conversation with each other.
 @docs rooms, fromRoomId, mapRoom, updateRoom
 
 
+## Invites
+
+Invites are invitations for a user to join a given room.
+
+@docs invites, fromInviteId, mapInvite, updateInvite
+
+
 ## Account data
 
 @docs getAccountData, setAccountData
@@ -42,6 +50,7 @@ import FastDict as Dict exposing (Dict)
 import Internal.Config.Text as Text
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.Json as Json
+import Internal.Values.Invite as Invite exposing (Invite)
 import Internal.Values.Room as Room exposing (Room)
 import Recursion
 import Recursion.Fold
@@ -51,6 +60,7 @@ import Recursion.Fold
 -}
 type alias Vault =
     { accountData : Dict String Json.Value
+    , invites : Hashdict Invite
     , nextBatch : Maybe String
     , rooms : Hashdict Room
     }
@@ -65,6 +75,7 @@ type VaultUpdate
     | More (List VaultUpdate)
     | Optional (Maybe VaultUpdate)
     | SetAccountData String Json.Value
+    | SetInvite Invite
     | SetNextBatch String
 
 
@@ -72,7 +83,7 @@ type VaultUpdate
 -}
 coder : Json.Coder Vault
 coder =
-    Json.object3
+    Json.object4
         { name = Text.docs.vault.name
         , description = Text.docs.vault.description
         , init = Vault
@@ -82,6 +93,14 @@ coder =
             , toField = .accountData
             , description = Text.fields.vault.accountData
             , coder = Json.fastDict Json.value
+            }
+        )
+        (Json.field.optional.withDefault
+            { fieldName = "invites"
+            , toField = .invites
+            , description = Text.fields.vault.invites
+            , coder = Hashdict.coder .roomId Invite.coder
+            , default = ( Hashdict.empty .roomId, [] )
             }
         )
         (Json.field.optional.value
@@ -98,6 +117,13 @@ coder =
             , coder = Hashdict.coder .roomId Room.coder
             }
         )
+
+
+{-| Get a given invite by the room id of the room that the invite invites the user to join.
+-}
+fromInviteId : String -> Vault -> Maybe Invite
+fromInviteId roomId vault =
+    Hashdict.get roomId vault.invites
 
 
 {-| Get a given room by its room id.
@@ -119,9 +145,25 @@ getAccountData key vault =
 init : Vault
 init =
     { accountData = Dict.empty
+    , invites = Hashdict.empty .roomId
     , nextBatch = Nothing
     , rooms = Hashdict.empty .roomId
     }
+
+
+{-| Get a list of all invites that are currently open.
+-}
+invites : Vault -> List Invite
+invites vault =
+    Hashdict.values vault.invites
+
+
+{-| Update an invite, if it exists. If the invite isn't known, this operation
+is ignored.
+-}
+mapInvite : String -> (Invite -> Invite) -> Vault -> Vault
+mapInvite roomId f vault =
+    { vault | invites = Hashdict.map roomId f vault.invites }
 
 
 {-| Update a room, if it exists. If the room isn´t known, this operation is
@@ -144,6 +186,13 @@ rooms vault =
 setAccountData : String -> Json.Value -> Vault -> Vault
 setAccountData key value vault =
     { vault | accountData = Dict.insert key value vault.accountData }
+
+
+{-| Update an Invite based on whether it exists or not.
+-}
+updateInvite : String -> (Maybe Invite -> Maybe Invite) -> Vault -> Vault
+updateInvite roomId f vault =
+    { vault | invites = Hashdict.update roomId f vault.invites }
 
 
 {-| Update a Room based on whether it exists or not.
@@ -179,6 +228,21 @@ update vaultUpdate startVault =
 
                 SetAccountData key value ->
                     Recursion.base (setAccountData key value)
+
+                SetInvite invite ->
+                    (\currentInvite ->
+                        case currentInvite of
+                            Just ci ->
+                                invite
+                                    |> Invite.toList
+                                    |> List.foldl Invite.addInviteEvent ci
+                                    |> Just
+
+                            Nothing ->
+                                Just invite
+                    )
+                        |> updateInvite invite.roomId
+                        |> Recursion.base
 
                 SetNextBatch nb ->
                     Recursion.base

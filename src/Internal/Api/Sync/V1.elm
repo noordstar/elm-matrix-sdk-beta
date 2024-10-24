@@ -20,6 +20,7 @@ import Internal.Tools.StrippedEvent as StrippedEvent
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
 import Internal.Values.Envelope as E
 import Internal.Values.Event as Event
+import Internal.Values.Invite as Invite
 import Internal.Values.Room as R
 import Internal.Values.User as User exposing (User)
 import Internal.Values.Vault as V
@@ -860,6 +861,14 @@ updateSyncResponse { filter, since } response =
 updateRooms : { filter : Filter, nextBatch : String, since : Maybe String } -> Rooms -> ( V.VaultUpdate, List Log )
 updateRooms { filter, nextBatch, since } rooms =
     let
+        ( inviteUpdate, inviteLogs ) =
+            rooms.invite
+                |> Maybe.withDefault Dict.empty
+                |> Dict.toList
+                |> List.map (\( roomId, invite ) -> updateInvitedRoom roomId invite)
+                |> List.unzip
+                |> Tuple.mapBoth V.More List.concat
+
         ( roomUpdate, roomLogs ) =
             rooms.join
                 |> Maybe.withDefault Dict.empty
@@ -889,14 +898,27 @@ updateRooms { filter, nextBatch, since } rooms =
             |> List.map V.CreateRoomIfNotExists
             |> V.More
 
+        -- Update invites
+        , inviteUpdate
+
         -- Update rooms
         , roomUpdate
 
-        -- TODO: Add invited rooms
         -- TODO: Add knocked rooms
         -- TODO: Add left rooms
         ]
-    , roomLogs
+    , List.append inviteLogs roomLogs
+    )
+
+
+updateInvitedRoom : String -> InvitedRoom -> ( V.VaultUpdate, List Log )
+updateInvitedRoom roomId room =
+    ( room.inviteState
+        |> Maybe.andThen .events
+        |> Maybe.withDefault []
+        |> List.foldl Invite.addInviteEvent { roomId = roomId, events = Dict.empty }
+        |> V.SetInvite
+    , []
     )
 
 

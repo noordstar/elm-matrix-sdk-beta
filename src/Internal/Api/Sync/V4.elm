@@ -12,6 +12,7 @@ This API module represents the /sync endpoint on Matrix spec version v1.11.
 -}
 
 import FastDict as Dict exposing (Dict)
+import Internal.Api.Sync.V3 as PV
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Filter.Timeline exposing (Filter)
@@ -879,6 +880,14 @@ updateSyncResponse { filter, since } response =
 updateRooms : { filter : Filter, nextBatch : String, since : Maybe String } -> Rooms -> ( V.VaultUpdate, List Log )
 updateRooms { filter, nextBatch, since } rooms =
     let
+        ( inviteUpdate, inviteLogs ) =
+            rooms.invite
+                |> Maybe.withDefault Dict.empty
+                |> Dict.toList
+                |> List.map (\( roomId, invite ) -> updateInvitedRoom roomId invite)
+                |> List.unzip
+                |> Tuple.mapBoth V.More List.concat
+
         ( roomUpdate, roomLogs ) =
             rooms.join
                 |> Maybe.withDefault Dict.empty
@@ -908,15 +917,22 @@ updateRooms { filter, nextBatch, since } rooms =
             |> List.map V.CreateRoomIfNotExists
             |> V.More
 
+        -- Update invites
+        , inviteUpdate
+
         -- Update rooms
         , roomUpdate
 
-        -- TODO: Add invited rooms
         -- TODO: Add knocked rooms
         -- TODO: Add left rooms
         ]
-    , roomLogs
+    , List.append inviteLogs roomLogs
     )
+
+
+updateInvitedRoom : String -> InvitedRoom -> ( V.VaultUpdate, List Log )
+updateInvitedRoom =
+    PV.updateInvitedRoom
 
 
 updateJoinedRoom : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> JoinedRoom -> ( R.RoomUpdate, List Log )
