@@ -118,6 +118,8 @@ docs :
     , event : TypeDocs
     , hashdict : TypeDocs
     , ibatch : TypeDocs
+    , invite : TypeDocs
+    , inviteEvent : TypeDocs
     , itoken : TypeDocs
     , mashdict : TypeDocs
     , room : TypeDocs
@@ -167,6 +169,18 @@ docs =
         { name = "IBatch"
         , description =
             [ "The internal batch tracks a patch of events on the Matrix timeline."
+            ]
+        }
+    , invite =
+        { name = "Invite"
+        , description =
+            [ "The Invite type represents an invitation to join a Matrix room."
+            ]
+        }
+    , inviteEvent =
+        { name = "InviteEvent"
+        , description =
+            [ "The InviteEvent type represents a state event that can be previewed of a room that the user has been invited to."
             ]
         }
     , itoken =
@@ -306,6 +320,10 @@ fields :
         { cursor : Desc
         , dict : Desc
         }
+    , invite :
+        { events : Desc
+        , roomId : Desc
+        }
     , itoken :
         { behind : Desc
         , ends : Desc
@@ -350,6 +368,7 @@ fields :
         }
     , vault :
         { accountData : Desc
+        , invites : Desc
         , nextBatch : Desc
         , rooms : Desc
         , user : Desc
@@ -478,6 +497,14 @@ fields =
             [ "Dictionary that contains all values stored in the iddict."
             ]
         }
+    , invite =
+        { events =
+            [ "State events that render a preview of the room that the user is invited to."
+            ]
+        , roomId =
+            [ "Room ID of the room that the invite is to."
+            ]
+        }
     , itoken =
         { behind =
             [ "This token is behind all tokens in this field."
@@ -581,6 +608,9 @@ fields =
     , vault =
         { accountData =
             [ "The account's global private data."
+            ]
+        , invites =
+            [ "Collection of invites that the user has received."
             ]
         , nextBatch =
             [ "The next batch that can be used to sync with the Matrix API."

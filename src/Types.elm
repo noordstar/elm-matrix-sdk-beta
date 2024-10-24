@@ -1,4 +1,7 @@
-module Types exposing (Vault(..), Event(..), Room(..), User(..), VaultUpdate(..))
+module Types exposing
+    ( Vault(..), Event(..), Invite(..), Room(..), User(..), VaultUpdate(..)
+    , InviteEvent(..)
+    )
 
 {-| The Elm SDK uses a lot of records and values that are easy to manipulate.
 Yet, the [Elm design guidelines](https://package.elm-lang.org/help/design-guidelines#keep-tags-and-record-constructors-secret)
@@ -12,13 +15,14 @@ access their content directly.
 The opaque types are placed in a central module so all exposed modules can
 safely access all exposed data types without risking to create circular imports.
 
-@docs Vault, Event, Room, User, VaultUpdate
+@docs Vault, Event, Invite, Room, User, VaultUpdate
 
 -}
 
 import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Event as Event
+import Internal.Values.Invite as Invite
 import Internal.Values.Room as Room
 import Internal.Values.User as User
 import Internal.Values.Vault as Vault
@@ -28,6 +32,18 @@ import Internal.Values.Vault as Vault
 -}
 type Event
     = Event (Envelope.Envelope Event.Event)
+
+
+{-| Opaque type for Matrix Invite
+-}
+type Invite
+    = Invite (Envelope.Envelope Invite.Invite)
+
+
+{-| Opauqe type for Matrix InviteEvent
+-}
+type InviteEvent
+    = InviteEvent (Envelope.Envelope Invite.InviteEvent)
 
 
 {-| Opaque type for Matrix Room

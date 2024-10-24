@@ -13,8 +13,6 @@ This module allows the developer to set account data to a Matrix room.
 
 import Internal.Api.Api as A
 import Internal.Api.Request as R
-import Internal.Config.Log exposing (log)
-import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 import Internal.Values.Room as R
