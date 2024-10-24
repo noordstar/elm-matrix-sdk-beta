@@ -552,10 +552,9 @@ updateJoinedRoom data room =
             |> Maybe.map R.SetEphemeral
             |> R.Optional
 
-        -- TODO: Add state
         -- TODO: Add RoomSummary
         , room.timeline
-            |> Maybe.map (updateTimeline data)
+            |> Maybe.map (updateTimeline data room.state)
             |> R.Optional
 
         -- TODO: Add unread notifications
@@ -565,7 +564,7 @@ updateJoinedRoom data room =
     )
 
 
-updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Timeline -> R.RoomUpdate
+updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Maybe State -> Timeline -> R.RoomUpdate
 updateTimeline =
     PV.updateTimeline
 

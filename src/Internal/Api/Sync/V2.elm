@@ -23,6 +23,7 @@ import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
 import Internal.Values.Envelope as E
 import Internal.Values.Event as Event
 import Internal.Values.Room as R
+import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.User as User exposing (User)
 import Internal.Values.Vault as V
 import Recursion
@@ -669,10 +670,9 @@ updateJoinedRoom data room =
             |> Maybe.map R.SetEphemeral
             |> R.Optional
 
-        -- TODO: Add state
         -- TODO: Add RoomSummary
         , room.timeline
-            |> Maybe.map (updateTimeline data)
+            |> Maybe.map (updateTimeline data room.state)
             |> R.Optional
 
         -- TODO: Add unread notifications
@@ -681,8 +681,8 @@ updateJoinedRoom data room =
     )
 
 
-updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Timeline -> R.RoomUpdate
-updateTimeline { filter, nextBatch, roomId, since } timeline =
+updateTimeline : { filter : Filter, nextBatch : String, roomId : String, since : Maybe String } -> Maybe State -> Timeline -> R.RoomUpdate
+updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
     let
         limited : Bool
         limited =
@@ -691,48 +691,70 @@ updateTimeline { filter, nextBatch, roomId, since } timeline =
         newEvents : List Event.Event
         newEvents =
             List.map (toEvent roomId) timeline.events
-    in
-    case ( limited, timeline.prevBatch ) of
-        ( False, Just p ) ->
-            if timeline.prevBatch == since then
-                R.AddSync
-                    { events = newEvents
-                    , filter = filter
-                    , start = Just p
-                    , end = nextBatch
-                    }
 
-            else
-                R.More
-                    [ R.AddSync
-                        { events = []
-                        , filter = filter
-                        , start = since
-                        , end = p
-                        }
-                    , R.AddSync
+        prevState : StateManager
+        prevState =
+            mstate
+                |> Maybe.andThen .events
+                |> Maybe.withDefault []
+                |> List.map (toEvent roomId)
+                |> StateManager.fromList
+
+        currentState : StateManager
+        currentState =
+            newEvents
+                |> StateManager.fromList
+                |> StateManager.append prevState
+    in
+    R.More
+        [ case ( limited, timeline.prevBatch ) of
+            ( False, Just p ) ->
+                if timeline.prevBatch == since then
+                    R.AddSync
                         { events = newEvents
                         , filter = filter
                         , start = Just p
+                        , state = prevState
                         , end = nextBatch
                         }
-                    ]
 
-        ( False, Nothing ) ->
-            R.AddSync
-                { events = newEvents
-                , filter = filter
-                , start = since
-                , end = nextBatch
-                }
+                else
+                    R.More
+                        [ R.AddSync
+                            { events = []
+                            , filter = filter
+                            , start = since
+                            , state = StateManager.empty
+                            , end = p
+                            }
+                        , R.AddSync
+                            { events = newEvents
+                            , filter = filter
+                            , start = Just p
+                            , state = prevState
+                            , end = nextBatch
+                            }
+                        ]
 
-        ( True, _ ) ->
-            R.AddSync
-                { events = newEvents
-                , filter = filter
-                , start = timeline.prevBatch
-                , end = nextBatch
-                }
+            ( False, Nothing ) ->
+                R.AddSync
+                    { events = newEvents
+                    , filter = filter
+                    , start = since
+                    , state = prevState
+                    , end = nextBatch
+                    }
+
+            ( True, _ ) ->
+                R.AddSync
+                    { events = newEvents
+                    , filter = filter
+                    , start = timeline.prevBatch
+                    , state = prevState
+                    , end = nextBatch
+                    }
+        , R.AddState (StateManager.append prevState currentState)
+        ]
 
 
 toEvent : String -> ClientEventWithoutRoomID -> Event.Event
