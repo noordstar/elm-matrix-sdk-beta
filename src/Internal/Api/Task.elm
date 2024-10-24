@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+    , banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs banUser, inviteUser, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
+@docs banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -31,6 +31,7 @@ import Internal.Api.BanUser.Api
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
 import Internal.Api.InviteUser.Api
+import Internal.Api.JoinRoomById.Api
 import Internal.Api.KickUser.Api
 import Internal.Api.Leave.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
@@ -229,6 +230,15 @@ inviteUser : { reason : Maybe String, roomId : String, user : User } -> Task
 inviteUser input =
     makeVBA
         |> C.andThen (Internal.Api.InviteUser.Api.inviteUser input)
+        |> finishTask
+
+
+{-| Join a room.
+-}
+join : { reason : Maybe String, roomId : String } -> Task
+join input =
+    makeVBA
+        |> C.andThen (Internal.Api.JoinRoomById.Api.joinRoomById input)
         |> finishTask
 
 
