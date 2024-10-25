@@ -7,6 +7,7 @@ import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
+import Internal.Values.Vault as V
 
 
 joinRoomById : JoinRoomByIdInput -> A.TaskChain (Phantom a) (Phantom a)
@@ -69,7 +70,17 @@ joinRoomByIdV1 { roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "join" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate =
+            \out ->
+                ( E.ContentUpdate
+                    (V.More
+                        [ V.CreateRoomIfNotExists out.roomId
+                        , V.RemoveInvite roomId
+                        , V.RemoveInvite out.roomId
+                        ]
+                    )
+                , []
+                )
         }
 
 
@@ -85,7 +96,17 @@ joinRoomByIdV2 { roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "join" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate =
+            \out ->
+                ( E.ContentUpdate
+                    (V.More
+                        [ V.CreateRoomIfNotExists out.roomId
+                        , V.RemoveInvite roomId
+                        , V.RemoveInvite out.roomId
+                        ]
+                    )
+                , []
+                )
         }
 
 
@@ -102,7 +123,17 @@ joinRoomByIdV3 { reason, roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "v3", "rooms", roomId, "join" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate =
+            \out ->
+                ( E.ContentUpdate
+                    (V.More
+                        [ V.CreateRoomIfNotExists out.roomId
+                        , V.RemoveInvite roomId
+                        , V.RemoveInvite out.roomId
+                        ]
+                    )
+                , []
+                )
         }
 
 

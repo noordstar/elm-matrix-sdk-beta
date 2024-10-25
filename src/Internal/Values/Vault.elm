@@ -74,6 +74,7 @@ type VaultUpdate
     | MapRoom String Room.RoomUpdate
     | More (List VaultUpdate)
     | Optional (Maybe VaultUpdate)
+    | RemoveInvite String
     | SetAccountData String Json.Value
     | SetInvite Invite
     | SetNextBatch String
@@ -225,6 +226,9 @@ update vaultUpdate startVault =
 
                 Optional Nothing ->
                     Recursion.base identity
+
+                RemoveInvite roomId ->
+                    Recursion.base (updateInvite roomId (always Nothing))
 
                 SetAccountData key value ->
                     Recursion.base (setAccountData key value)

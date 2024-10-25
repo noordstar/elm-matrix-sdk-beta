@@ -13,6 +13,7 @@ import Internal.Api.Api as A
 import Internal.Api.Request as R
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
+import Internal.Values.Vault as V
 
 
 leave : LeaveInput -> A.TaskChain (Phantom a) (Phantom a)
@@ -75,7 +76,7 @@ leaveV1 { roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "leave" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate = always ( E.ContentUpdate (V.RemoveInvite roomId), [] )
         }
 
 
@@ -87,7 +88,7 @@ leaveV2 { roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "r0", "rooms", roomId, "leave" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate = always ( E.ContentUpdate (V.RemoveInvite roomId), [] )
         }
 
 
@@ -103,7 +104,7 @@ leaveV3 { reason, roomId } =
         , contextChange = always identity
         , method = "POST"
         , path = [ "_matrix", "client", "v3", "rooms", roomId, "leave" ]
-        , toUpdate = always ( E.Optional Nothing, [] )
+        , toUpdate = always ( E.ContentUpdate (V.RemoveInvite roomId), [] )
         }
 
 
