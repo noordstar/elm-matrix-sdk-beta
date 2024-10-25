@@ -9,6 +9,8 @@ import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
+import Test.Values.StateManager as TestStateManager
+import Internal.Values.StateManager as StateManager
 
 
 fuzzer : Fuzzer Timeline
@@ -81,10 +83,11 @@ fuzzer =
 
 fuzzerBatch : Fuzzer Batch
 fuzzerBatch =
-    Fuzz.map4 Batch
+    Fuzz.map5 Batch
         (Fuzz.list Fuzz.string)
         TestFilter.fuzzer
         (Fuzz.maybe Fuzz.string)
+        TestStateManager.fuzzer
         Fuzz.string
 
 
@@ -100,12 +103,14 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = filter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEventsFrom filter "token_3"
@@ -125,12 +130,14 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = f1
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = f1
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEventsFrom subFilter "token_3"
@@ -146,12 +153,14 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = f1
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = f1
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEventsFrom f2 "token_3"
@@ -176,18 +185,21 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = f1
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = f2
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "g", "h", "i" ]
                             , filter = subFilter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_4"
                             }
                         |> Timeline.mostRecentEventsFrom subFilter "token_4"
@@ -206,12 +218,14 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_4"
                             }
                         |> Timeline.mostRecentEventsFrom filter "token_4"
@@ -227,18 +241,21 @@ suite =
                             { events = l1
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = l3
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_4"
                             }
                         |> Timeline.insert
                             { events = l2
                             , filter = filter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEventsFrom filter "token_4"
@@ -267,18 +284,21 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = filter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.insert
                             { events = [ "g", "h", "i" ]
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.mostRecentEventsFrom filter "token_2"
@@ -297,18 +317,21 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.addSync
                             { events = [ "f", "g", "h" ]
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_4"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e" ]
                             , filter = filter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.mostRecentEvents filter
@@ -322,12 +345,14 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.addSync
                             { events = [ "f", "g", "h" ]
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_4"
                             }
                         |> Timeline.mostRecentEvents filter
@@ -345,6 +370,7 @@ suite =
                                 { events = [ "a", "b", "c" ]
                                 , filter = filter
                                 , start = Just start
+                                , state = StateManager.empty
                                 , end = end
                                 }
                                 timeline
@@ -361,18 +387,21 @@ suite =
                             { events = [ "a", "b", "c" ]
                             , filter = filter
                             , start = Just "token_1"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.insert
                             { events = [ "d", "e", "f" ]
                             , filter = filter
                             , start = Just "token_2"
+                            , state = StateManager.empty
                             , end = "token_3"
                             }
                         |> Timeline.insert
                             { events = [ "g", "h", "i" ]
                             , filter = filter
                             , start = Just "token_3"
+                            , state = StateManager.empty
                             , end = "token_2"
                             }
                         |> Timeline.mostRecentEventsFrom filter "token_2"

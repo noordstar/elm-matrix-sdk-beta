@@ -1,5 +1,6 @@
 module Matrix.Event exposing
     ( Event, content, eventType, stateKey
+    , redact
     , eventId, roomId, sender, originServerTs
     , previousContent, redactedBecause
     )
@@ -18,6 +19,11 @@ events.
 @docs Event, content, eventType, stateKey
 
 
+## Actions
+
+@docs redact
+
+
 ## Metadata
 
 @docs eventId, roomId, sender, originServerTs
@@ -32,6 +38,7 @@ information isn't always applicable, it doesn't always exist.
 
 -}
 
+import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Event as Internal
 import Json.Encode
@@ -101,6 +108,29 @@ to see the previous content.
 previousContent : Event -> Maybe Json.Encode.Value
 previousContent (Event event) =
     Envelope.extract Internal.prevContent event
+
+
+{-| Redact a given event. This erases as much information from the event as
+possible.
+-}
+redact :
+    { event : Event
+    , reason : Maybe String
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    }
+    -> Cmd msg
+redact data =
+    case data.event of
+        Event event ->
+            Api.redact
+                event
+                { eventId = eventId data.event
+                , reason = data.reason
+                , roomId = roomId data.event
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
 
 
 {-| If the event has been redacted, the homeserver can display the event that

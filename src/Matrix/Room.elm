@@ -1,5 +1,7 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
+    , name, topic, pinnedEvents, getState
+    , leave, redact
     , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
     , invite, kick, ban
@@ -18,6 +20,20 @@ where a group of users talk to each other.
 
 This module exposes various functions that help you inspect various aspects of
 a room.
+
+
+## Room state
+
+State events describe the room's current state. Using state events, you can
+determine various pieces of information, such as the room's name, its members
+and how many people have rejected your invitation to join.
+
+@docs name, topic, pinnedEvents, getState
+
+
+## Actions
+
+@docs leave, redact
 
 
 ## Account data
@@ -57,6 +73,7 @@ you like. To help other users with decoding your JSON objects, you pass an
 import Internal.Api.Main as Api
 import Internal.Values.Envelope as Envelope
 import Internal.Values.Room as Internal
+import Json.Decode as D
 import Json.Encode as E
 import Types exposing (Room(..))
 
@@ -92,6 +109,14 @@ ban data =
 getAccountData : String -> Room -> Maybe E.Value
 getAccountData key (Room room) =
     Envelope.extract (Internal.getAccountData key) room
+
+
+{-| Get a room's current state.
+-}
+getState : { eventType : String, stateKey : String } -> Room -> Maybe Types.Event
+getState data (Room room) =
+    Envelope.mapMaybe (Internal.getState data) room
+        |> Maybe.map Types.Event
 
 
 {-| Invite a user to a room.
@@ -134,12 +159,46 @@ kick data =
                 }
 
 
-{-| Get a room's room id. This is an opaque string that distinguishes rooms from
-each other.
+{-| Leave a room.
 -}
-roomId : Room -> String
-roomId (Room room) =
-    Envelope.extract .roomId room
+leave :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+leave data =
+    case data.room of
+        Room room ->
+            Api.leave room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
+
+
+{-| Redact an event in the room. This erases as much information from the event
+as possible.
+-}
+redact :
+    { eventId : String
+    , reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    }
+    -> Cmd msg
+redact data =
+    case data.room of
+        Room room ->
+            Api.redact
+                room
+                { eventId = data.eventId
+                , reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
+                }
 
 
 {-| Get a list of the most recent events sent in the room.
@@ -148,6 +207,41 @@ mostRecentEvents : Room -> List Types.Event
 mostRecentEvents (Room room) =
     Envelope.mapList Internal.mostRecentEvents room
         |> List.map Types.Event
+
+
+{-| Get a room's name. The room name is a human-friendly string designed to be
+displayed to the end-user.
+
+Keep in mind that the room name is not unique: multiple rooms can have the same
+name.
+
+-}
+name : Room -> Maybe String
+name (Room room) =
+    room
+        |> Envelope.extract (Internal.getState { eventType = "m.room.name", stateKey = "" })
+        |> Maybe.map .content
+        |> Maybe.andThen (D.decodeValue (D.field "name" D.string) >> Result.toMaybe)
+
+
+{-| Get a room's pinned events. Pinned events are event IDs that the user is
+expected to review later.
+-}
+pinnedEvents : Room -> List String
+pinnedEvents (Room room) =
+    room
+        |> Envelope.extract (Internal.getState { eventType = "m.room.pinned_events", stateKey = "" })
+        |> Maybe.map .content
+        |> Maybe.andThen (D.decodeValue (D.field "pinned" (D.list D.string)) >> Result.toMaybe)
+        |> Maybe.withDefault []
+
+
+{-| Get a room's room id. This is an opaque string that distinguishes rooms from
+each other.
+-}
+roomId : Room -> String
+roomId (Room room) =
+    Envelope.extract .roomId room
 
 
 {-| Send a message event to a given room.
@@ -212,3 +306,15 @@ setAccountData data =
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 }
+
+
+{-| Get a room's topic. A topic is a short message detailing what is currently
+being discussed in the room. It can also be used as a way to display extra
+information about the room, which may not be suitable for the room name.
+-}
+topic : Room -> Maybe String
+topic (Room room) =
+    room
+        |> Envelope.extract (Internal.getState { eventType = "m.room.topic", stateKey = "" })
+        |> Maybe.map .content
+        |> Maybe.andThen (D.decodeValue (D.field "topic" D.string) >> Result.toMaybe)

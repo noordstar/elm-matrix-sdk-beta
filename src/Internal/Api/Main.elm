@@ -1,6 +1,6 @@
 module Internal.Api.Main exposing
     ( Msg
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -18,7 +18,7 @@ This module is used as reference for getting
 
 ## Actions
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -27,7 +27,6 @@ import Internal.Tools.Json as Json
 import Internal.Values.Context as Context
 import Internal.Values.Envelope as E
 import Internal.Values.User as User exposing (User)
-import Internal.Values.Vault as V
 
 
 {-| Update message type that is being returned.
@@ -82,6 +81,27 @@ inviteUser env data =
         (Context.apiFormat env.context)
 
 
+{-| Join a room by its room id.
+-}
+join :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+join env data =
+    ITask.run
+        data.toMsg
+        (ITask.join
+            { reason = data.reason
+            , roomId = data.roomId
+            }
+        )
+        (Context.apiFormat env.context)
+
+
 {-| Kick a user from a room.
 -}
 kickUser :
@@ -102,6 +122,48 @@ kickUser env data =
             , reason = data.reason
             , roomId = data.roomId
             , user = data.user
+            }
+        )
+        (Context.apiFormat env.context)
+
+
+{-| Leave a room.
+-}
+leave :
+    E.Envelope a
+    ->
+        { reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        }
+    -> Cmd msg
+leave env data =
+    ITask.run
+        data.toMsg
+        (ITask.leave { reason = data.reason, roomId = data.roomId })
+        (Context.apiFormat env.context)
+
+
+{-| Redact an event.
+-}
+redact :
+    E.Envelope a
+    ->
+        { eventId : String
+        , reason : Maybe String
+        , roomId : String
+        , toMsg : Msg -> msg
+        , transactionId : String
+        }
+    -> Cmd msg
+redact env data =
+    ITask.run
+        data.toMsg
+        (ITask.redact
+            { eventId = data.eventId
+            , reason = data.reason
+            , roomId = data.roomId
+            , transactionId = data.transactionId
             }
         )
         (Context.apiFormat env.context)
@@ -234,3 +296,13 @@ sync env data =
             }
         )
         (Context.apiFormat env.context)
+
+
+{-| Reveal personal information about the account to the user.
+-}
+whoAmI :
+    E.Envelope a
+    -> { toMsg : Msg -> msg }
+    -> Cmd msg
+whoAmI env data =
+    ITask.run data.toMsg ITask.whoAmI (Context.apiFormat env.context)

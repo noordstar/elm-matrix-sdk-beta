@@ -1,6 +1,7 @@
 module Internal.Values.Room exposing
     ( Room, init
     , RoomUpdate(..), update
+    , getState
     , Batch, addBatch, addSync, addEvents, mostRecentEvents
     , getAccountData, setAccountData
     , coder, encode, decode
@@ -29,6 +30,11 @@ room state reflect the homeserver state of the room.
 ## Update
 
 @docs RoomUpdate, update
+
+
+## Room state
+
+@docs getState
 
 
 ## Timeline
@@ -65,7 +71,7 @@ import Recursion.Fold
 {-| The Batch is a group of new events from somewhere in the timeline.
 -}
 type alias Batch =
-    { events : List Event, filter : Filter, start : Maybe String, end : String }
+    { events : List Event, filter : Filter, start : Maybe String, state : StateManager, end : String }
 
 
 {-| The Matrix Room is a representation of a Matrix Room as portrayed by the
@@ -86,6 +92,7 @@ from the Matrix API.
 -}
 type RoomUpdate
     = AddEvent Event
+    | AddState StateManager
     | AddSync Batch
     | Invite User
     | More (List RoomUpdate)
@@ -97,13 +104,14 @@ type RoomUpdate
 {-| Add new events to the Room's event directory + Room's timeline.
 -}
 addEventsToTimeline : (Timeline.Batch -> Timeline -> Timeline) -> Batch -> Room -> Room
-addEventsToTimeline f { events, filter, start, end } room =
+addEventsToTimeline f { events, filter, start, state, end } room =
     let
         batch : Timeline.Batch
         batch =
             { events = List.map .eventId events
             , filter = filter
             , start = start
+            , state = state
             , end = end
             }
     in
@@ -220,6 +228,13 @@ getAccountData key room =
     Dict.get key room.accountData
 
 
+{-| Get a state value for a room.
+-}
+getState : { eventType : String, stateKey : String } -> Room -> Maybe Event
+getState { eventType, stateKey } room =
+    StateManager.get { eventType = eventType, stateKey = stateKey } room.state
+
+
 {-| Create an empty room for which nothing is known.
 -}
 init : String -> Room
@@ -263,6 +278,9 @@ update roomUpdate startRoom =
                 AddEvent _ ->
                     -- TODO: Add event
                     Recursion.base identity
+
+                AddState state ->
+                    Recursion.base (\room -> { room | state = StateManager.append room.state state })
 
                 AddSync batch ->
                     Recursion.base (addSync batch)
