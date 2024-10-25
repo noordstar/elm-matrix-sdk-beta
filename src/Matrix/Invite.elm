@@ -42,10 +42,20 @@ import Json.Encode as E
 import Types exposing (Invite(..), InviteEvent(..))
 
 
+{-| Invitation to a given room. This type represents contains all available
+information about the room.
+-}
 type alias Invite =
     Types.Invite
 
 
+{-| An InviteEvent is a state event that indicates the room's state.
+
+This InviteEvent is more limited than the standard [Event](Matrix-Event#Event).
+It exclusively provides the information that is considered relevant for the
+invitation.
+
+-}
 type alias InviteEvent =
     Types.InviteEvent
 
