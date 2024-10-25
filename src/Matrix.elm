@@ -1,7 +1,7 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
     , VaultUpdate, update, sync, logs
-    , rooms, fromRoomId
+    , rooms, fromRoomId, invites, fromInviteId
     , getAccountData, setAccountData
     , addAccessToken, leave, sendMessageEvent, whoAmI
     )
@@ -31,7 +31,7 @@ support a monolithic public registry. (:
 
 ## Exploring the Vault
 
-@docs rooms, fromRoomId
+@docs rooms, fromRoomId, invites, fromInviteId
 
 
 ## Account data
@@ -76,6 +76,14 @@ addAccessToken : String -> Vault -> Vault
 addAccessToken token (Vault vault) =
     Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
         |> Vault
+
+
+{-| Get a specific invite to a given room Id.
+-}
+fromInviteId : String -> Vault -> Maybe Types.Invite
+fromInviteId roomId (Vault vault) =
+    Envelope.mapMaybe (Internal.fromInviteId roomId) vault
+        |> Maybe.map Types.Invite
 
 
 {-| Get a room based on its room ID, if the user is a member of that room.
@@ -139,6 +147,14 @@ fromUsername { username, host, port_ } =
         |> Envelope.init
         |> Envelope.mapContext (\c -> { c | username = Just username })
         |> Vault
+
+
+{-| Get a list of all invites that the user has received.
+-}
+invites : Vault -> List Types.Invite
+invites (Vault vault) =
+    Envelope.mapList Internal.invites vault
+        |> List.map Types.Invite
 
 
 {-| Leave a room. This stops a user from participating in a room.
