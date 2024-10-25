@@ -13,13 +13,10 @@ This module helps to ban users from a room.
 
 import Internal.Api.Api as A
 import Internal.Api.Request as R
-import Internal.Config.Log exposing (log)
-import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 import Internal.Values.Room as R
 import Internal.Values.User as User exposing (User)
-import Internal.Values.Vault as V
 
 
 banUser : BanUserInput -> A.TaskChain (Phantom a) (Phantom a)

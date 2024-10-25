@@ -19,7 +19,6 @@ import Internal.Tools.Json as Json
 import Internal.Values.Envelope as E
 import Internal.Values.Room as R
 import Internal.Values.User as User exposing (User)
-import Internal.Values.Vault as V
 
 
 kickUser : KickUserInput -> A.TaskChain (Phantom a) (Phantom a)

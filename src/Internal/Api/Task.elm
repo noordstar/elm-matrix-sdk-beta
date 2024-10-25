@@ -1,6 +1,6 @@
 module Internal.Api.Task exposing
     ( Task, run, Backpack
-    , banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+    , banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
     )
 
 {-|
@@ -23,7 +23,7 @@ up-to-date.
 
 ## Tasks
 
-@docs banUser, inviteUser, kickUser, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync
+@docs banUser, inviteUser, join, kickUser, leave, redact, sendMessageEvent, sendStateEvent, setAccountData, setRoomAccountData, sync, whoAmI
 
 -}
 
@@ -31,9 +31,12 @@ import Internal.Api.BanUser.Api
 import Internal.Api.BaseUrl.Api
 import Internal.Api.Chain as C
 import Internal.Api.InviteUser.Api
+import Internal.Api.JoinRoomById.Api
 import Internal.Api.KickUser.Api
+import Internal.Api.Leave.Api
 import Internal.Api.LoginWithUsernameAndPassword.Api
 import Internal.Api.Now.Api
+import Internal.Api.Redact.Api
 import Internal.Api.Request as Request
 import Internal.Api.SendMessageEvent.Api
 import Internal.Api.SendStateEvent.Api
@@ -41,6 +44,7 @@ import Internal.Api.SetAccountData.Api
 import Internal.Api.SetRoomAccountData.Api
 import Internal.Api.Sync.Api
 import Internal.Api.Versions.Api
+import Internal.Api.WhoAmI.Api
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Tools.Json as Json
@@ -229,6 +233,15 @@ inviteUser input =
         |> finishTask
 
 
+{-| Join a room.
+-}
+join : { reason : Maybe String, roomId : String } -> Task
+join input =
+    makeVBA
+        |> C.andThen (Internal.Api.JoinRoomById.Api.joinRoomById input)
+        |> finishTask
+
+
 {-| Kick a user from a room.
 -}
 kickUser :
@@ -242,6 +255,19 @@ kickUser :
 kickUser input =
     makeVBA
         |> C.andThen (Internal.Api.KickUser.Api.kickUser input)
+        |> finishTask
+
+
+{-| Leave a room.
+-}
+leave :
+    { reason : Maybe String
+    , roomId : String
+    }
+    -> Task
+leave input =
+    makeVBA
+        |> C.andThen (Internal.Api.Leave.Api.leave input)
         |> finishTask
 
 
@@ -262,6 +288,15 @@ makeVBA =
     makeVB
         |> C.andThen getNow
         |> C.andThen getAccessToken
+
+
+{-| Redact an event from a room.
+-}
+redact : { eventId : String, reason : Maybe String, roomId : String, transactionId : String } -> Task
+redact input =
+    makeVBA
+        |> C.andThen (Internal.Api.Redact.Api.redact input)
+        |> finishTask
 
 
 {-| Send a message event to a room.
@@ -306,6 +341,15 @@ sync : { fullState : Maybe Bool, presence : Maybe String, since : Maybe String, 
 sync input =
     makeVBA
         |> C.andThen (Internal.Api.Sync.Api.sync input)
+        |> finishTask
+
+
+{-| Reveal personal information about the account to the user.
+-}
+whoAmI : Task
+whoAmI =
+    makeVBA
+        |> C.andThen (Internal.Api.WhoAmI.Api.whoAmI {})
         |> finishTask
 
 

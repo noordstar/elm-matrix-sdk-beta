@@ -1,6 +1,7 @@
 module Matrix.Room exposing
     ( Room, mostRecentEvents, roomId
     , name, topic, pinnedEvents, getState
+    , leave, redact
     , getAccountData, setAccountData
     , sendMessageEvent, sendStateEvent
     , invite, kick, ban
@@ -28,6 +29,11 @@ determine various pieces of information, such as the room's name, its members
 and how many people have rejected your invitation to join.
 
 @docs name, topic, pinnedEvents, getState
+
+
+## Actions
+
+@docs leave, redact
 
 
 ## Account data
@@ -150,6 +156,48 @@ kick data =
                 , roomId = roomId data.room
                 , toMsg = Types.VaultUpdate >> data.toMsg
                 , user = Envelope.getContent user
+                }
+
+
+{-| Leave a room.
+-}
+leave :
+    { reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    }
+    -> Cmd msg
+leave data =
+    case data.room of
+        Room room ->
+            Api.leave room
+                { reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                }
+
+
+{-| Redact an event in the room. This erases as much information from the event
+as possible.
+-}
+redact :
+    { eventId : String
+    , reason : Maybe String
+    , room : Room
+    , toMsg : Types.VaultUpdate -> msg
+    , transactionId : String
+    }
+    -> Cmd msg
+redact data =
+    case data.room of
+        Room room ->
+            Api.redact
+                room
+                { eventId = data.eventId
+                , reason = data.reason
+                , roomId = roomId data.room
+                , toMsg = Types.VaultUpdate >> data.toMsg
+                , transactionId = data.transactionId
                 }
 
 
