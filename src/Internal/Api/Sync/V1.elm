@@ -15,6 +15,7 @@ import FastDict as Dict exposing (Dict)
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Filter.Timeline exposing (Filter)
+import Internal.Grammar.UserId as UserId
 import Internal.Tools.Json as Json
 import Internal.Tools.StrippedEvent as StrippedEvent
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
@@ -957,14 +958,14 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
             mstate
                 |> Maybe.andThen .events
                 |> Maybe.withDefault []
-                |> List.map (toStateEvent roomId)
+                |> List.filterMap (toStateEvent roomId)
                 |> StateManager.fromList
 
         currentState : StateManager
         currentState =
             timeline
                 |> Maybe.andThen .events
-                |> Maybe.map (List.map (toEvent roomId))
+                |> Maybe.map (List.filterMap (toEvent roomId))
                 |> Maybe.withDefault []
                 |> StateManager.fromList
                 |> StateManager.append prevState
@@ -982,7 +983,7 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
                         newEvents =
                             tl.events
                                 |> Maybe.withDefault []
-                                |> List.map (toEvent roomId)
+                                |> List.filterMap (toEvent roomId)
                     in
                     case ( limited, tl.prevBatch ) of
                         ( False, Just p ) ->
@@ -1036,30 +1037,32 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
         ]
 
 
-toStateEvent : String -> SyncStateEvent -> Event.Event
+toStateEvent : String -> SyncStateEvent -> Maybe Event.Event
 toStateEvent roomId event =
-    { content = event.content
-    , eventId = event.eventId
-    , originServerTs = event.originServerTs
-    , roomId = roomId
-    , sender = event.sender
-    , stateKey = Just event.stateKey
-    , eventType = event.eventType
-    , unsigned = Maybe.map toUnsigned event.unsigned
-    }
+    verifyLegality
+        { content = event.content
+        , eventId = event.eventId
+        , originServerTs = event.originServerTs
+        , roomId = roomId
+        , sender = event.sender
+        , stateKey = Just event.stateKey
+        , eventType = event.eventType
+        , unsigned = Maybe.map toUnsigned event.unsigned
+        }
 
 
-toEvent : String -> SyncRoomEvent -> Event.Event
+toEvent : String -> SyncRoomEvent -> Maybe Event.Event
 toEvent roomId event =
-    { content = event.content
-    , eventId = event.eventId
-    , originServerTs = event.originServerTs
-    , roomId = roomId
-    , sender = event.sender
-    , stateKey = Nothing
-    , eventType = event.eventType
-    , unsigned = Maybe.map toUnsigned event.unsigned
-    }
+    verifyLegality
+        { content = event.content
+        , eventId = event.eventId
+        , originServerTs = event.originServerTs
+        , roomId = roomId
+        , sender = event.sender
+        , stateKey = Nothing
+        , eventType = event.eventType
+        , unsigned = Maybe.map toUnsigned event.unsigned
+        }
 
 
 toUnsigned : UnsignedData -> Event.UnsignedData
@@ -1071,3 +1074,12 @@ toUnsigned u =
         , redactedBecause = Nothing
         , transactionId = u.transactionId
         }
+
+
+verifyLegality : Event.Event -> Maybe Event.Event
+verifyLegality event =
+    if UserId.isIllegal event.sender then
+        Nothing
+
+    else
+        Just event

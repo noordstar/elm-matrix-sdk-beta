@@ -584,7 +584,7 @@ updateTimeline =
     PV.updateTimeline
 
 
-toEvent : String -> ClientEventWithoutRoomID -> Event.Event
+toEvent : String -> ClientEventWithoutRoomID -> Maybe Event.Event
 toEvent =
     PV.toEvent
 
@@ -592,3 +592,8 @@ toEvent =
 toUnsigned : Maybe Event.Event -> Maybe UnsignedData -> Maybe Event.UnsignedData
 toUnsigned =
     PV.toUnsigned
+
+
+verifyLegality : Event.Event -> Maybe Event.Event
+verifyLegality =
+    PV.verifyLegality

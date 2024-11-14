@@ -61,7 +61,11 @@ coder =
                     P.succeed
                         ( name
                         , if UserId.isHistorical name then
-                            [ log.warn "Historical user found"
+                            [ log.warn ("Historical user found: " ++ UserId.toString name)
+                            ]
+
+                          else if UserId.isIllegal name then
+                            [ log.warn ("Invalid user found: " ++ UserId.toString name)
                             ]
 
                           else

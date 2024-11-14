@@ -705,14 +705,14 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
 
         newEvents : List Event.Event
         newEvents =
-            List.map (toEvent roomId) timeline.events
+            List.filterMap (toEvent roomId) timeline.events
 
         prevState : StateManager
         prevState =
             mstate
                 |> Maybe.andThen .events
                 |> Maybe.withDefault []
-                |> List.map (toEvent roomId)
+                |> List.filterMap (toEvent roomId)
                 |> StateManager.fromList
 
         currentState : StateManager
@@ -772,7 +772,7 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
         ]
 
 
-toEvent : String -> ClientEventWithoutRoomID -> Event.Event
+toEvent : String -> ClientEventWithoutRoomID -> Maybe Event.Event
 toEvent roomId event =
     Recursion.runRecursion
         (\ev ->
@@ -781,28 +781,32 @@ toEvent roomId event =
                     Recursion.recurseThen e
                         (\eo ->
                             Recursion.base
-                                { content = ev.content
-                                , eventId = ev.eventId
-                                , originServerTs = ev.originServerTs
-                                , roomId = roomId
-                                , sender = ev.sender
-                                , stateKey = ev.stateKey
-                                , eventType = ev.eventType
-                                , unsigned = toUnsigned (Just eo) ev.unsigned
-                                }
+                                (verifyLegality
+                                    { content = ev.content
+                                    , eventId = ev.eventId
+                                    , originServerTs = ev.originServerTs
+                                    , roomId = roomId
+                                    , sender = ev.sender
+                                    , stateKey = ev.stateKey
+                                    , eventType = ev.eventType
+                                    , unsigned = toUnsigned eo ev.unsigned
+                                    }
+                                )
                         )
 
                 Nothing ->
                     Recursion.base
-                        { content = ev.content
-                        , eventId = ev.eventId
-                        , originServerTs = ev.originServerTs
-                        , roomId = roomId
-                        , sender = ev.sender
-                        , stateKey = ev.stateKey
-                        , eventType = ev.eventType
-                        , unsigned = toUnsigned Nothing ev.unsigned
-                        }
+                        (verifyLegality
+                            { content = ev.content
+                            , eventId = ev.eventId
+                            , originServerTs = ev.originServerTs
+                            , roomId = roomId
+                            , sender = ev.sender
+                            , stateKey = ev.stateKey
+                            , eventType = ev.eventType
+                            , unsigned = toUnsigned Nothing ev.unsigned
+                            }
+                        )
         )
         event
 
@@ -832,3 +836,8 @@ toUnsigned ev unsigned =
             }
                 |> Event.UnsignedData
                 |> Just
+
+
+verifyLegality : Event.Event -> Maybe Event.Event
+verifyLegality =
+    PV.verifyLegality

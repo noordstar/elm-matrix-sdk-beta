@@ -13,6 +13,7 @@ might be relevant to them.
 
 import FastDict as Dict exposing (Dict)
 import Internal.Config.Text as Text
+import Internal.Grammar.UserId as UserId
 import Internal.Tools.Json as Json
 import Internal.Values.User as User exposing (User)
 
@@ -33,19 +34,23 @@ type alias InviteEvent =
 
 addInviteEvent : InviteEvent -> Invite -> Invite
 addInviteEvent event invite =
-    { invite
-        | events =
-            Dict.update event.eventType
-                (\mdict ->
-                    case mdict of
-                        Just dict ->
-                            Just (Dict.insert event.stateKey event dict)
+    if UserId.isIllegal event.sender then
+        invite
 
-                        Nothing ->
-                            Just (Dict.singleton event.stateKey event)
-                )
-                invite.events
-    }
+    else
+        { invite
+            | events =
+                Dict.update event.eventType
+                    (\mdict ->
+                        case mdict of
+                            Just dict ->
+                                Just (Dict.insert event.stateKey event dict)
+
+                            Nothing ->
+                                Just (Dict.singleton event.stateKey event)
+                    )
+                    invite.events
+        }
 
 
 {-| Define how an invite is encoded in JSON.
