@@ -101,7 +101,8 @@ type alias Settings =
     Settings.Settings
 
 
-{-| Clean an incoming baseUrl
+{-| Clean an incoming baseUrl. If no valid URL can be found, this function
+returns Nothing.
 -}
 cleanBaseUrl : String -> Maybe String
 cleanBaseUrl u =
@@ -120,7 +121,11 @@ cleanBaseUrl u =
         |> Maybe.map
             (\data ->
                 Url.toString
-                    { data | path = "", query = Nothing, fragment = Nothing }
+                    { data
+                        | path = removeTrailingSlashes data.path
+                        , query = Nothing
+                        , fragment = Nothing
+                    }
             )
 
 
@@ -315,6 +320,29 @@ toMaybe data =
     Maybe.map
         (\content -> map (always content) data)
         data.content
+
+
+{-| Remove trailing slashes from a string
+-}
+removeTrailingSlashes : String -> String
+removeTrailingSlashes =
+    String.reverse
+        >> String.toList
+        >> Recursion.runRecursion
+            (\s ->
+                case s of
+                    h :: t ->
+                        if h == '/' then
+                            Recursion.recurse t
+
+                        else
+                            Recursion.base s
+
+                    [] ->
+                        Recursion.base s
+            )
+        >> String.fromList
+        >> String.reverse
 
 
 {-| Updates the Envelope with a given EnvelopeUpdate value.
