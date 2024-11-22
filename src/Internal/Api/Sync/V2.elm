@@ -296,7 +296,7 @@ coderInviteState =
     PV.coderInviteState
 
 
-coderStrippedStateEvent : Json.Coder StrippedStateEvent
+coderStrippedStateEvent : Json.Coder (Maybe StrippedStateEvent)
 coderStrippedStateEvent =
     PV.coderStrippedState
 
@@ -368,12 +368,19 @@ coderState =
             { fieldName = "events"
             , toField = .events
             , description = [ "List of events." ]
-            , coder = Json.list coderClientEventWithoutRoomID
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderClientEventWithoutRoomID)
             }
         )
 
 
-coderClientEventWithoutRoomID : Json.Coder ClientEventWithoutRoomID
+coderClientEventWithoutRoomID : Json.Coder (Maybe ClientEventWithoutRoomID)
 coderClientEventWithoutRoomID =
     Json.object7
         { name = "ClientEventWithoutRoomID"
@@ -405,7 +412,7 @@ coderClientEventWithoutRoomID =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Required: Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value
@@ -429,6 +436,7 @@ coderClientEventWithoutRoomID =
             , coder = coderUnsignedData
             }
         )
+        |> Json.unsafe
 
 
 coderUnsignedData : Json.Coder UnsignedData
@@ -459,7 +467,8 @@ coderUnsignedData =
             , coder = Json.value
             }
         )
-        (Json.field.optional.value
+        (Json.field.required
+            -- NOTE: Not required - it's already a Maybe type because it's unsafe
             { fieldName = "redacted_because"
             , toField = \(UnsignedData u) -> u.redactedBecause
             , description = [ "The event that redacted this event, if any." ]
@@ -491,7 +500,14 @@ coderTimeline =
             { fieldName = "events"
             , toField = .events
             , description = [ "Required: List of events." ]
-            , coder = Json.list coderClientEventWithoutRoomID
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderClientEventWithoutRoomID)
             }
         )
         (Json.field.optional.value
@@ -565,7 +581,7 @@ coderToDevice =
     PV.coderToDevice
 
 
-coderToDeviceEvent : Json.Coder ToDeviceEvent
+coderToDeviceEvent : Json.Coder (Maybe ToDeviceEvent)
 coderToDeviceEvent =
     PV.coderToDeviceEvent
 
@@ -705,14 +721,14 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
 
         newEvents : List Event.Event
         newEvents =
-            List.filterMap (toEvent roomId) timeline.events
+            List.map (toEvent roomId) timeline.events
 
         prevState : StateManager
         prevState =
             mstate
                 |> Maybe.andThen .events
                 |> Maybe.withDefault []
-                |> List.filterMap (toEvent roomId)
+                |> List.map (toEvent roomId)
                 |> StateManager.fromList
 
         currentState : StateManager
@@ -772,7 +788,7 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
         ]
 
 
-toEvent : String -> ClientEventWithoutRoomID -> Maybe Event.Event
+toEvent : String -> ClientEventWithoutRoomID -> Event.Event
 toEvent roomId event =
     Recursion.runRecursion
         (\ev ->
@@ -781,32 +797,28 @@ toEvent roomId event =
                     Recursion.recurseThen e
                         (\eo ->
                             Recursion.base
-                                (verifyLegality
-                                    { content = ev.content
-                                    , eventId = ev.eventId
-                                    , originServerTs = ev.originServerTs
-                                    , roomId = roomId
-                                    , sender = ev.sender
-                                    , stateKey = ev.stateKey
-                                    , eventType = ev.eventType
-                                    , unsigned = toUnsigned eo ev.unsigned
-                                    }
-                                )
+                                { content = ev.content
+                                , eventId = ev.eventId
+                                , originServerTs = ev.originServerTs
+                                , roomId = roomId
+                                , sender = ev.sender
+                                , stateKey = ev.stateKey
+                                , eventType = ev.eventType
+                                , unsigned = toUnsigned (Just eo) ev.unsigned
+                                }
                         )
 
                 Nothing ->
                     Recursion.base
-                        (verifyLegality
-                            { content = ev.content
-                            , eventId = ev.eventId
-                            , originServerTs = ev.originServerTs
-                            , roomId = roomId
-                            , sender = ev.sender
-                            , stateKey = ev.stateKey
-                            , eventType = ev.eventType
-                            , unsigned = toUnsigned Nothing ev.unsigned
-                            }
-                        )
+                        { content = ev.content
+                        , eventId = ev.eventId
+                        , originServerTs = ev.originServerTs
+                        , roomId = roomId
+                        , sender = ev.sender
+                        , stateKey = ev.stateKey
+                        , eventType = ev.eventType
+                        , unsigned = toUnsigned Nothing ev.unsigned
+                        }
         )
         event
 
@@ -836,8 +848,3 @@ toUnsigned ev unsigned =
             }
                 |> Event.UnsignedData
                 |> Just
-
-
-verifyLegality : Event.Event -> Maybe Event.Event
-verifyLegality =
-    PV.verifyLegality

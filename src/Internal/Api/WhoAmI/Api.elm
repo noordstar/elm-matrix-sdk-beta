@@ -159,7 +159,7 @@ coderV1 =
             { fieldName = "user_id"
             , toField = .user
             , description = [ "The user that owns the access token" ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
 
@@ -184,7 +184,7 @@ coderV2 =
             { fieldName = "user_id"
             , toField = .user
             , description = [ "The user that owns the access token" ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
 
@@ -217,6 +217,6 @@ coderV3 =
             { fieldName = "user_id"
             , toField = .user
             , description = [ "The user that owns the access token" ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )

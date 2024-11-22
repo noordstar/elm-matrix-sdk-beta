@@ -15,7 +15,6 @@ import FastDict as Dict exposing (Dict)
 import Internal.Config.Log exposing (Log, log)
 import Internal.Config.Text as Text
 import Internal.Filter.Timeline exposing (Filter)
-import Internal.Grammar.UserId as UserId
 import Internal.Tools.Json as Json
 import Internal.Tools.StrippedEvent as StrippedEvent
 import Internal.Tools.Timestamp as Timestamp exposing (Timestamp)
@@ -335,12 +334,19 @@ coderInviteState =
             { fieldName = "events"
             , toField = .events
             , description = [ "The StrippedState events that form the invite state." ]
-            , coder = Json.list coderStrippedState
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderStrippedState)
             }
         )
 
 
-coderStrippedState : Json.Coder StrippedState
+coderStrippedState : Json.Coder (Maybe StrippedState)
 coderStrippedState =
     Json.object4
         { name = "StrippedState"
@@ -358,7 +364,7 @@ coderStrippedState =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "The sender for the event." ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.required
@@ -375,6 +381,7 @@ coderStrippedState =
             , coder = Json.string
             }
         )
+        |> Json.unsafe
 
 
 coderJoinedRoom : Json.Coder JoinedRoom
@@ -455,12 +462,19 @@ coderState =
             { fieldName = "events"
             , toField = .events
             , description = [ "List of events." ]
-            , coder = Json.list coderSyncStateEvent
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderSyncStateEvent)
             }
         )
 
 
-coderSyncStateEvent : Json.Coder SyncStateEvent
+coderSyncStateEvent : Json.Coder (Maybe SyncStateEvent)
 coderSyncStateEvent =
     Json.object8
         { name = "SyncStateEvent"
@@ -499,7 +513,7 @@ coderSyncStateEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.required
@@ -523,6 +537,7 @@ coderSyncStateEvent =
             , coder = coderUnsignedData
             }
         )
+        |> Json.unsafe
 
 
 coderUnsignedData : Json.Coder UnsignedData
@@ -596,7 +611,14 @@ coderTimeline =
             { fieldName = "events"
             , toField = .events
             , description = [ "List of events." ]
-            , coder = Json.list coderSyncRoomEvent
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderSyncRoomEvent)
             }
         )
         (Json.field.optional.value
@@ -615,7 +637,7 @@ coderTimeline =
         )
 
 
-coderSyncRoomEvent : Json.Coder SyncRoomEvent
+coderSyncRoomEvent : Json.Coder (Maybe SyncRoomEvent)
 coderSyncRoomEvent =
     Json.object6
         { name = "SyncRoomEvent"
@@ -647,7 +669,7 @@ coderSyncRoomEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "Contains the fully-qualified ID of the user who sent this event." ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.required
@@ -664,6 +686,7 @@ coderSyncRoomEvent =
             , coder = coderUnsignedData
             }
         )
+        |> Json.unsafe
 
 
 coderUnreadNotificationCounts : Json.Coder UnreadNotificationCounts
@@ -716,7 +739,14 @@ coderKnockState =
             { fieldName = "events"
             , toField = .events
             , description = [ "The StrippedState events that form the knock state." ]
-            , coder = Json.list coderStrippedState
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderStrippedState)
             }
         )
 
@@ -785,12 +815,19 @@ coderToDevice =
             { fieldName = "events"
             , toField = .events
             , description = [ "List of send-to-device messages." ]
-            , coder = Json.list coderToDeviceEvent
+            , coder =
+                Json.map
+                    { back = List.map Just
+                    , forth = List.filterMap identity
+                    , name = Text.mappings.eventDecoder.name
+                    , description = Text.mappings.eventDecoder.description
+                    }
+                    (Json.list coderToDeviceEvent)
             }
         )
 
 
-coderToDeviceEvent : Json.Coder ToDeviceEvent
+coderToDeviceEvent : Json.Coder (Maybe ToDeviceEvent)
 coderToDeviceEvent =
     Json.object3
         { name = "ToDeviceEvent"
@@ -808,7 +845,7 @@ coderToDeviceEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = [ "The Matrix user ID of the user who sent this event." ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value
@@ -818,6 +855,7 @@ coderToDeviceEvent =
             , coder = Json.string
             }
         )
+        |> Json.unsafe
 
 
 updateSyncResponse : { filter : Filter, since : Maybe String } -> SyncResponse -> ( E.EnvelopeUpdate V.VaultUpdate, List Log )
@@ -958,14 +996,14 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
             mstate
                 |> Maybe.andThen .events
                 |> Maybe.withDefault []
-                |> List.filterMap (toStateEvent roomId)
+                |> List.map (toStateEvent roomId)
                 |> StateManager.fromList
 
         currentState : StateManager
         currentState =
             timeline
                 |> Maybe.andThen .events
-                |> Maybe.map (List.filterMap (toEvent roomId))
+                |> Maybe.map (List.map (toEvent roomId))
                 |> Maybe.withDefault []
                 |> StateManager.fromList
                 |> StateManager.append prevState
@@ -983,7 +1021,7 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
                         newEvents =
                             tl.events
                                 |> Maybe.withDefault []
-                                |> List.filterMap (toEvent roomId)
+                                |> List.map (toEvent roomId)
                     in
                     case ( limited, tl.prevBatch ) of
                         ( False, Just p ) ->
@@ -1037,32 +1075,30 @@ updateTimeline { filter, nextBatch, roomId, since } mstate timeline =
         ]
 
 
-toStateEvent : String -> SyncStateEvent -> Maybe Event.Event
+toStateEvent : String -> SyncStateEvent -> Event.Event
 toStateEvent roomId event =
-    verifyLegality
-        { content = event.content
-        , eventId = event.eventId
-        , originServerTs = event.originServerTs
-        , roomId = roomId
-        , sender = event.sender
-        , stateKey = Just event.stateKey
-        , eventType = event.eventType
-        , unsigned = Maybe.map toUnsigned event.unsigned
-        }
+    { content = event.content
+    , eventId = event.eventId
+    , originServerTs = event.originServerTs
+    , roomId = roomId
+    , sender = event.sender
+    , stateKey = Just event.stateKey
+    , eventType = event.eventType
+    , unsigned = Maybe.map toUnsigned event.unsigned
+    }
 
 
-toEvent : String -> SyncRoomEvent -> Maybe Event.Event
+toEvent : String -> SyncRoomEvent -> Event.Event
 toEvent roomId event =
-    verifyLegality
-        { content = event.content
-        , eventId = event.eventId
-        , originServerTs = event.originServerTs
-        , roomId = roomId
-        , sender = event.sender
-        , stateKey = Nothing
-        , eventType = event.eventType
-        , unsigned = Maybe.map toUnsigned event.unsigned
-        }
+    { content = event.content
+    , eventId = event.eventId
+    , originServerTs = event.originServerTs
+    , roomId = roomId
+    , sender = event.sender
+    , stateKey = Nothing
+    , eventType = event.eventType
+    , unsigned = Maybe.map toUnsigned event.unsigned
+    }
 
 
 toUnsigned : UnsignedData -> Event.UnsignedData
@@ -1074,12 +1110,3 @@ toUnsigned u =
         , redactedBecause = Nothing
         , transactionId = u.transactionId
         }
-
-
-verifyLegality : Event.Event -> Maybe Event.Event
-verifyLegality event =
-    if UserId.isIllegal event.sender then
-        Nothing
-
-    else
-        Just event

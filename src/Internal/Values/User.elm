@@ -1,7 +1,7 @@
 module Internal.Values.User exposing
     ( User, toString, fromString
     , localpart, domain
-    , coder
+    , strictCoder, unsafeCoder
     )
 
 {-| The Matrix user is uniquely identified by their identifier. This User type
@@ -32,7 +32,7 @@ Since the username is safely parsed, one can get these parts of the username.
 
 ## JSON
 
-@docs coder
+@docs strictCoder, unsafeCoder
 
 -}
 
@@ -47,34 +47,6 @@ import Parser as P
 -}
 type alias User =
     UserId.UserID
-
-
-{-| Define a method to encode/decode Matrix users.
--}
-coder : Json.Coder User
-coder =
-    Json.parser
-        { name = "Username"
-        , p =
-            P.andThen
-                (\name ->
-                    P.succeed
-                        ( name
-                        , if UserId.isHistorical name then
-                            [ log.warn ("Historical user found: " ++ UserId.toString name)
-                            ]
-
-                          else if UserId.isIllegal name then
-                            [ log.warn ("Invalid user found: " ++ UserId.toString name)
-                            ]
-
-                          else
-                            []
-                        )
-                )
-                UserId.userIdParser
-        , toString = UserId.toString
-        }
 
 
 {-| The domain represents the Matrix homeserver controlling this user. It also
@@ -103,8 +75,70 @@ localpart =
     .localpart
 
 
+{-| Define a method to encode/decode Matrix users. This coder strictly follows
+the rules of the Matrix spec.
+-}
+strictCoder : Json.Coder User
+strictCoder =
+    Json.parser
+        { name = "Username"
+        , p =
+            P.andThen
+                (\name ->
+                    P.succeed
+                        ( name
+                        , if UserId.isHistorical name then
+                            [ log.warn ("Historical user found: " ++ UserId.toString name)
+                            ]
+
+                          else if UserId.isIllegal name then
+                            [ log.error ("Invalid user found: " ++ UserId.toString name)
+                            ]
+
+                          else
+                            []
+                        )
+                )
+                UserId.userIdParser
+        , toString = UserId.toString
+        }
+
+
 {-| Convert a user into its unique identifier string value.
 -}
 toString : User -> String
 toString =
     UserId.toString
+
+
+{-| Define a method to encode/decode Matrix users. This coder follows the rules
+of the Matrix spec, but then returns a Maybe type in order to handle illegal
+user ids elsewhere.
+-}
+unsafeCoder : Json.Coder (Maybe User)
+unsafeCoder =
+    Json.parser
+        { name = "Username"
+        , p =
+            P.andThen
+                (\name ->
+                    if UserId.isIllegal name then
+                        P.succeed
+                            ( Nothing
+                            , [ log.warn ("Invalid user found: " ++ UserId.toString name) ]
+                            )
+
+                    else
+                        P.succeed
+                            ( Just name
+                            , if UserId.isHistorical name then
+                                [ log.warn ("Historical user found: " ++ UserId.toString name)
+                                ]
+
+                              else
+                                []
+                            )
+                )
+                UserId.userIdParser
+        , toString = Maybe.map UserId.toString >> Maybe.withDefault ""
+        }

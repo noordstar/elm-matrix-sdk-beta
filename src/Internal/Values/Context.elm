@@ -233,7 +233,7 @@ coder =
             { fieldName = "user"
             , toField = .user
             , description = Text.fields.context.user
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value

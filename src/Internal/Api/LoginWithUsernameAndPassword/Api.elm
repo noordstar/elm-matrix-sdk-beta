@@ -565,7 +565,7 @@ coderV1 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
 
@@ -613,7 +613,7 @@ coderV2 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
 
@@ -661,7 +661,7 @@ coderV3 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
 
@@ -709,7 +709,7 @@ coderV4 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value
@@ -784,7 +784,7 @@ coderV5 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value
@@ -859,7 +859,7 @@ coderV6 =
             , description =
                 [ "The fully-qualified Matrix ID that has been registered."
                 ]
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.optional.value

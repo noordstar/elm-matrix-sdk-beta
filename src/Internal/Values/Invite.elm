@@ -99,7 +99,7 @@ coderEvent =
             { fieldName = "sender"
             , toField = .sender
             , description = Text.fields.event.sender
-            , coder = User.coder
+            , coder = User.strictCoder
             }
         )
         (Json.field.required

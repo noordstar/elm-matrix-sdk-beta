@@ -1,7 +1,7 @@
 module Internal.Tools.Json exposing
     ( Coder, string, bool, int, float, value, unit
     , Encoder, encode, Decoder, decode, Value
-    , succeed, fail, andThen, lazy, map
+    , succeed, fail, andThen, lazy, map, unsafe
     , Docs(..), RequiredField(..), toDocs
     , list, listWithOne, slowDict, fastDict, fastIntDict, set, iddict, maybe
     , Field, field, parser
@@ -39,7 +39,7 @@ module to build its encoders and decoders.
 
 ## Optional coding
 
-@docs succeed, fail, andThen, lazy, map
+@docs succeed, fail, andThen, lazy, map, unsafe
 
 
 ## Documentation
@@ -166,6 +166,7 @@ type Docs
     | DocsSet Docs
     | DocsString
     | DocsUnit
+    | DocsUnsafe Docs
     | DocsValue
 
 
@@ -1472,6 +1473,31 @@ unit =
         { encoder = \() -> E.object []
         , decoder = D.succeed ( (), [] )
         , docs = DocsUnit
+        }
+
+
+{-| Unsafe coder for JSON. To be used when a coder may not fail when it contains
+invalid contents.
+-}
+unsafe : Coder a -> Coder (Maybe a)
+unsafe (Coder old) =
+    Coder
+        -- TODO: Instead of the unit value, perhaps the default should encode
+        -- TODO: to something that is guaranteed to fail decoding?
+        { encoder = Maybe.map old.encoder >> Maybe.withDefault (E.object [])
+        , decoder =
+            old.decoder
+                |> D.maybe
+                |> D.map
+                    (\mout ->
+                        case mout of
+                            Just ( a, logs ) ->
+                                ( Just a, logs )
+
+                            Nothing ->
+                                ( Nothing, [] )
+                    )
+        , docs = DocsUnsafe old.docs
         }
 
 

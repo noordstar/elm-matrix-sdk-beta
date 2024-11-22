@@ -301,7 +301,7 @@ coderInviteState =
     PV.coderInviteState
 
 
-coderStrippedStateEvent : Json.Coder StrippedStateEvent
+coderStrippedStateEvent : Json.Coder (Maybe StrippedStateEvent)
 coderStrippedStateEvent =
     PV.coderStrippedStateEvent
 
@@ -374,7 +374,7 @@ coderState =
     PV.coderState
 
 
-coderClientEventWithoutRoomID : Json.Coder ClientEventWithoutRoomID
+coderClientEventWithoutRoomID : Json.Coder (Maybe ClientEventWithoutRoomID)
 coderClientEventWithoutRoomID =
     PV.coderClientEventWithoutRoomID
 
@@ -447,7 +447,7 @@ coderToDevice =
     PV.coderToDevice
 
 
-coderToDeviceEvent : Json.Coder ToDeviceEvent
+coderToDeviceEvent : Json.Coder (Maybe ToDeviceEvent)
 coderToDeviceEvent =
     PV.coderToDeviceEvent
 
@@ -584,7 +584,7 @@ updateTimeline =
     PV.updateTimeline
 
 
-toEvent : String -> ClientEventWithoutRoomID -> Maybe Event.Event
+toEvent : String -> ClientEventWithoutRoomID -> Event.Event
 toEvent =
     PV.toEvent
 
@@ -592,8 +592,3 @@ toEvent =
 toUnsigned : Maybe Event.Event -> Maybe UnsignedData -> Maybe Event.UnsignedData
 toUnsigned =
     PV.toUnsigned
-
-
-verifyLegality : Event.Event -> Maybe Event.Event
-verifyLegality =
-    PV.verifyLegality
