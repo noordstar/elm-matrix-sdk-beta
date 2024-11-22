@@ -59,6 +59,7 @@ import Internal.Values.Settings as Settings
 import Internal.Values.User exposing (User)
 import Recursion
 import Recursion.Fold
+import Url
 
 
 {-| There are lots of different data types in the Elm SDK, and many of them
@@ -98,6 +99,34 @@ manipulate the Matrix Vault.
 -}
 type alias Settings =
     Settings.Settings
+
+
+{-| Clean an incoming baseUrl. If no valid URL can be found, this function
+returns Nothing.
+-}
+cleanBaseUrl : String -> Maybe String
+cleanBaseUrl u =
+    let
+        startsWithProtocol =
+            String.startsWith "https://" u || String.startsWith "http://" u
+
+        text =
+            if startsWithProtocol then
+                u
+
+            else
+                "https://" ++ u
+    in
+    Url.fromString text
+        |> Maybe.map
+            (\data ->
+                Url.toString
+                    { data
+                        | path = removeTrailingSlashes data.path
+                        , query = Nothing
+                        , fragment = Nothing
+                    }
+            )
 
 
 {-| Define how an Envelope can be encoded to and decoded from a JSON object.
@@ -293,6 +322,29 @@ toMaybe data =
         data.content
 
 
+{-| Remove trailing slashes from a string
+-}
+removeTrailingSlashes : String -> String
+removeTrailingSlashes =
+    String.reverse
+        >> String.toList
+        >> Recursion.runRecursion
+            (\s ->
+                case s of
+                    h :: t ->
+                        if h == '/' then
+                            Recursion.recurse t
+
+                        else
+                            Recursion.base s
+
+                    [] ->
+                        Recursion.base s
+            )
+        >> String.fromList
+        >> String.reverse
+
+
 {-| Updates the Envelope with a given EnvelopeUpdate value.
 -}
 update : (au -> a -> a) -> EnvelopeUpdate au -> Envelope a -> Envelope a
@@ -347,10 +399,15 @@ update updateContent eu startData =
                         )
 
                 SetBaseUrl b ->
-                    Recursion.base
-                        (\({ context } as data) ->
-                            { data | context = { context | baseUrl = Just b } }
-                        )
+                    case cleanBaseUrl b of
+                        Just burl ->
+                            Recursion.base
+                                (\({ context } as data) ->
+                                    { data | context = { context | baseUrl = Just burl } }
+                                )
+
+                        Nothing ->
+                            Recursion.base identity
 
                 SetDeviceId d ->
                     Recursion.base
