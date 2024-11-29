@@ -301,7 +301,7 @@ coderInviteState =
     PV.coderInviteState
 
 
-coderStrippedStateEvent : Json.Coder StrippedStateEvent
+coderStrippedStateEvent : Json.Coder (Maybe StrippedStateEvent)
 coderStrippedStateEvent =
     PV.coderStrippedStateEvent
 
@@ -374,7 +374,7 @@ coderState =
     PV.coderState
 
 
-coderClientEventWithoutRoomID : Json.Coder ClientEventWithoutRoomID
+coderClientEventWithoutRoomID : Json.Coder (Maybe ClientEventWithoutRoomID)
 coderClientEventWithoutRoomID =
     PV.coderClientEventWithoutRoomID
 
@@ -447,7 +447,7 @@ coderToDevice =
     PV.coderToDevice
 
 
-coderToDeviceEvent : Json.Coder ToDeviceEvent
+coderToDeviceEvent : Json.Coder (Maybe ToDeviceEvent)
 coderToDeviceEvent =
     PV.coderToDeviceEvent
 

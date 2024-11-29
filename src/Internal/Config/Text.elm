@@ -721,9 +721,16 @@ logs =
 
 {-| Function descriptions
 -}
-mappings : { itokenPTR : TypeDocs }
+mappings : { eventDecoder : TypeDocs, itokenPTR : TypeDocs }
 mappings =
-    { itokenPTR =
+    { eventDecoder =
+        { name = "Safe event decoding"
+        , description =
+            [ "Most Synapse servers allow invalid events to be sent over federation."
+            , "For this reason, each event is individually decoded, and invalid events are discarded."
+            ]
+        }
+    , itokenPTR =
         { name = "ITokenPTR init"
         , description =
             [ "Converts an optional string to an Itoken pointer."

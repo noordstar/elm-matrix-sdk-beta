@@ -1,6 +1,6 @@
 module Internal.Grammar.UserId exposing
     ( UserID, toString, fromString
-    , userIdParser, isHistorical
+    , userIdParser, isHistorical, isIllegal
     )
 
 {-|
@@ -47,7 +47,7 @@ localparts from the expanded character set:
 
 ## Extra
 
-@docs userIdParser, isHistorical
+@docs userIdParser, isHistorical, isIllegal
 
 -}
 
@@ -78,25 +78,36 @@ As a result, an explicit method to spot historical users is added to the SDK.
 
 -}
 isHistorical : UserID -> Bool
-isHistorical { localpart } =
-    String.any
-        (\c ->
-            let
-                i : Int
-                i =
-                    Char.toCode c
-            in
-            not ((0x61 <= i && i <= 0x7A) || Char.isAlpha c)
-        )
-        localpart
+isHistorical ({ localpart } as u) =
+    String.all validHistoricalLocalpartChar localpart && not (isModern u)
+
+
+{-| Despite the Matrix specification having strict rules on what a user is meant
+to look like, this does not always reflect reality. As a result, JSON responses
+are parsed with illegal user ids kept in mind.
+
+This function helps determine such users. Their input is not to be trusted as
+their malformed user ID is often constructed intentionally.
+
+-}
+isIllegal : UserID -> Bool
+isIllegal u =
+    not (isModern u || isHistorical u)
+
+
+isModern : UserID -> Bool
+isModern { localpart } =
+    String.all validModernLocalpartChar localpart
 
 
 localpartParser : Parser String
 localpartParser =
-    P.chompIf validHistoricalUsernameChar
+    -- Yes, some illegal users have a zero-length localpart
+    P.chompWhile (\c -> c /= ':')
         |> P.getChompedString
         |> PE.times 1 255
         |> P.map String.concat
+        |> P.map String.toLower
 
 
 {-| Convert a parsed User ID to a string.
@@ -118,11 +129,16 @@ userIdParser =
         |> PE.maxLength 255
 
 
-validHistoricalUsernameChar : Char -> Bool
-validHistoricalUsernameChar c =
+validHistoricalLocalpartChar : Char -> Bool
+validHistoricalLocalpartChar c =
     let
         i : Int
         i =
             Char.toCode c
     in
     (0x21 <= i && i <= 0x39) || (0x3B <= i && i <= 0x7E)
+
+
+validModernLocalpartChar : Char -> Bool
+validModernLocalpartChar c =
+    Char.isLower c || String.any ((==) c) "-.=_/+"
