@@ -1,7 +1,7 @@
 module Matrix.User exposing
     ( User, toString
     , localpart, domain
-    , get
+    -- , get
     )
 
 {-| Matrix users are identified by their unique ID. In the Matrix API, this is a
@@ -96,26 +96,23 @@ domain (User user) =
     Envelope.extract Internal.domain user
 
 
-{-| Get a specific user by their unique identifier.
 
-The Vault is needed as an input because the `User` type also stores various
-credentials needed to talk to the Matrix API.
-
-    get vault "@alice:example.org" -- Just (User "alice" "example.org")
-
-    get vault "@bob:127.0.0.1" -- Just (User "bob" "127.0.0.1")
-
-    get vault "@charlie:[2001:db8::]" -- Just (User "charlie" "2001:db8::")
-
-    get vault "@evil:#mp#ss#bl#.c#m" -- Nothing
-
-    get vault "" -- Nothing
-
--}
-get : Types.Vault -> String -> Maybe User
-get (Types.Vault vault) username =
-    Envelope.mapMaybe (\_ -> Internal.fromString username) vault
-        |> Maybe.map Types.User
+-- TODO: Since it is now safe to store a user as a variable,
+-- TODO: create a `fromString` variable that safely creates a user type.
+-- {-| Get a specific user by their unique identifier.
+-- The Vault is needed as an input because the `User` type also stores various
+-- credentials needed to talk to the Matrix API.
+--     get vault "@alice:example.org" -- Just (User "alice" "example.org")
+--     get vault "@bob:127.0.0.1" -- Just (User "bob" "127.0.0.1")
+--     get vault "@charlie:[2001:db8::]" -- Just (User "charlie" "2001:db8::")
+--     get vault "@evil:#mp#ss#bl#.c#m" -- Nothing
+--     get vault "" -- Nothing
+-- -}
+-- get : Types.Vault -> String -> Maybe User
+-- get (Types.Vault vault) username =
+--     Envelope.mapMaybe (\_ -> Internal.fromString username) vault
+--         |> Maybe.map Types.User
+-- TODO: Fix docs
 
 
 {-| The localpart is the user's unique username. Every homeserver has their own

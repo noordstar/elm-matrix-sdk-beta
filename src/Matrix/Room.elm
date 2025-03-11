@@ -89,19 +89,11 @@ type alias Room =
 ban :
     { reason : Maybe String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     , user : Types.User
     }
-    -> Cmd msg
-ban data =
-    case ( data.room, data.user ) of
-        ( Room room, Types.User user ) ->
-            Api.banUser room
-                { reason = data.reason
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , user = Envelope.getContent user
-                }
+    -> Types.VaultUpdate
+ban _ =
+    Debug.todo "Ban user"
 
 
 {-| Get a piece of account data linked to a certain string key.
@@ -124,19 +116,11 @@ getState data (Room room) =
 invite :
     { reason : Maybe String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     , user : Types.User
     }
-    -> Cmd msg
-invite data =
-    case ( data.room, data.user ) of
-        ( Room room, Types.User user ) ->
-            Api.inviteUser room
-                { reason = data.reason
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , user = Envelope.getContent user
-                }
+    -> Types.VaultUpdate
+invite _ =
+    Debug.todo "Invite user"
 
 
 {-| Kick a user from a room.
@@ -144,19 +128,11 @@ invite data =
 kick :
     { reason : Maybe String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     , user : Types.User
     }
-    -> Cmd msg
-kick data =
-    case ( data.room, data.user ) of
-        ( Room room, Types.User user ) ->
-            Api.kickUser room
-                { reason = data.reason
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , user = Envelope.getContent user
-                }
+    -> Types.VaultUpdate
+kick _ =
+    Debug.todo "Kick user"
 
 
 {-| Leave a room.
@@ -164,17 +140,10 @@ kick data =
 leave :
     { reason : Maybe String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     }
-    -> Cmd msg
-leave data =
-    case data.room of
-        Room room ->
-            Api.leave room
-                { reason = data.reason
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+    -> Types.VaultUpdate
+leave _ =
+    Debug.todo "Leave room"
 
 
 {-| Redact an event in the room. This erases as much information from the event
@@ -184,21 +153,11 @@ redact :
     { eventId : String
     , reason : Maybe String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     , transactionId : String
     }
-    -> Cmd msg
-redact data =
-    case data.room of
-        Room room ->
-            Api.redact
-                room
-                { eventId = data.eventId
-                , reason = data.reason
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , transactionId = data.transactionId
-                }
+    -> Types.VaultUpdate
+redact _ =
+    Debug.todo "Redact event"
 
 
 {-| Get a list of the most recent events sent in the room.
@@ -250,20 +209,11 @@ sendMessageEvent :
     { content : E.Value
     , eventType : String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     , transactionId : String
     }
-    -> Cmd msg
-sendMessageEvent data =
-    case data.room of
-        Room room ->
-            Api.sendMessageEvent room
-                { content = data.content
-                , eventType = data.eventType
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , transactionId = data.transactionId
-                }
+    -> Types.VaultUpdate
+sendMessageEvent _ =
+    Debug.todo "Send message event"
 
 
 {-| Send a state event to a given room.
@@ -276,16 +226,8 @@ sendStateEvent :
     , toMsg : Types.VaultUpdate -> msg
     }
     -> Cmd msg
-sendStateEvent data =
-    case data.room of
-        Room room ->
-            Api.sendStateEvent room
-                { content = data.content
-                , eventType = data.eventType
-                , roomId = roomId data.room
-                , stateKey = data.stateKey
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+sendStateEvent _ =
+    Debug.todo "Send state event"
 
 
 {-| Set account data to a Matrix room.
@@ -294,18 +236,10 @@ setAccountData :
     { content : E.Value
     , eventType : String
     , room : Room
-    , toMsg : Types.VaultUpdate -> msg
     }
-    -> Cmd msg
-setAccountData data =
-    case data.room of
-        Room room ->
-            Api.setRoomAccountData room
-                { content = data.content
-                , eventType = data.eventType
-                , roomId = roomId data.room
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+    -> Types.VaultUpdate
+setAccountData _ =
+    Debug.todo "Set account data"
 
 
 {-| Get a room's topic. A topic is a short message detailing what is currently

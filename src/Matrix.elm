@@ -1,6 +1,6 @@
 module Matrix exposing
     ( Vault, fromUserId, fromUsername
-    , VaultUpdate, update, sync, logs
+    , VaultUpdate, update, sync
     , rooms, fromRoomId, invites, fromInviteId
     , getAccountData, setAccountData
     , addAccessToken, leave, sendMessageEvent, whoAmI
@@ -26,7 +26,7 @@ support a monolithic public registry. (:
 
 ## Keeping the Vault up-to-date
 
-@docs VaultUpdate, update, sync, logs
+@docs VaultUpdate, update, sync
 
 
 ## Exploring the Vault
@@ -72,10 +72,9 @@ type alias VaultUpdate =
 {-| Adds a custom access token to the Vault. This can be done if no password is
 provided or known.
 -}
-addAccessToken : String -> Vault -> Vault
-addAccessToken token (Vault vault) =
-    Envelope.mapContext (\c -> { c | suggestedAccessToken = Just token }) vault
-        |> Vault
+addAccessToken : String -> VaultUpdate
+addAccessToken _ =
+    Debug.todo "Add access token"
 
 
 {-| Get a specific invite to a given room Id.
@@ -169,40 +168,10 @@ The user will still be allowed to retrieve history from the room which they were
 leave :
     { reason : Maybe String
     , roomId : String
-    , toMsg : Types.VaultUpdate -> msg
-    , vault : Vault
     }
-    -> Cmd msg
-leave data =
-    case data.vault of
-        Vault vault ->
-            Api.leave vault
-                { reason = data.reason
-                , roomId = data.roomId
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
-
-
-{-| The VaultUpdate is a complex type that helps update the Vault. However,
-it also contains a human output!
-
-Using this function, you can get a human output that describes everything that
-the VaultUpdate has to tell the Vault.
-
-The `channel` field describes the context of the log, allowing you to filter
-further. For example:
-
-  - `debug` is a comprehensive channel describing everything the Elm runtime has
-    executed.
-  - `warn` contains warnings that aren't breaking, but relevant.
-  - `securityWarn` warns about potential security issues or potential attacks.
-  - `error` has errors that were encountered.
-  - `caughtError` has errors that were dealt with successfully.
-
--}
-logs : VaultUpdate -> List { channel : String, content : String }
-logs (VaultUpdate vu) =
-    vu.logs
+    -> VaultUpdate
+leave _ =
+    Debug.todo "Leave a chosen room"
 
 
 {-| Get a list of all the rooms that the user has joined.
@@ -225,33 +194,20 @@ The fields stand for the following:
   - `content` is the JSON object that is sent to the Matrix room.
   - `eventType` is the event type that is sent to the Matrix room.
   - `roomId` is the Matrix room ID.
-  - `toMsg` is the `msg` type that is returned after the message has been sent.
   - `transactionId` is a unique identifier that helps the Matrix server
     distringuish messages. If you send the same message with the same transactionId,
     the server promises to register it only once.
-  - `vault` is the Matrix Vault that contains all the latest and most relevant
-    information.
 
 -}
 sendMessageEvent :
     { content : E.Value
     , eventType : String
     , roomId : String
-    , toMsg : VaultUpdate -> msg
     , transactionId : String
-    , vault : Vault
     }
-    -> Cmd msg
-sendMessageEvent data =
-    case data.vault of
-        Vault vault ->
-            Api.sendMessageEvent vault
-                { content = data.content
-                , eventType = data.eventType
-                , roomId = data.roomId
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , transactionId = data.transactionId
-                }
+    -> VaultUpdate
+sendMessageEvent _ =
+    Debug.todo "Send message event"
 
 
 {-| Set global account data.
@@ -259,18 +215,10 @@ sendMessageEvent data =
 setAccountData :
     { content : E.Value
     , eventType : String
-    , room : Vault
-    , toMsg : Types.VaultUpdate -> msg
     }
-    -> Cmd msg
-setAccountData data =
-    case data.room of
-        Vault vault ->
-            Api.setAccountData vault
-                { content = data.content
-                , eventType = data.eventType
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+    -> VaultUpdate
+setAccountData _ =
+    Debug.todo "Set global account data"
 
 
 {-| Synchronize the Vault with the Matrix API.
@@ -279,9 +227,9 @@ Effectively, this task asks the Matrix API to provide the latest information,
 which will be returned as your VaultUpdate.
 
 -}
-sync : (VaultUpdate -> msg) -> Vault -> Cmd msg
-sync toMsg (Vault vault) =
-    Api.sync vault { toMsg = Types.VaultUpdate >> toMsg }
+sync : (VaultUpdate -> msg) -> Sub msg
+sync _ =
+    Debug.todo "Sync vault"
 
 
 {-| Using new VaultUpdate information, update the Vault accordingly.
@@ -290,11 +238,9 @@ This allows us to change our perception of the Matrix environment: has anyone
 sent a new message? Did someone send us an invite for a new room?
 
 -}
-update : VaultUpdate -> Vault -> Vault
+update : VaultUpdate -> Vault -> ( Vault, Cmd VaultUpdate )
 update (VaultUpdate vu) (Vault vault) =
-    vu.messages
-        |> List.foldl (Envelope.update Internal.update) vault
-        |> Vault
+    Debug.todo "Update vault"
 
 
 {-| Get personal information about the vault, such as the user id, the device
@@ -306,6 +252,6 @@ that such information is available, you can use this function to download that
 information.
 
 -}
-whoAmI : (VaultUpdate -> msg) -> Vault -> Cmd msg
-whoAmI toMsg (Vault vault) =
-    Api.whoAmI vault { toMsg = Types.VaultUpdate >> toMsg }
+whoAmI : (VaultUpdate -> msg) -> VaultUpdate
+whoAmI _ =
+    Debug.todo "Who am I?"

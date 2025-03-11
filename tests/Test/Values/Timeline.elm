@@ -4,13 +4,13 @@ import Expect
 import Fuzz exposing (Fuzzer)
 import Internal.Filter.Timeline as Filter
 import Internal.Tools.Json as Json
+import Internal.Values.StateManager as StateManager
 import Internal.Values.Timeline as Timeline exposing (Batch, Timeline)
 import Json.Decode as D
 import Json.Encode as E
 import Test exposing (..)
 import Test.Filter.Timeline as TestFilter
 import Test.Values.StateManager as TestStateManager
-import Internal.Values.StateManager as StateManager
 
 
 fuzzer : Fuzzer Timeline

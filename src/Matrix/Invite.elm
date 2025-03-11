@@ -67,16 +67,9 @@ accept :
     , reason : Maybe String
     , toMsg : Types.VaultUpdate -> msg
     }
-    -> Cmd msg
-accept data =
-    case data.invite of
-        Invite invite ->
-            Api.join
-                invite
-                { reason = data.reason
-                , roomId = roomId data.invite
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+    -> Types.VaultUpdate
+accept _ =
+    Debug.todo "Accept invite"
 
 
 {-| Determines the content of an event.
@@ -126,18 +119,10 @@ they receive a new invite.
 reject :
     { invite : Invite
     , reason : Maybe String
-    , toMsg : Types.VaultUpdate -> msg
     }
-    -> Cmd msg
-reject data =
-    case data.invite of
-        Invite invite ->
-            Api.leave
-                invite
-                { reason = data.reason
-                , roomId = roomId data.invite
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                }
+    -> Types.VaultUpdate
+reject _ =
+    Debug.todo "Reject invite"
 
 
 {-| Get the room id of the room that the user is invited to.

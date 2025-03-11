@@ -1,5 +1,5 @@
 module Matrix.Settings exposing
-    ( setAccessToken, removeAccessToken
+    ( setAccessToken
     , getDeviceName, setDeviceName
     , getSyncTime, setSyncTime
     , setPassword
@@ -20,7 +20,7 @@ can use this option to insert an access token into the Vault.
 As long as the access token remains valid, the Vault will use this provided
 access token.
 
-@docs setAccessToken, removeAccessToken
+@docs setAccessToken
 
 
 ## Device name
@@ -87,67 +87,60 @@ getSyncTime (Vault vault) =
     Envelope.extractSettings .syncTime vault
 
 
-{-| Remove an access token that has been inserted using the
-[setAccessToken](Matrix-Settings#setAccessToken) function.
 
-This should generally not be necessary, but it can be nice security-wise.
-
--}
-removeAccessToken : Vault -> Vault
-removeAccessToken (Vault vault) =
-    vault
-        |> Envelope.mapContext
-            (\c -> { c | suggestedAccessToken = Nothing })
-        |> Vault
+-- TODO: Generalize more: what if more than one access token has been inserted?
+-- TODO: Should the access token be invalidated server-side too?
+-- TODO: Should the Vault simply forget that it exists?
+-- {-| Remove an access token that has been inserted using the
+-- [setAccessToken](Matrix-Settings#setAccessToken) function.
+-- This should generally not be necessary, but it can be nice security-wise.
+-- -}
+-- removeAccessToken : Vault -> Vault
+-- removeAccessToken (Vault vault) =
+--     vault
+--         |> Envelope.mapContext
+--             (\c -> { c | suggestedAccessToken = Nothing })
+--         |> Vault
 
 
 {-| Remove a password that is stored in the Matrix Vault.
 -}
-removePassword : Vault -> Vault
-removePassword (Vault vault) =
-    vault
-        |> Envelope.mapContext
-            (\c -> { c | password = Nothing })
-        |> Vault
+removePassword : Types.VaultUpdate
+removePassword =
+    Debug.todo "Remove password"
 
 
 {-| Remove password from the Vault as soon as a valid access token has been
 received from the Matrix API.
 -}
-removePasswordOnLogin : Bool -> Vault -> Vault
-removePasswordOnLogin b (Vault vault) =
-    Vault <| Envelope.mapSettings (\s -> { s | removePasswordOnLogin = b }) vault
+removePasswordOnLogin : Bool -> Types.VaultUpdate
+removePasswordOnLogin _ =
+    Debug.todo "Remove password on login"
 
 
 {-| Insert a suggested access token.
 -}
-setAccessToken : String -> Vault -> Vault
-setAccessToken token (Vault vault) =
-    vault
-        |> Envelope.mapContext
-            (\c -> { c | suggestedAccessToken = Just token })
-        |> Vault
+setAccessToken : String -> Types.VaultUpdate
+setAccessToken _ =
+    Debug.todo "Insert access token"
 
 
 {-| Override the device name.
 -}
-setDeviceName : String -> Vault -> Vault
-setDeviceName name (Vault vault) =
-    Vault <| Envelope.mapSettings (\s -> { s | deviceName = name }) vault
+setDeviceName : String -> Types.VaultUpdate
+setDeviceName _ =
+    Debug.todo "Set device name"
 
 
 {-| Set a password for the given user.
 -}
-setPassword : String -> Vault -> Vault
-setPassword password (Vault vault) =
-    vault
-        |> Envelope.mapContext
-            (\c -> { c | password = Just password })
-        |> Vault
+setPassword : String -> Types.VaultUpdate
+setPassword _ =
+    Debug.todo "Set password"
 
 
 {-| Override the sync timeout value.
 -}
-setSyncTime : Int -> Vault -> Vault
-setSyncTime time (Vault vault) =
-    Vault <| Envelope.mapSettings (\s -> { s | syncTime = max 1 time }) vault
+setSyncTime : Int -> Types.VaultUpdate
+setSyncTime _ =
+    Debug.todo "Override sync time"

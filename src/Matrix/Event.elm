@@ -116,21 +116,11 @@ possible.
 redact :
     { event : Event
     , reason : Maybe String
-    , toMsg : Types.VaultUpdate -> msg
     , transactionId : String
     }
-    -> Cmd msg
-redact data =
-    case data.event of
-        Event event ->
-            Api.redact
-                event
-                { eventId = eventId data.event
-                , reason = data.reason
-                , roomId = roomId data.event
-                , toMsg = Types.VaultUpdate >> data.toMsg
-                , transactionId = data.transactionId
-                }
+    -> Types.VaultUpdate
+redact _ =
+    Debug.todo "Redact event"
 
 
 {-| If the event has been redacted, the homeserver can display the event that
