@@ -10,7 +10,16 @@
         "Matrix.Invite",
         "Matrix.Room",
         "Matrix.Settings",
-        "Matrix.User"
+        "Matrix.Types.AccessToken",
+        "Matrix.Types.ClientEvent",
+        "Matrix.Types.DeviceId",
+        "Matrix.Types.DiscoveryInformation",
+        "Matrix.Types.EventId",
+        "Matrix.Types.HomeserverUrl",
+        "Matrix.Types.RefreshToken",
+        "Matrix.Types.RoomId",
+        "Matrix.Types.ServerVersion",
+        "Matrix.Types.UserId"
     ],
     "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
@@ -20,6 +29,7 @@
         "elm/parser": "1.0.0 <= v < 2.0.0",
         "elm/time": "1.0.0 <= v < 2.0.0",
         "elm/url": "1.0.0 <= v < 2.0.0",
+        "ianmackenzie/elm-units": "2.10.0 <= v < 3.0.0",
         "micahhahn/elm-safe-recursion": "2.0.0 <= v < 3.0.0",
         "miniBill/elm-fast-dict": "1.0.0 <= v < 2.0.0",
         "noordstar/elm-iddict": "1.0.1 <= v < 2.0.0"
