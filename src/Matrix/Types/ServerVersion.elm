@@ -1,16 +1,19 @@
 module Matrix.Types.ServerVersion exposing
-    ( ServerVersion, hasUnstableFeature, hasVersion
+    ( ServerVersion, naive, hasUnstableFeature, hasVersion
     , decoder
     )
 
-{-| Homeserver versions and feature flags.
+{-| The `ServerVersion` describes the Matrix server's version and communication
+flag. This allows the Matrix SDK to remain up-to-date with the latest versions
+while remaining fully backwards compatible.
 
-This usually comes from the `/versions` endpoint.
+In general, you should download this from the `/versions` endpoint. See
+[the fetchServerVersion function](Matrix.Api.Versions#fetchServerVersion).
 
 
 ## ServerVersion
 
-@docs ServerVersion, hasUnstableFeature, hasVersion
+@docs ServerVersion, naive, hasUnstableFeature, hasVersion
 
 
 ## JSON
@@ -24,11 +27,6 @@ import Set exposing (Set)
 
 
 {-| Capability information returned by a homeserver.
-
-`versions` lists stable Matrix spec versions the server supports.
-`unstableFeatures` contains enabled feature identifiers from
-`unstable_features`.
-
 -}
 type ServerVersion
     = ServerVersion
@@ -78,3 +76,17 @@ Example version strings include `"r0.6.1"` and `"v1.11"`.
 hasVersion : String -> ServerVersion -> Bool
 hasVersion v (ServerVersion { versions }) =
     List.member v versions
+
+
+{-| Naive type containing zero information about a Matrix server.
+
+You can use this type if you cannot
+[download the information](Matrix.Api.Versions#fetchServerVersion) or if the
+Matrix server cannot tell you its capabilities for some reason. In general,
+the Matrix SDK will communicate in the version that it thinks is the most
+likely to be understood by the Matrix server.
+
+-}
+naive : ServerVersion
+naive =
+    ServerVersion { unstableFeatures = Set.empty, versions = [] }
