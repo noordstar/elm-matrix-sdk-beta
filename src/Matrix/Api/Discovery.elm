@@ -30,7 +30,7 @@ import Internal.Tools.DecodeExtra as DE
 import Json.Decode as D
 import Matrix.Http exposing (Error)
 import Matrix.Types.DiscoveryInformation as DiscoveryInformation exposing (DiscoveryInformation)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl as HomeserverUrl
 import Matrix.Types.UserId as UserId exposing (UserId)
 import Url exposing (Url)
 

@@ -13,10 +13,10 @@ Fetch single events when you have a room ID and event ID.
 
 import Matrix.Api.Internal.GetEvent as GetEvent
 import Matrix.Http exposing (Error)
-import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
+import Matrix.Types.AccessToken exposing (AccessToken)
 import Matrix.Types.ClientEvent as ClientEvent exposing (ClientEvent)
 import Matrix.Types.EventId as EventId exposing (EventId)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Matrix.Types.RoomId as RoomId exposing (RoomId)
 import Matrix.Types.ServerVersion as ServerVersion exposing (ServerVersion)
 

@@ -2,7 +2,7 @@ module Matrix.Types.ClientEvent exposing
     ( ClientEvent, content, eventType, stateKey
     , eventId, roomId, sender, originServerTs
     , previousContent, redactedBecause
-    , DecoderProfile, latestDecoderProfile, decoderWithProfile, decoder
+    , decoder, DecoderProfile, latestDecoderProfile, decoderWithProfile
     )
 
 {-| Matrix Events
@@ -31,7 +31,7 @@ information isn't always applicable, it doesn't always exist.
 
 ## JSON
 
-@docs DecoderProfile, latestDecoderProfile, decoderWithProfile, decoder
+@docs decoder, DecoderProfile, latestDecoderProfile, decoderWithProfile
 
 -}
 

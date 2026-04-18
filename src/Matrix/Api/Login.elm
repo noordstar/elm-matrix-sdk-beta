@@ -36,7 +36,7 @@ import Matrix.Http exposing (Error)
 import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
 import Matrix.Types.DeviceId as DeviceId exposing (DeviceId)
 import Matrix.Types.DiscoveryInformation as DiscoveryInformation exposing (DiscoveryInformation)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Matrix.Types.RefreshToken as RefreshToken exposing (RefreshToken)
 import Matrix.Types.UserId as UserId exposing (UserId)
 

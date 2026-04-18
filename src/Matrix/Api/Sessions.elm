@@ -13,8 +13,8 @@ Use these to end one session or all sessions for a user.
 
 import Json.Encode as E
 import Matrix.Http exposing (Error)
-import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.AccessToken exposing (AccessToken)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 
 
 {-| Log out this device session.

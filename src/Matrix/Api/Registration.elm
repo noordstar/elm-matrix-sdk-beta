@@ -14,7 +14,7 @@ These endpoints are useful before a user has logged in.
 import Json.Decode as D
 import Json.Encode as E
 import Matrix.Http exposing (Error)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 
 
 {-| Check whether a username is available for registration.

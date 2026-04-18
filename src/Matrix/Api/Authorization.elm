@@ -22,7 +22,7 @@ This is the OpenID metadata published by a Matrix homeserver.
 import Internal.Tools.DecodeExtra as DE
 import Json.Decode as D
 import Matrix.Http exposing (Error)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Url exposing (Url)
 
 

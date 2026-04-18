@@ -25,7 +25,7 @@ import Json.Decode as D
 import Json.Encode as E
 import Matrix.Http exposing (Error)
 import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Matrix.Types.RefreshToken as RefreshToken exposing (RefreshToken)
 
 

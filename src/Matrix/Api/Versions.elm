@@ -13,8 +13,8 @@ supports.
 -}
 
 import Matrix.Http exposing (Error)
-import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
-import Matrix.Types.HomeserverUrl as HomeserverUrl exposing (HomeserverUrl)
+import Matrix.Types.AccessToken exposing (AccessToken)
+import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Matrix.Types.ServerVersion as ServerVersion exposing (ServerVersion)
 
 
