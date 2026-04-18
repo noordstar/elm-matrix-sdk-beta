@@ -11,6 +11,7 @@
         "Matrix.Api.Discovery",
         "Matrix.Api.Events",
         "Matrix.Api.Login",
+        "Matrix.Api.RoomMembership",
         "Matrix.Api.Registration",
         "Matrix.Api.Sessions",
         "Matrix.Api.Tokens",

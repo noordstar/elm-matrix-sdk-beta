@@ -7,6 +7,10 @@ module Matrix.Api exposing
     , refreshTokens, RefreshTokensResponse
     , logoutDevice, logoutEverywhere
     , fetchAuthorizationMetadata, AuthorizationServerMetadata
+    , banUser, banUserWithServerVersion
+    , inviteUser, inviteUserWithServerVersion
+    , kickUser, kickUserWithServerVersion
+    , leaveRoom, leaveRoomWithServerVersion
     , fetchEvent, fetchEventWithServerVersion
     , supportContactDecoder, supportInfoDecoder
     , loginFlowDecoder, loginResponseDecoder
@@ -51,6 +55,7 @@ From there you typically:
   - Tokens: `Matrix.Api.Tokens`
   - Sessions: `Matrix.Api.Sessions`
   - Authorization: `Matrix.Api.Authorization`
+  - Room Membership: `Matrix.Api.RoomMembership`
   - Events: `Matrix.Api.Events`
 
 
@@ -90,6 +95,14 @@ From there you typically:
 @docs fetchAuthorizationMetadata, AuthorizationServerMetadata
 
 
+## Room Membership
+
+@docs banUser, banUserWithServerVersion
+@docs inviteUser, inviteUserWithServerVersion
+@docs kickUser, kickUserWithServerVersion
+@docs leaveRoom, leaveRoomWithServerVersion
+
+
 ## Events
 
 @docs fetchEvent, fetchEventWithServerVersion
@@ -113,6 +126,7 @@ import Matrix.Api.Discovery as Discovery
 import Matrix.Api.Events as Events
 import Matrix.Api.Login as Login
 import Matrix.Api.Registration as Registration
+import Matrix.Api.RoomMembership as RoomMembership
 import Matrix.Api.Sessions as Sessions
 import Matrix.Api.Tokens as Tokens
 import Matrix.Api.Versions as Versions
@@ -301,6 +315,132 @@ fetchAuthorizationMetadata :
     -> Cmd msg
 fetchAuthorizationMetadata =
     Authorization.fetchAuthorizationMetadata
+
+
+{-| See `Matrix.Api.RoomMembership.banUser`.
+-}
+banUser :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+banUser =
+    RoomMembership.banUser
+
+
+{-| See `Matrix.Api.RoomMembership.banUserWithServerVersion`.
+-}
+banUserWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , serverVersion : ServerVersion
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+banUserWithServerVersion =
+    RoomMembership.banUserWithServerVersion
+
+
+{-| See `Matrix.Api.RoomMembership.inviteUser`.
+-}
+inviteUser :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+inviteUser =
+    RoomMembership.inviteUser
+
+
+{-| See `Matrix.Api.RoomMembership.inviteUserWithServerVersion`.
+-}
+inviteUserWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , serverVersion : ServerVersion
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+inviteUserWithServerVersion =
+    RoomMembership.inviteUserWithServerVersion
+
+
+{-| See `Matrix.Api.RoomMembership.kickUser`.
+-}
+kickUser :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , avatarUrl : Maybe String
+    , displayName : Maybe String
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+kickUser =
+    RoomMembership.kickUser
+
+
+{-| See `Matrix.Api.RoomMembership.kickUserWithServerVersion`.
+-}
+kickUserWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , userId : UserId
+    , reason : Maybe String
+    , avatarUrl : Maybe String
+    , displayName : Maybe String
+    , serverVersion : ServerVersion
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+kickUserWithServerVersion =
+    RoomMembership.kickUserWithServerVersion
+
+
+{-| See `Matrix.Api.RoomMembership.leaveRoom`.
+-}
+leaveRoom :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , reason : Maybe String
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+leaveRoom =
+    RoomMembership.leaveRoom
+
+
+{-| See `Matrix.Api.RoomMembership.leaveRoomWithServerVersion`.
+-}
+leaveRoomWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , roomId : RoomId
+    , reason : Maybe String
+    , serverVersion : ServerVersion
+    , toMsg : Result Error () -> msg
+    }
+    -> Cmd msg
+leaveRoomWithServerVersion =
+    RoomMembership.leaveRoomWithServerVersion
 
 
 {-| See `Matrix.Api.Events.fetchEvent`.
