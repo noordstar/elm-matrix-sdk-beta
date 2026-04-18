@@ -2,7 +2,7 @@ module Matrix.Types.ClientEvent exposing
     ( ClientEvent, content, eventType, stateKey
     , eventId, roomId, sender, originServerTs
     , previousContent, redactedBecause
-    , decoder
+    , DecoderProfile, latestDecoderProfile, decoderWithProfile, decoder
     )
 
 {-| Matrix Events
@@ -31,7 +31,7 @@ information isn't always applicable, it doesn't always exist.
 
 ## JSON
 
-@docs decoder
+@docs DecoderProfile, latestDecoderProfile, decoderWithProfile, decoder
 
 -}
 
@@ -70,6 +70,13 @@ type ClientEvent
         , redactedBecause : Maybe ClientEvent
         , transactionId : Maybe String
         }
+
+
+{-| Options for decoding version-specific event response fields.
+-}
+type alias DecoderProfile =
+    { includeMembership : Bool
+    }
 
 
 {-| Receive the body of an event, as created by the user that sent it.
@@ -177,6 +184,21 @@ based on the event `type_`.
 -}
 decoder : D.Decoder ClientEvent
 decoder =
+    decoderWithProfile latestDecoderProfile
+
+
+{-| The default decoder profile used by `decoder`.
+-}
+latestDecoderProfile : DecoderProfile
+latestDecoderProfile =
+    { includeMembership = True
+    }
+
+
+{-| Decode a Matrix event using a specific response profile.
+-}
+decoderWithProfile : DecoderProfile -> D.Decoder ClientEvent
+decoderWithProfile profile =
     DE.map12
         (\ct ei ts ri sd sk t ag ms pc rb ti ->
             ClientEvent
@@ -201,25 +223,24 @@ decoder =
         (D.field "sender" UserId.decoder)
         (DE.opField "state_key" D.string)
         (D.field "type" D.string)
-        (D.map (toFloat >> Duration.milliseconds) D.int
-            |> DE.opField "age"
-            |> DE.opField "unsigned"
-            |> D.map (Maybe.andThen identity)
-        )
-        (DE.opField "membership" D.string
-            |> DE.opField "unsigned"
-            |> D.map (Maybe.andThen identity)
-        )
-        (DE.opField "prev_content" D.value
-            |> DE.opField "unsigned"
-            |> D.map (Maybe.andThen identity)
-        )
-        (D.lazy (\() -> decoder)
-            |> DE.opField "redacted_because"
-            |> DE.opField "unsigned"
-            |> D.map (Maybe.andThen identity)
-        )
-        (DE.opField "transaction_id" D.string
-            |> DE.opField "unsigned"
-            |> D.map (Maybe.andThen identity)
-        )
+        (unsignedField "age" (D.map (toFloat >> Duration.milliseconds) D.int))
+        (membershipDecoder profile.includeMembership)
+        (unsignedField "prev_content" D.value)
+        (unsignedField "redacted_because" (D.lazy (\() -> decoderWithProfile profile)))
+        (unsignedField "transaction_id" D.string)
+
+
+membershipDecoder : Bool -> D.Decoder (Maybe String)
+membershipDecoder includeMembership =
+    if includeMembership then
+        unsignedField "membership" D.string
+
+    else
+        D.succeed Nothing
+
+
+unsignedField : String -> D.Decoder a -> D.Decoder (Maybe a)
+unsignedField fieldName fieldDecoder =
+    DE.opField fieldName fieldDecoder
+        |> DE.opField "unsigned"
+        |> D.map (Maybe.andThen identity)

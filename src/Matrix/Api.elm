@@ -7,7 +7,7 @@ module Matrix.Api exposing
     , refreshTokens, RefreshTokensResponse
     , logoutDevice, logoutEverywhere
     , fetchAuthorizationMetadata, AuthorizationServerMetadata
-    , fetchEvent
+    , fetchEvent, fetchEventWithServerVersion
     , supportContactDecoder, supportInfoDecoder
     , loginFlowDecoder, loginResponseDecoder
     , refreshTokensResponseDecoder
@@ -92,7 +92,7 @@ From there you typically:
 
 ## Events
 
-@docs fetchEvent
+@docs fetchEvent, fetchEventWithServerVersion
 
 
 ## JSON
@@ -315,6 +315,21 @@ fetchEvent :
     -> Cmd msg
 fetchEvent =
     Events.fetchEvent
+
+
+{-| See `Matrix.Api.Events.fetchEventWithServerVersion`.
+-}
+fetchEventWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , eventId : EventId
+    , roomId : RoomId
+    , serverVersion : ServerVersion
+    , toMsg : Result Error ClientEvent -> msg
+    }
+    -> Cmd msg
+fetchEventWithServerVersion =
+    Events.fetchEventWithServerVersion
 
 
 {-| Decode support contact information.
