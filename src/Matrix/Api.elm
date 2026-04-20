@@ -7,6 +7,7 @@ module Matrix.Api exposing
     , refreshTokens, RefreshTokensResponse
     , logoutDevice, logoutEverywhere
     , fetchAuthorizationMetadata, AuthorizationServerMetadata
+    , sync, syncWithServerVersion, SyncResponse, SyncPresence
     , banUser, banUserWithServerVersion
     , inviteUser, inviteUserWithServerVersion
     , kickUser, kickUserWithServerVersion
@@ -55,6 +56,7 @@ From there you typically:
   - Tokens: `Matrix.Api.Tokens`
   - Sessions: `Matrix.Api.Sessions`
   - Authorization: `Matrix.Api.Authorization`
+  - Sync: `Matrix.Api.Sync`
   - Room Membership: `Matrix.Api.RoomMembership`
   - Events: `Matrix.Api.Events`
 
@@ -95,6 +97,11 @@ From there you typically:
 @docs fetchAuthorizationMetadata, AuthorizationServerMetadata
 
 
+## Sync
+
+@docs sync, syncWithServerVersion, SyncResponse, SyncPresence
+
+
 ## Room Membership
 
 @docs banUser, banUserWithServerVersion
@@ -128,6 +135,7 @@ import Matrix.Api.Login as Login
 import Matrix.Api.Registration as Registration
 import Matrix.Api.RoomMembership as RoomMembership
 import Matrix.Api.Sessions as Sessions
+import Matrix.Api.Sync as Sync
 import Matrix.Api.Tokens as Tokens
 import Matrix.Api.Versions as Versions
 import Matrix.Http exposing (Error)
@@ -140,6 +148,7 @@ import Matrix.Types.HomeserverUrl exposing (HomeserverUrl)
 import Matrix.Types.RefreshToken exposing (RefreshToken)
 import Matrix.Types.RoomId exposing (RoomId)
 import Matrix.Types.ServerVersion exposing (ServerVersion)
+import Matrix.Types.Sync exposing (SyncResponse)
 import Matrix.Types.UserId exposing (UserId)
 import Url exposing (Url)
 
@@ -315,6 +324,39 @@ fetchAuthorizationMetadata :
     -> Cmd msg
 fetchAuthorizationMetadata =
     Authorization.fetchAuthorizationMetadata
+
+
+{-| See `Matrix.Api.Sync.sync`.
+-}
+sync :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , fullState : Maybe Bool
+    , presence : Maybe SyncPresence
+    , since : Maybe String
+    , timeout : Maybe Int
+    , toMsg : Result Error SyncResponse -> msg
+    }
+    -> Cmd msg
+sync =
+    Sync.sync
+
+
+{-| See `Matrix.Api.Sync.syncWithServerVersion`.
+-}
+syncWithServerVersion :
+    { accessToken : AccessToken
+    , baseUrl : HomeserverUrl
+    , fullState : Maybe Bool
+    , presence : Maybe SyncPresence
+    , since : Maybe String
+    , timeout : Maybe Int
+    , serverVersion : ServerVersion
+    , toMsg : Result Error SyncResponse -> msg
+    }
+    -> Cmd msg
+syncWithServerVersion =
+    Sync.syncWithServerVersion
 
 
 {-| See `Matrix.Api.RoomMembership.banUser`.
@@ -554,3 +596,15 @@ type alias RefreshTokensResponse =
 -}
 type alias AuthorizationServerMetadata =
     Authorization.AuthorizationServerMetadata
+
+
+{-| Presence mode for the `/sync` endpoint.
+-}
+type alias SyncPresence =
+    Sync.SyncPresence
+
+
+{-| Raw response returned by the `/sync` endpoint.
+-}
+type alias SyncResponse =
+    Sync.SyncResponse

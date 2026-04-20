@@ -2,13 +2,15 @@ module Matrix.Types.ClientEvent exposing
     ( ClientEvent, content, eventType, stateKey
     , eventId, roomId, sender, originServerTs
     , previousContent, redactedBecause
-    , decoder, DecoderProfile, latestDecoderProfile, decoderWithProfile
+    , decoder, decoderWithMembership
     )
 
 {-| Matrix Events
 
 This module contains all the functions necessary to view and manipulate Matrix
-events that your client receives.
+events that your client receives. The major difference with the
+[SyncEvent](Matrix.Types.SyncEvent) type is that this type also stores an
+attached room id.
 
 
 ## Event
@@ -31,7 +33,7 @@ information isn't always applicable, it doesn't always exist.
 
 ## JSON
 
-@docs decoder, DecoderProfile, latestDecoderProfile, decoderWithProfile
+@docs decoder, decoderWithMembership
 
 -}
 
@@ -70,13 +72,6 @@ type ClientEvent
         , redactedBecause : Maybe ClientEvent
         , transactionId : Maybe String
         }
-
-
-{-| Options for decoding version-specific event response fields.
--}
-type alias DecoderProfile =
-    { includeMembership : Bool
-    }
 
 
 {-| Receive the body of an event, as created by the user that sent it.
@@ -184,21 +179,13 @@ based on the event `type_`.
 -}
 decoder : D.Decoder ClientEvent
 decoder =
-    decoderWithProfile latestDecoderProfile
-
-
-{-| The default decoder profile used by `decoder`.
--}
-latestDecoderProfile : DecoderProfile
-latestDecoderProfile =
-    { includeMembership = True
-    }
+    decoderWithMembership True
 
 
 {-| Decode a Matrix event using a specific response profile.
 -}
-decoderWithProfile : DecoderProfile -> D.Decoder ClientEvent
-decoderWithProfile profile =
+decoderWithMembership : Bool -> D.Decoder ClientEvent
+decoderWithMembership includeMembership =
     DE.map12
         (\ct ei ts ri sd sk t ag ms pc rb ti ->
             ClientEvent
@@ -224,9 +211,9 @@ decoderWithProfile profile =
         (DE.opField "state_key" D.string)
         (D.field "type" D.string)
         (unsignedField "age" (D.map (toFloat >> Duration.milliseconds) D.int))
-        (membershipDecoder profile.includeMembership)
+        (membershipDecoder includeMembership)
         (unsignedField "prev_content" D.value)
-        (unsignedField "redacted_because" (D.lazy (\() -> decoderWithProfile profile)))
+        (unsignedField "redacted_because" (D.lazy (\() -> decoderWithMembership includeMembership)))
         (unsignedField "transaction_id" D.string)
 
 

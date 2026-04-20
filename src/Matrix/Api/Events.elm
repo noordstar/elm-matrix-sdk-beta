@@ -88,5 +88,5 @@ fetchEventWithServerVersion data =
             , "event"
             , EventId.toString data.eventId
             ]
-        , expect = Matrix.Http.expectJson data.toMsg (ClientEvent.decoderWithProfile profile.decoderProfile)
+        , expect = Matrix.Http.expectJson data.toMsg (ClientEvent.decoderWithMembership profile.includeMembership)
         }

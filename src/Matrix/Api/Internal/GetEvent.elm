@@ -16,14 +16,14 @@ import Matrix.Types.ServerVersion exposing (ServerVersion)
 -}
 type alias EndpointProfile =
     { clientPathVersion : String
-    , decoderProfile : ClientEvent.DecoderProfile
+    , includeMembership : Bool
     }
 
 
 latestProfile : EndpointProfile
 latestProfile =
     { clientPathVersion = "v3"
-    , decoderProfile = ClientEvent.latestDecoderProfile
+    , includeMembership = True
     }
 
 
@@ -61,7 +61,7 @@ variants =
             ]
       , value =
             { clientPathVersion = "v3"
-            , decoderProfile = { includeMembership = False }
+            , includeMembership = False
             }
       }
     , { matches =
@@ -71,7 +71,7 @@ variants =
             ]
       , value =
             { clientPathVersion = "r0"
-            , decoderProfile = { includeMembership = False }
+            , includeMembership = False
             }
       }
     ]
