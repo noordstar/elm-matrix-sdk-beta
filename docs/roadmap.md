@@ -24,29 +24,28 @@ Starting point: `v4-refactor` at commit `77a1334`, which compiles.
 `stash@{0}` ("Manual refactor attempt") is left as it is. Its pieces may be
 borrowed, but it won't be restored.
 
-- [ ] Commit `docs/architecture.md`, `docs/documentation-style.md`,
-      `docs/roadmap.md`, `CLAUDE.md` and `.gitignore`.
-- [ ] Borrow from the stash:
-  - `src/Matrix/Types/BatchToken.elm` and `src/Matrix/Types/DeviceEvent.elm`.
-    These were untracked, so they live in `stash@{0}^3`:
-    `git checkout stash@{0}^3 -- <path>`.
-  - `RoomId.equals`, from `git diff stash@{0}^1 stash@{0} -- src/Matrix/Types/RoomId.elm`.
-- [ ] Fix the `Authorization` header: `"Bearer: "` must be `"Bearer "`
-      (`src/Matrix/Http.elm:269`).
-- [ ] Make the error body's `error` field optional; only `errcode` is required
-      by the spec (`src/Matrix/Http.elm:91`).
-- [ ] Make `HomeserverUrl` keep the base URL's path prefix, which restores the
-      3.6.1 fix from #45. Add tests.
-- [ ] Make `Matrix.Types.UserId` wrap `Internal.Grammar.UserId` directly instead
-      of `Internal.Values.User`.
-- [ ] Delete the 3.x code and the re-export hub (architecture §9, "Delete"
-      row), their tests (everything in `tests/` except `Test/Grammar/*`), and
-      the dependencies `elm-safe-recursion`, `elm-fast-dict` and `elm-iddict`.
+- [x] Commit `docs/architecture.md`, `docs/documentation-style.md`,
+      `docs/roadmap.md`, `CLAUDE.md` and `.gitignore` (commit `e9c2321`).
+- [x] Borrow from the stash: `BatchToken.elm` and `DeviceEvent.elm` (from
+      `git show stash@{0}:<path>`), and `RoomId.equals`.
+- [x] Fix the `Authorization` header: `"Bearer: "` became `"Bearer "`.
+- [x] Make the error body's `error` field optional. `errorHuman` is now a
+      `Maybe String`; only `errcode` is required by the spec.
+- [x] Make `HomeserverUrl` keep the base URL's path prefix, which restores the
+      3.6.1 fix from #45. This also fixed a double `??` in query strings, and
+      the `.well-known` lookups now always use the domain root. Tests are in
+      `tests/Test/Types/HomeserverUrl.elm`.
+- [x] Make `Matrix.Types.UserId` wrap `Internal.Grammar.UserId` directly.
+- [x] Delete the 3.x code and the re-export hub, their tests, and the
+      dependencies `elm-safe-recursion`, `elm-fast-dict` and `elm-iddict`.
       Update `exposed-modules` in `elm.json`.
-- [ ] Add `.github/workflows/ci.yml`: `elm-format --validate src tests`,
-      `elm make --docs=docs.json` and `npx elm-test`.
+- [x] Add `.github/workflows/ci.yml`: `elm-format --validate src tests`,
+      `elm make --docs=docs.json` and `elm-test`.
+- [ ] Commit and push, then check that CI passes on GitHub.
 
 **Done when:** CI is green on `v4-refactor` and `src/` contains only v4 code.
+Everything passes locally: `elm make --docs`, `elm-format --validate`, and all
+19 tests (run in a browser, see `CLAUDE.md`). CI itself hasn't run yet.
 
 ## Phase 1: Foundation
 

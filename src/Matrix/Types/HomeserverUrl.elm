@@ -5,9 +5,11 @@ module Matrix.Types.HomeserverUrl exposing
 
 {-| Homeserver base URLs.
 
-This type stores protocol, host, and optional port. It intentionally omits
-path, query, and fragment so you can safely build Matrix API URLs from a known
-base.
+This type stores the protocol, host, optional port and optional path prefix of
+a homeserver. Most homeservers live at the root of their domain, such as
+`https://matrix.example.org`, but the spec also allows a path prefix, such as
+`https://example.org/matrix`. Query and fragment are always dropped, so you
+can safely build Matrix API URLs from a known base.
 
 
 ## HomeserverUrl
@@ -34,31 +36,34 @@ type HomeserverUrl
         { protocol : Url.Protocol
         , host : String
         , port_ : Maybe Int
+        , pathPrefix : List String
         }
 
 
 {-| Build an absolute URL at a given path and query.
 
-Path segments are percent-encoded automatically. Only query parameters with a
-`Just` value are included.
+Path segments are percent-encoded automatically, and they are added after the
+homeserver's path prefix, if it has one. Only query parameters with a `Just`
+value are included.
 
     atPath [ "_matrix", "client", "v3", "sync" ]
         [ ( "timeout", Just "30000" ), ( "since", Nothing ) ]
         homeserver
+    -- "https://example.org/_matrix/client/v3/sync?timeout=30000"
 
 Note: This function does not validate whether the path is a real Matrix
 endpoint. It just builds the URL.
 
 -}
 atPath : List String -> List ( String, Maybe String ) -> HomeserverUrl -> String
-atPath path query hurl =
+atPath path query ((HomeserverUrl data) as hurl) =
     let
         url =
             toUrl hurl
     in
     Url.toString
         { url
-            | path = "/" ++ String.join "/" (List.map Url.percentEncode path)
+            | path = "/" ++ String.join "/" (data.pathPrefix ++ List.map Url.percentEncode path)
             , query =
                 query
                     |> List.filterMap
@@ -71,7 +76,7 @@ atPath path query hurl =
                                 _ :: _ ->
                                     Just items
                        )
-                    |> Maybe.map Url.Builder.toQuery
+                    |> Maybe.map (Url.Builder.toQuery >> String.dropLeft 1)
         }
 
 
@@ -116,6 +121,9 @@ encode =
     HomeserverUrl.fromString "https://example.org"
     -- Just <homeserverUrl>
 
+    HomeserverUrl.fromString "https://example.org/matrix/"
+    -- Just <homeserverUrl>, with the path prefix "/matrix"
+
     HomeserverUrl.fromString "not a url"
     -- Nothing
 
@@ -126,6 +134,11 @@ fromString =
 
 
 {-| Create a `HomeserverUrl` from `Url.Url`.
+
+The path becomes the homeserver's path prefix. Trailing slashes don't matter:
+`https://example.org/matrix` and `https://example.org/matrix/` give the same
+result. The query and fragment are dropped.
+
 -}
 fromUrl : Url.Url -> HomeserverUrl
 fromUrl url =
@@ -133,13 +146,17 @@ fromUrl url =
         { protocol = url.protocol
         , host = url.host
         , port_ = url.port_
+        , pathPrefix =
+            url.path
+                |> String.split "/"
+                |> List.filter (not << String.isEmpty)
         }
 
 
 {-| Convert a homeserver URL to string form.
 
     HomeserverUrl.toString homeserver
-    -- "https://example.org"
+    -- "https://example.org/"
 
 -}
 toString : HomeserverUrl -> String
@@ -147,7 +164,8 @@ toString =
     toUrl >> Url.toString
 
 
-{-| Convert to `Url.Url`, with path set to `/`.
+{-| Convert to `Url.Url`. The path is the homeserver's path prefix, or `/` if
+it has none.
 
 This is useful when you need to use functions from `elm/url`.
 
@@ -157,7 +175,7 @@ toUrl (HomeserverUrl data) =
     { protocol = data.protocol
     , host = data.host
     , port_ = data.port_
-    , path = "/"
+    , path = "/" ++ String.join "/" data.pathPrefix
     , query = Nothing
     , fragment = Nothing
     }

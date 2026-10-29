@@ -56,11 +56,19 @@ discoverHomeserver :
 discoverHomeserver data =
     Matrix.Http.get
         { accessToken = Nothing
-        , baseUrl = HomeserverUrl.fromUrl data.url
+        , baseUrl = domainRoot data.url
         , path = [ ".well-known", "matrix", "client" ]
         , expect =
             Matrix.Http.expectJson data.toMsg DiscoveryInformation.decoder
         }
+
+
+{-| The root of a domain. The `.well-known` files always live at the root,
+even when the URL you were given has a path.
+-}
+domainRoot : Url -> HomeserverUrl.HomeserverUrl
+domainRoot url =
+    HomeserverUrl.fromUrl { url | path = "/" }
 
 
 {-| Fetch support information for a domain.
@@ -84,7 +92,7 @@ getSupportInfo :
 getSupportInfo data =
     Matrix.Http.get
         { accessToken = Nothing
-        , baseUrl = HomeserverUrl.fromUrl data.url
+        , baseUrl = domainRoot data.url
         , path = [ ".well-known", "matrix", "support" ]
         , expect = Matrix.Http.expectJson data.toMsg supportInfoDecoder
         }

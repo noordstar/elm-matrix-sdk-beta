@@ -1,0 +1,35 @@
+# Checks every push and pull request: formatting, compiling with documentation,
+# and the test suite. Tool versions are pinned to match local development.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache Elm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.elm
+          key: elm-${{ hashFiles('elm.json') }}
+
+      - name: Install Elm tools
+        run: npm install --global elm@0.19.1-6 elm-format@0.8.5 elm-test@0.19.1-revision17
+
+      - name: Check formatting
+        run: elm-format --validate src tests
+
+      - name: Compile with documentation
+        run: elm make --docs=docs.json
+
+      - name: Run tests
+        run: elm-test

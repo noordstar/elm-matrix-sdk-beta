@@ -35,8 +35,8 @@ helps you validate and split them without dealing with the details every time.
 
 -}
 
+import Internal.Grammar.ServerName as ServerName
 import Internal.Grammar.UserId as Grammar
-import Internal.Values.User as Internal
 import Json.Decode as D
 import Json.Encode as E
 
@@ -44,7 +44,7 @@ import Json.Encode as E
 {-| The ID of a Matrix user.
 -}
 type UserId
-    = UserId Internal.User
+    = UserId Grammar.UserID
 
 
 {-| Encode a user ID as a JSON string.
@@ -103,7 +103,7 @@ the Matrix API.
 -}
 fromString : String -> Maybe UserId
 fromString =
-    Internal.fromString >> Maybe.map UserId
+    Grammar.fromString >> Maybe.map UserId
 
 
 {-| Extract the raw string value from a user ID.
@@ -116,7 +116,7 @@ Use this when you must include the ID in a URL or JSON payload.
 -}
 toString : UserId -> String
 toString (UserId userId) =
-    Internal.toString userId
+    Grammar.toString userId
 
 
 {-| Get the localpart of a user ID.
@@ -130,7 +130,7 @@ same localpart if they are on different servers.
 -}
 localpart : UserId -> String
 localpart (UserId userId) =
-    Internal.localpart userId
+    userId.localpart
 
 
 {-| Get the domain of a user ID.
@@ -144,7 +144,7 @@ case-sensitive, so exact equality is meaningful.
 -}
 domain : UserId -> String
 domain (UserId userId) =
-    Internal.domain userId
+    ServerName.toString userId.domain
 
 
 {-| Report whether this user ID uses a historical character set.

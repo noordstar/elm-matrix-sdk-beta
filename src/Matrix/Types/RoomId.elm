@@ -1,5 +1,6 @@
 module Matrix.Types.RoomId exposing
     ( RoomId, fromString, toString
+    , equals
     , encode, decoder
     )
 
@@ -13,6 +14,11 @@ A room ID uniquely identifies one room across the whole Matrix network.
 @docs RoomId, fromString, toString
 
 
+## Comparison
+
+@docs equals
+
+
 ## JSON
 
 @docs encode, decoder
@@ -24,6 +30,10 @@ import Json.Encode as E
 
 
 {-| The ID of a Matrix room.
+
+Room IDs can be compared safely with the `(==)` operator. If you prefer an
+explicit function, use [equals](#equals).
+
 -}
 type RoomId
     = RoomId String
@@ -37,6 +47,14 @@ type RoomId
 encode : RoomId -> E.Value
 encode =
     toString >> E.string
+
+
+{-| Check whether two room IDs point to the same room. This is shorthand for
+the normal `(==)` operator.
+-}
+equals : RoomId -> RoomId -> Bool
+equals =
+    (==)
 
 
 {-| Decode a room ID from a JSON string.

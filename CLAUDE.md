@@ -43,7 +43,17 @@ that becomes a `Cmd` or a `Task`. There's no `Vault` or other stateful client.
 |---|---|---|
 | Build and check docs | `elm make --docs=docs.json` | `docs.json` is git-ignored |
 | Format | `elm-format --yes src tests` | CI uses `elm-format --validate src tests` |
-| Tests | `npx elm-test` | Needs Node.js, which isn't installed on Bram's Windows machine yet, so tests run in CI |
+| Tests | `npx elm-test` | Needs Node.js, which isn't installed on Bram's Windows machine yet. CI runs them. |
 | Spec ledger (Phase 2) | `python tools/spec-ledger/...` | Python 3 with PyYAML is installed |
 
 The machine runs Windows. Both Git Bash and PowerShell are available.
+
+**Running the tests without Node.js:**
+1. In the scratchpad, create an `application` `elm.json` whose
+   `source-directories` point at this repo's `src` and `tests` (use absolute
+   paths), with `elm-explorations/test` 2.2.0 as a direct dependency.
+2. Write a `Main.elm` that runs the suites through `Test.Runner.fromTest` and
+   prints the failures as HTML.
+3. Build it with `elm make Main.elm --output=index.html`.
+4. Serve it with `python -m http.server`, open it in the built-in browser, and
+   read the result with `get_page_text`. (A `file://` page doesn't run scripts there.)

@@ -36,6 +36,7 @@ responses.
 import Dict exposing (Dict)
 import Duration exposing (Duration)
 import Http
+import Internal.Tools.DecodeExtra as DE
 import Json.Decode as D
 import Json.Encode as E
 import Matrix.Types.AccessToken as AccessToken exposing (AccessToken)
@@ -53,7 +54,8 @@ import Url exposing (Url)
     time. If a `Duration` is included, that's the recommended time to wait before
     sending another request.
   - `ServerError` means the Matrix server received your request and returned an
-    error in the way that Matrix would normally do.
+    error in the way that Matrix would normally do. The `errorCode` is always
+    there, but the human-readable `errorHuman` message is optional.
 
 This error type is meant to help you draw a clean line between networking
 problems and Matrix-specific failures.
@@ -66,7 +68,7 @@ type Error
     | Ratelimit (Maybe Duration)
     | ServerError
         { errorCode : String
-        , errorHuman : String
+        , errorHuman : Maybe String
         , keys : Dict String E.Value
         }
 
@@ -81,14 +83,17 @@ type Expect msg
     = Expect (Http.Expect msg)
 
 
-errorDecoder : D.Decoder { errorCode : String, errorHuman : String, keys : Dict String E.Value }
+{-| Decode a standard Matrix error body. The spec only requires the `errcode`
+field, so the human-readable `error` message may be missing.
+-}
+errorDecoder : D.Decoder { errorCode : String, errorHuman : Maybe String, keys : Dict String E.Value }
 errorDecoder =
     D.map3
         (\ec eh ks ->
             { errorCode = ec, errorHuman = eh, keys = ks }
         )
         (D.field "errcode" D.string)
-        (D.field "error" D.string)
+        (DE.opField "error" D.string)
         (D.dict D.value)
 
 
@@ -266,7 +271,7 @@ request data =
         , headers =
             case Maybe.map AccessToken.toString data.accessToken of
                 Just s ->
-                    [ Http.header "Authorization" ("Bearer: " ++ s) ]
+                    [ Http.header "Authorization" ("Bearer " ++ s) ]
 
                 Nothing ->
                     []
