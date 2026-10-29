@@ -11,3 +11,14 @@ elm.js
 
 # Elm configurations
 elm-*.json
+
+# Generated documentation (elm make --docs=docs.json)
+docs.json
+
+# Spec ledger: regenerated from matrix-spec tags (architecture D16)
+tools/spec-ledger/ledger.json
+tools/spec-ledger/cache/
+tests/Generated/
+
+# Python
+__pycache__/
